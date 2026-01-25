@@ -55,8 +55,12 @@ if (-not $NoVersionBump) {
         $moduleJson.download = $moduleJson.download -replace "\/v[\d\.]+\/", "/v$newVersion/"
     }
     
-    # Save updated module.json
-    $moduleJson | ConvertTo-Json -Depth 10 | Set-Content "module.json" -Encoding UTF8
+    # Save updated module.json with proper formatting (2-space indent, UTF8 without BOM)
+    $jsonFormatted = $moduleJson | ConvertTo-Json -Depth 10
+    # Ensure Unix line endings and proper indentation
+    $jsonFormatted = $jsonFormatted -replace '(?m)^  ', '  ' # Normalize to 2 spaces
+    [System.IO.File]::WriteAllText("$PWD\module.json", $jsonFormatted + "`n", [System.Text.UTF8Encoding]::new($false))
+    
     Write-Host "module.json updated!" -ForegroundColor Green
     
     # Store version for later use
@@ -236,9 +240,8 @@ if ($CreateGitHubRelease) {
     # Create release and upload module.zip
     try {
         Write-Host "Creating release v$version on GitHub..." -ForegroundColor Cyan
-        gh release create "v$version" `
-            --title "v$version" `
-            --notes "$ReleaseNotes" `
+        gh release create "v$version" \
+            "module.json#module.json" \
             "$outputFile#module.zip"
         
         Write-Host "GitHub release v$version created successfully!" -ForegroundColor Green
@@ -289,4 +292,5 @@ if (-not $CreateGitHubRelease) {
 }
 Write-Host "  2. Test the module in Foundry VTT" -ForegroundColor Gray
 Write-Host ""
+
 

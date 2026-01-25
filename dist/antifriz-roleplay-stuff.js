@@ -15389,7 +15389,7 @@ function create_if_block_1$4(ctx) {
     }
   };
 }
-function create_fragment$8(ctx) {
+function create_fragment$9(ctx) {
   let button_1;
   let button_1_class_value;
   let applyStyles_action;
@@ -15529,7 +15529,7 @@ function create_fragment$8(ctx) {
     }
   };
 }
-function instance$8($$self, $$props, $$invalidate) {
+function instance$9($$self, $$props, $$invalidate) {
   let icon;
   let label;
   let tooltipDirection;
@@ -15631,7 +15631,7 @@ function instance$8($$self, $$props, $$invalidate) {
 class TJSHeaderButton extends SvelteComponent {
   constructor(options) {
     super();
-    init(this, options, instance$8, create_fragment$8, safe_not_equal, { button: 0, storeHeaderButtonNoLabel: 1 });
+    init(this, options, instance$9, create_fragment$9, safe_not_equal, { button: 0, storeHeaderButtonNoLabel: 1 });
   }
   get button() {
     return this.$$.ctx[0];
@@ -16184,7 +16184,7 @@ function create_key_block(ctx) {
     }
   };
 }
-function create_fragment$7(ctx) {
+function create_fragment$8(ctx) {
   let previous_key = (
     /*draggable*/
     ctx[0]
@@ -16234,7 +16234,7 @@ function create_fragment$7(ctx) {
     }
   };
 }
-function instance$7($$self, $$props, $$invalidate) {
+function instance$8($$self, $$props, $$invalidate) {
   let $focusKeep;
   let $focusAuto;
   let $elementRoot;
@@ -16439,7 +16439,7 @@ function instance$7($$self, $$props, $$invalidate) {
 class TJSApplicationHeader extends SvelteComponent {
   constructor(options) {
     super();
-    init(this, options, instance$7, create_fragment$7, safe_not_equal, { draggable: 0, draggableOptions: 25 }, null, [-1, -1]);
+    init(this, options, instance$8, create_fragment$8, safe_not_equal, { draggable: 0, draggableOptions: 25 }, null, [-1, -1]);
   }
 }
 class ResizeHandleTransform {
@@ -16496,7 +16496,7 @@ class ResizeHandleTransform {
     return this.#pDeltaLocal;
   }
 }
-function create_fragment$6(ctx) {
+function create_fragment$7(ctx) {
   let div;
   let resizable_action;
   let mounted;
@@ -16560,7 +16560,7 @@ function create_fragment$6(ctx) {
     }
   };
 }
-function instance$6($$self, $$props, $$invalidate) {
+function instance$7($$self, $$props, $$invalidate) {
   let $storeElementRoot;
   let $storeMinimized;
   let $storeResizable;
@@ -16700,10 +16700,10 @@ function instance$6($$self, $$props, $$invalidate) {
 class ResizableHandle extends SvelteComponent {
   constructor(options) {
     super();
-    init(this, options, instance$6, create_fragment$6, safe_not_equal, { isResizable: 10 });
+    init(this, options, instance$7, create_fragment$7, safe_not_equal, { isResizable: 10 });
   }
 }
-function create_fragment$5(ctx) {
+function create_fragment$6(ctx) {
   let div;
   let mounted;
   let dispose;
@@ -16739,7 +16739,7 @@ function create_fragment$5(ctx) {
     }
   };
 }
-function instance$5($$self, $$props, $$invalidate) {
+function instance$6($$self, $$props, $$invalidate) {
   let { elementRoot = void 0 } = $$props;
   let { enabled = true } = $$props;
   let ignoreElements, wrapEl;
@@ -16779,7 +16779,7 @@ function instance$5($$self, $$props, $$invalidate) {
 class TJSFocusWrap extends SvelteComponent {
   constructor(options) {
     super();
-    init(this, options, instance$5, create_fragment$5, safe_not_equal, { elementRoot: 2, enabled: 3 });
+    init(this, options, instance$6, create_fragment$6, safe_not_equal, { elementRoot: 2, enabled: 3 });
   }
 }
 function create_else_block$3(ctx) {
@@ -17367,7 +17367,7 @@ function create_if_block$4(ctx) {
     }
   };
 }
-function create_fragment$4(ctx) {
+function create_fragment$5(ctx) {
   let current_block_type_index;
   let if_block;
   let if_block_anchor;
@@ -17433,7 +17433,7 @@ function create_fragment$4(ctx) {
     }
   };
 }
-function instance$4($$self, $$props, $$invalidate) {
+function instance$5($$self, $$props, $$invalidate) {
   let appResizeObserver;
   let appClasses;
   let $focusKeep;
@@ -17780,8 +17780,8 @@ class ApplicationShell extends SvelteComponent {
     init(
       this,
       options,
-      instance$4,
-      create_fragment$4,
+      instance$5,
+      create_fragment$5,
       safe_not_equal,
       {
         elementContent: 0,
@@ -22838,7 +22838,7 @@ function create_each_block$3(ctx) {
     }
   };
 }
-function create_fragment$3(ctx) {
+function create_fragment$4(ctx) {
   let div;
   let button;
   let i;
@@ -22995,7 +22995,7 @@ function portal$1(node) {
     }
   };
 }
-function instance$3($$self, $$props, $$invalidate) {
+function instance$4($$self, $$props, $$invalidate) {
   let normalized;
   let currentLabel;
   let currentIcon;
@@ -23125,7 +23125,7 @@ function instance$3($$self, $$props, $$invalidate) {
 class PermissionPicker extends SvelteComponent {
   constructor(options) {
     super();
-    init(this, options, instance$3, create_fragment$3, safe_not_equal, { value: 16, compact: 0 });
+    init(this, options, instance$4, create_fragment$4, safe_not_equal, { value: 16, compact: 0 });
   }
 }
 function get_each_context$2(ctx, list, i) {
@@ -24604,7 +24604,7 @@ function create_if_block_1$1(ctx) {
     }
   };
 }
-function create_default_slot$2(ctx) {
+function create_default_slot$3(ctx) {
   let main;
   let header;
   let h2;
@@ -24820,7 +24820,7 @@ function create_default_slot$2(ctx) {
     }
   };
 }
-function create_fragment$2(ctx) {
+function create_fragment$3(ctx) {
   let applicationshell;
   let updating_elementRoot;
   let current;
@@ -24830,7 +24830,7 @@ function create_fragment$2(ctx) {
     ctx[45](value);
   }
   let applicationshell_props = {
-    $$slots: { default: [create_default_slot$2] },
+    $$slots: { default: [create_default_slot$3] },
     $$scope: { ctx }
   };
   if (
@@ -24899,7 +24899,7 @@ function formatTime(seconds) {
 }
 const keydown_handler = () => {
 };
-function instance$2($$self, $$props, $$invalidate) {
+function instance$3($$self, $$props, $$invalidate) {
   let doc;
   let currentTrack;
   let visibleTracks;
@@ -25254,7 +25254,7 @@ function instance$2($$self, $$props, $$invalidate) {
 class CharacterMusicShell extends SvelteComponent {
   constructor(options) {
     super();
-    init(this, options, instance$2, create_fragment$2, safe_not_equal, { elementRoot: 0, tjsDoc: 1 }, null, [-1, -1, -1]);
+    init(this, options, instance$3, create_fragment$3, safe_not_equal, { elementRoot: 0, tjsDoc: 1 }, null, [-1, -1, -1]);
   }
   get elementRoot() {
     return this.$$.ctx[0];
@@ -26198,7 +26198,7 @@ function create_each_block$1(key_1, ctx) {
     }
   };
 }
-function create_default_slot$1(ctx) {
+function create_default_slot$2(ctx) {
   let main;
   let header;
   let div0;
@@ -26481,7 +26481,7 @@ function create_default_slot$1(ctx) {
     }
   };
 }
-function create_fragment$1(ctx) {
+function create_fragment$2(ctx) {
   let applicationshell;
   let updating_elementRoot;
   let current;
@@ -26489,7 +26489,7 @@ function create_fragment$1(ctx) {
     ctx[35](value);
   }
   let applicationshell_props = {
-    $$slots: { default: [create_default_slot$1] },
+    $$slots: { default: [create_default_slot$2] },
     $$scope: { ctx }
   };
   if (
@@ -26546,7 +26546,7 @@ function showImagePopout(imagePath, title = "Image") {
 function handleImageClick(event, item) {
   showImagePopout(item.path, item.name);
 }
-function instance$1($$self, $$props, $$invalidate) {
+function instance$2($$self, $$props, $$invalidate) {
   let doc;
   let isActor;
   let isItem;
@@ -26756,7 +26756,7 @@ function instance$1($$self, $$props, $$invalidate) {
 class PortraitGalleryShell extends SvelteComponent {
   constructor(options) {
     super();
-    init(this, options, instance$1, create_fragment$1, safe_not_equal, { elementRoot: 0, tjsDoc: 1 }, null, [-1, -1]);
+    init(this, options, instance$2, create_fragment$2, safe_not_equal, { elementRoot: 0, tjsDoc: 1 }, null, [-1, -1]);
   }
   get elementRoot() {
     return this.$$.ctx[0];
@@ -27039,7 +27039,7 @@ function create_each_block_1(key_1, ctx) {
     }
   };
 }
-function create_default_slot(ctx) {
+function create_default_slot$1(ctx) {
   let main;
   let p;
   let t1;
@@ -27410,7 +27410,7 @@ function create_each_block(ctx) {
     }
   };
 }
-function create_fragment(ctx) {
+function create_fragment$1(ctx) {
   let applicationshell;
   let updating_elementRoot;
   let t;
@@ -27422,7 +27422,7 @@ function create_fragment(ctx) {
     ctx[34](value);
   }
   let applicationshell_props = {
-    $$slots: { default: [create_default_slot] },
+    $$slots: { default: [create_default_slot$1] },
     $$scope: { ctx }
   };
   if (
@@ -27523,7 +27523,7 @@ function portal(node) {
     }
   };
 }
-function instance($$self, $$props, $$invalidate) {
+function instance$1($$self, $$props, $$invalidate) {
   let openCategoryIndex;
   let openCategory;
   let { elementRoot = void 0 } = $$props;
@@ -27758,7 +27758,368 @@ function instance($$self, $$props, $$invalidate) {
 class MusicCategoriesShell extends SvelteComponent {
   constructor(options) {
     super();
-    init(this, options, instance, create_fragment, safe_not_equal, { elementRoot: 0 }, null, [-1, -1]);
+    init(this, options, instance$1, create_fragment$1, safe_not_equal, { elementRoot: 0 }, null, [-1, -1]);
+  }
+  get elementRoot() {
+    return this.$$.ctx[0];
+  }
+  set elementRoot(elementRoot) {
+    this.$$set({ elementRoot });
+    flush();
+  }
+}
+function create_default_slot(ctx) {
+  let div7;
+  let div2;
+  let h30;
+  let t1;
+  let div0;
+  let label0;
+  let input0;
+  let t2;
+  let i1;
+  let t3;
+  let t4;
+  let div1;
+  let label1;
+  let input1;
+  let t5;
+  let i2;
+  let t6;
+  let t7;
+  let div5;
+  let h31;
+  let t9;
+  let div3;
+  let label2;
+  let input2;
+  let t10;
+  let i4;
+  let t11;
+  let t12;
+  let div4;
+  let label3;
+  let input3;
+  let t13;
+  let i5;
+  let t14;
+  let t15;
+  let div6;
+  let button0;
+  let t17;
+  let button1;
+  let mounted;
+  let dispose;
+  return {
+    c() {
+      div7 = element("div");
+      div2 = element("div");
+      h30 = element("h3");
+      h30.innerHTML = `<i class="fas fa-user"></i> Actor Sheets`;
+      t1 = space();
+      div0 = element("div");
+      label0 = element("label");
+      input0 = element("input");
+      t2 = space();
+      i1 = element("i");
+      t3 = text("\n               Show Music Button");
+      t4 = space();
+      div1 = element("div");
+      label1 = element("label");
+      input1 = element("input");
+      t5 = space();
+      i2 = element("i");
+      t6 = text("\n               Show Gallery Button");
+      t7 = space();
+      div5 = element("div");
+      h31 = element("h3");
+      h31.innerHTML = `<i class="fas fa-suitcase"></i> Item Sheets`;
+      t9 = space();
+      div3 = element("div");
+      label2 = element("label");
+      input2 = element("input");
+      t10 = space();
+      i4 = element("i");
+      t11 = text("\n               Show Music Button");
+      t12 = space();
+      div4 = element("div");
+      label3 = element("label");
+      input3 = element("input");
+      t13 = space();
+      i5 = element("i");
+      t14 = text("\n               Show Gallery Button");
+      t15 = space();
+      div6 = element("div");
+      button0 = element("button");
+      button0.innerHTML = `<i class="fas fa-save"></i> Save`;
+      t17 = space();
+      button1 = element("button");
+      button1.innerHTML = `<i class="fas fa-times"></i> Cancel`;
+      attr(input0, "type", "checkbox");
+      attr(i1, "class", "fas fa-music");
+      attr(div0, "class", "setting-row");
+      attr(input1, "type", "checkbox");
+      attr(i2, "class", "fas fa-image");
+      attr(div1, "class", "setting-row");
+      attr(div2, "class", "config-section");
+      attr(input2, "type", "checkbox");
+      attr(i4, "class", "fas fa-music");
+      attr(div3, "class", "setting-row");
+      attr(input3, "type", "checkbox");
+      attr(i5, "class", "fas fa-image");
+      attr(div4, "class", "setting-row");
+      attr(div5, "class", "config-section");
+      attr(button0, "class", "save-btn");
+      attr(button1, "class", "cancel-btn");
+      attr(div6, "class", "button-row");
+      attr(div7, "class", "header-buttons-config-content");
+    },
+    m(target, anchor) {
+      insert(target, div7, anchor);
+      append(div7, div2);
+      append(div2, h30);
+      append(div2, t1);
+      append(div2, div0);
+      append(div0, label0);
+      append(label0, input0);
+      input0.checked = /*showMusicButton*/
+      ctx[1];
+      append(label0, t2);
+      append(label0, i1);
+      append(label0, t3);
+      append(div2, t4);
+      append(div2, div1);
+      append(div1, label1);
+      append(label1, input1);
+      input1.checked = /*showGalleryButton*/
+      ctx[2];
+      append(label1, t5);
+      append(label1, i2);
+      append(label1, t6);
+      append(div7, t7);
+      append(div7, div5);
+      append(div5, h31);
+      append(div5, t9);
+      append(div5, div3);
+      append(div3, label2);
+      append(label2, input2);
+      input2.checked = /*showItemMusicButton*/
+      ctx[3];
+      append(label2, t10);
+      append(label2, i4);
+      append(label2, t11);
+      append(div5, t12);
+      append(div5, div4);
+      append(div4, label3);
+      append(label3, input3);
+      input3.checked = /*showItemGalleryButton*/
+      ctx[4];
+      append(label3, t13);
+      append(label3, i5);
+      append(label3, t14);
+      append(div7, t15);
+      append(div7, div6);
+      append(div6, button0);
+      append(div6, t17);
+      append(div6, button1);
+      if (!mounted) {
+        dispose = [
+          listen(
+            input0,
+            "change",
+            /*input0_change_handler*/
+            ctx[7]
+          ),
+          listen(
+            input1,
+            "change",
+            /*input1_change_handler*/
+            ctx[8]
+          ),
+          listen(
+            input2,
+            "change",
+            /*input2_change_handler*/
+            ctx[9]
+          ),
+          listen(
+            input3,
+            "change",
+            /*input3_change_handler*/
+            ctx[10]
+          ),
+          listen(
+            button0,
+            "click",
+            /*save*/
+            ctx[5]
+          ),
+          listen(
+            button1,
+            "click",
+            /*cancel*/
+            ctx[6]
+          )
+        ];
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty & /*showMusicButton*/
+      2) {
+        input0.checked = /*showMusicButton*/
+        ctx2[1];
+      }
+      if (dirty & /*showGalleryButton*/
+      4) {
+        input1.checked = /*showGalleryButton*/
+        ctx2[2];
+      }
+      if (dirty & /*showItemMusicButton*/
+      8) {
+        input2.checked = /*showItemMusicButton*/
+        ctx2[3];
+      }
+      if (dirty & /*showItemGalleryButton*/
+      16) {
+        input3.checked = /*showItemGalleryButton*/
+        ctx2[4];
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div7);
+      }
+      mounted = false;
+      run_all(dispose);
+    }
+  };
+}
+function create_fragment(ctx) {
+  let applicationshell;
+  let updating_elementRoot;
+  let current;
+  function applicationshell_elementRoot_binding(value) {
+    ctx[11](value);
+  }
+  let applicationshell_props = {
+    $$slots: { default: [create_default_slot] },
+    $$scope: { ctx }
+  };
+  if (
+    /*elementRoot*/
+    ctx[0] !== void 0
+  ) {
+    applicationshell_props.elementRoot = /*elementRoot*/
+    ctx[0];
+  }
+  applicationshell = new ApplicationShell({ props: applicationshell_props });
+  binding_callbacks.push(() => bind(applicationshell, "elementRoot", applicationshell_elementRoot_binding));
+  return {
+    c() {
+      create_component(applicationshell.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(applicationshell, target, anchor);
+      current = true;
+    },
+    p(ctx2, [dirty]) {
+      const applicationshell_changes = {};
+      if (dirty & /*$$scope, showItemGalleryButton, showItemMusicButton, showGalleryButton, showMusicButton*/
+      32798) {
+        applicationshell_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      if (!updating_elementRoot && dirty & /*elementRoot*/
+      1) {
+        updating_elementRoot = true;
+        applicationshell_changes.elementRoot = /*elementRoot*/
+        ctx2[0];
+        add_flush_callback(() => updating_elementRoot = false);
+      }
+      applicationshell.$set(applicationshell_changes);
+    },
+    i(local) {
+      if (current) return;
+      transition_in(applicationshell.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(applicationshell.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(applicationshell, detaching);
+    }
+  };
+}
+function instance($$self, $$props, $$invalidate) {
+  let { elementRoot = void 0 } = $$props;
+  const external = getContext("#external");
+  const application = external?.application;
+  let showMusicButton = true;
+  let showGalleryButton = true;
+  let showItemMusicButton = true;
+  let showItemGalleryButton = true;
+  function loadSettings() {
+    $$invalidate(1, showMusicButton = game.settings.get(MODULE_ID, "showMusicButton"));
+    $$invalidate(2, showGalleryButton = game.settings.get(MODULE_ID, "showGalleryButton"));
+    $$invalidate(3, showItemMusicButton = game.settings.get(MODULE_ID, "showItemMusicButton"));
+    $$invalidate(4, showItemGalleryButton = game.settings.get(MODULE_ID, "showItemGalleryButton"));
+  }
+  async function save() {
+    await game.settings.set(MODULE_ID, "showMusicButton", showMusicButton);
+    await game.settings.set(MODULE_ID, "showGalleryButton", showGalleryButton);
+    await game.settings.set(MODULE_ID, "showItemMusicButton", showItemMusicButton);
+    await game.settings.set(MODULE_ID, "showItemGalleryButton", showItemGalleryButton);
+    notifyInfo("Header buttons configuration saved!");
+    application.close();
+  }
+  function cancel() {
+    application.close();
+  }
+  loadSettings();
+  function input0_change_handler() {
+    showMusicButton = this.checked;
+    $$invalidate(1, showMusicButton);
+  }
+  function input1_change_handler() {
+    showGalleryButton = this.checked;
+    $$invalidate(2, showGalleryButton);
+  }
+  function input2_change_handler() {
+    showItemMusicButton = this.checked;
+    $$invalidate(3, showItemMusicButton);
+  }
+  function input3_change_handler() {
+    showItemGalleryButton = this.checked;
+    $$invalidate(4, showItemGalleryButton);
+  }
+  function applicationshell_elementRoot_binding(value) {
+    elementRoot = value;
+    $$invalidate(0, elementRoot);
+  }
+  $$self.$$set = ($$props2) => {
+    if ("elementRoot" in $$props2) $$invalidate(0, elementRoot = $$props2.elementRoot);
+  };
+  return [
+    elementRoot,
+    showMusicButton,
+    showGalleryButton,
+    showItemMusicButton,
+    showItemGalleryButton,
+    save,
+    cancel,
+    input0_change_handler,
+    input1_change_handler,
+    input2_change_handler,
+    input3_change_handler,
+    applicationshell_elementRoot_binding
+  ];
+}
+class HeaderButtonsShell extends SvelteComponent {
+  constructor(options) {
+    super();
+    init(this, options, instance, create_fragment, safe_not_equal, { elementRoot: 0 });
   }
   get elementRoot() {
     return this.$$.ctx[0];
@@ -27994,6 +28355,52 @@ class MusicCategoriesApp extends SvelteApp {
     });
   }
 }
+class HeaderButtonsApp extends SvelteApp {
+  /**
+   * @param {object} options - Application options
+   */
+  constructor(options = {}) {
+    super(options);
+  }
+  /**
+   * Static method to open the app.
+   * Prevents duplicate windows.
+   * @returns {HeaderButtonsApp}
+   */
+  static open() {
+    const existingApp = Object.values(ui.windows).find(
+      (w) => w instanceof HeaderButtonsApp
+    );
+    if (existingApp) {
+      existingApp.render(true, { focus: true });
+      return existingApp;
+    }
+    const app = new this();
+    app.render(true);
+    return app;
+  }
+  /**
+   * Default Application options
+   * @returns {SvelteApp.Options}
+   */
+  static get defaultOptions() {
+    return deepMerge(super.defaultOptions, {
+      id: "header-buttons-config",
+      classes: ["antifriz-roleplay-stuff", "header-buttons-config"],
+      title: "Header Buttons Configuration",
+      width: 450,
+      height: "auto",
+      resizable: false,
+      minimizable: false,
+      svelte: {
+        class: HeaderButtonsShell,
+        target: document.body,
+        intro: true,
+        props: {}
+      }
+    });
+  }
+}
 new TJSGameSettings(MODULE_ID);
 function registerSettings() {
   _registerWorldSettings();
@@ -28029,38 +28436,48 @@ class MusicCategoriesMenuProxy extends FormApplication {
     return this;
   }
 }
+class HeaderButtonsMenuProxy extends FormApplication {
+  constructor(...args) {
+    super(...args);
+    HeaderButtonsApp.open();
+  }
+  // Override render to do nothing (we open Svelte app instead)
+  async render() {
+    return this;
+  }
+}
 function _registerClientSettings() {
   game.settings.register(MODULE_ID, "showMusicButton", {
-    name: "SETTINGS.showMusicButton.Name",
-    hint: "SETTINGS.showMusicButton.Hint",
     scope: "client",
-    config: true,
+    config: false,
     type: Boolean,
     default: true
   });
   game.settings.register(MODULE_ID, "showGalleryButton", {
-    name: "SETTINGS.showGalleryButton.Name",
-    hint: "SETTINGS.showGalleryButton.Hint",
     scope: "client",
-    config: true,
+    config: false,
     type: Boolean,
     default: true
   });
   game.settings.register(MODULE_ID, "showItemMusicButton", {
-    name: "SETTINGS.showItemMusicButton.Name",
-    hint: "SETTINGS.showItemMusicButton.Hint",
     scope: "client",
-    config: true,
+    config: false,
     type: Boolean,
     default: true
   });
   game.settings.register(MODULE_ID, "showItemGalleryButton", {
-    name: "SETTINGS.showItemGalleryButton.Name",
-    hint: "SETTINGS.showItemGalleryButton.Hint",
     scope: "client",
-    config: true,
+    config: false,
     type: Boolean,
     default: true
+  });
+  game.settings.registerMenu(MODULE_ID, "headerButtonsMenu", {
+    name: "SETTINGS.headerButtonsMenu.Name",
+    label: "SETTINGS.headerButtonsMenu.Label",
+    hint: "SETTINGS.headerButtonsMenu.Hint",
+    icon: "fas fa-cog",
+    type: HeaderButtonsMenuProxy,
+    restricted: false
   });
   game.settings.register(MODULE_ID, "debugMode", {
     name: "SETTINGS.debugMode.Name",

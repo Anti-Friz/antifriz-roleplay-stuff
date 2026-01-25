@@ -6,3 +6,4 @@
 export { CharacterMusicApp } from "./characterSheetAddition/CharacterMusicApp.mjs";
 export { PortraitGalleryApp } from "./characterSheetAddition/PortraitGalleryApp.mjs";
 export { MusicCategoriesApp } from "./settings/MusicCategoriesApp.mjs";
+export { HeaderButtonsApp } from "./settings/HeaderButtonsApp.mjs";

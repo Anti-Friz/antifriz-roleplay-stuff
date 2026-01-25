@@ -1250,6 +1250,109 @@
   filter: brightness(1.1);
 }
 
+/**
+ * AntiFriz Roleplay Stuff - Main stylesheet
+ * 
+ * Uses Foundry VTT CSS variables for theme integration.
+ * Follows TyphonJS Runtime Library (TRL) patterns.
+ */
+/**
+ * Styles for HeaderButtonsShell component
+ */
+.antifriz-roleplay-stuff.header-buttons-config .window-content {
+  padding: 0 !important;
+}
+.antifriz-roleplay-stuff.header-buttons-config .header-buttons-config-content {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+.antifriz-roleplay-stuff.header-buttons-config .config-section {
+  border: 1px solid var(--ars-border-color);
+  border-radius: var(--ars-border-radius);
+  padding: 0.75rem;
+  background: var(--ars-bg-secondary);
+}
+.antifriz-roleplay-stuff.header-buttons-config .config-section h3 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1rem;
+  font-weight: bold;
+  color: var(--ars-text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.antifriz-roleplay-stuff.header-buttons-config .config-section h3 i {
+  color: var(--ars-accent);
+}
+.antifriz-roleplay-stuff.header-buttons-config .setting-row {
+  margin-bottom: 0.5rem;
+}
+.antifriz-roleplay-stuff.header-buttons-config .setting-row:last-child {
+  margin-bottom: 0;
+}
+.antifriz-roleplay-stuff.header-buttons-config .setting-row label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 3px;
+  transition: background-color 0.2s;
+}
+.antifriz-roleplay-stuff.header-buttons-config .setting-row label:hover {
+  background: var(--ars-bg-hover);
+}
+.antifriz-roleplay-stuff.header-buttons-config .setting-row label input[type=checkbox] {
+  cursor: pointer;
+  width: 18px;
+  height: 18px;
+}
+.antifriz-roleplay-stuff.header-buttons-config .setting-row label i {
+  width: 20px;
+  text-align: center;
+  color: var(--ars-text-secondary);
+}
+.antifriz-roleplay-stuff.header-buttons-config .button-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--ars-border-color);
+}
+.antifriz-roleplay-stuff.header-buttons-config .button-row button {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: var(--ars-border-radius);
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: all 0.2s;
+}
+.antifriz-roleplay-stuff.header-buttons-config .button-row button i {
+  font-size: 0.85rem;
+}
+.antifriz-roleplay-stuff.header-buttons-config .button-row .save-btn {
+  background: var(--ars-accent);
+  color: white;
+}
+.antifriz-roleplay-stuff.header-buttons-config .button-row .save-btn:hover {
+  background: var(--ars-accent-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px var(--ars-shadow-accent);
+}
+.antifriz-roleplay-stuff.header-buttons-config .button-row .cancel-btn {
+  background: var(--ars-bg-hover);
+  color: var(--ars-text-primary);
+}
+.antifriz-roleplay-stuff.header-buttons-config .button-row .cancel-btn:hover {
+  background: var(--ars-border-color);
+}
+
 .antifriz-roleplay-stuff {
   --tjs-default-outline-focus-visible: 2px solid var(--color-text-hyperlink, #7c3aed);
   --tjs-app-content-padding: 0.5rem;

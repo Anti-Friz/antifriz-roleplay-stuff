@@ -1,6 +1,6 @@
 import { TJSGameSettings } from '#runtime/svelte/store/fvtt/settings';
 import { MODULE_ID, DEFAULT_MUSIC_CATEGORIES } from '#config';
-import { MusicCategoriesApp } from '#applications';
+import { MusicCategoriesApp, HeaderButtonsApp } from '#applications';
 
 /**
  * TJSGameSettings instance for reactive Foundry settings
@@ -60,48 +60,67 @@ class MusicCategoriesMenuProxy extends FormApplication {
 }
 
 /**
+ * Proxy class to open the Svelte-based Header Buttons Config App
+ * This is needed because settings.registerMenu expects a FormApplication-like class
+ */
+class HeaderButtonsMenuProxy extends FormApplication {
+   constructor(...args) {
+      super(...args);
+      // Immediately open the Svelte app
+      HeaderButtonsApp.open();
+   }
+   
+   // Override render to do nothing (we open Svelte app instead)
+   async render() {
+      return this;
+   }
+}
+
+/**
  * Register client-scoped settings (per-user)
  * @private
  */
 function _registerClientSettings() {
-   // Actor sheet buttons
+   // Header buttons visibility (hidden settings, accessible via menu)
    game.settings.register(MODULE_ID, 'showMusicButton', {
-      name: 'SETTINGS.showMusicButton.Name',
-      hint: 'SETTINGS.showMusicButton.Hint',
       scope: 'client',
-      config: true,
+      config: false,
       type: Boolean,
       default: true
    });
 
    game.settings.register(MODULE_ID, 'showGalleryButton', {
-      name: 'SETTINGS.showGalleryButton.Name',
-      hint: 'SETTINGS.showGalleryButton.Hint',
       scope: 'client',
-      config: true,
+      config: false,
       type: Boolean,
       default: true
    });
 
-   // Item sheet buttons
    game.settings.register(MODULE_ID, 'showItemMusicButton', {
-      name: 'SETTINGS.showItemMusicButton.Name',
-      hint: 'SETTINGS.showItemMusicButton.Hint',
       scope: 'client',
-      config: true,
+      config: false,
       type: Boolean,
       default: true
    });
 
    game.settings.register(MODULE_ID, 'showItemGalleryButton', {
-      name: 'SETTINGS.showItemGalleryButton.Name',
-      hint: 'SETTINGS.showItemGalleryButton.Hint',
       scope: 'client',
-      config: true,
+      config: false,
       type: Boolean,
       default: true
    });
 
+   // Register settings menu for header buttons
+   game.settings.registerMenu(MODULE_ID, 'headerButtonsMenu', {
+      name: 'SETTINGS.headerButtonsMenu.Name',
+      label: 'SETTINGS.headerButtonsMenu.Label',
+      hint: 'SETTINGS.headerButtonsMenu.Hint',
+      icon: 'fas fa-cog',
+      type: HeaderButtonsMenuProxy,
+      restricted: false
+   });
+
+   // Debug mode
    game.settings.register(MODULE_ID, 'debugMode', {
       name: 'SETTINGS.debugMode.Name',
       hint: 'SETTINGS.debugMode.Hint',

@@ -3,21 +3,10 @@
     "title": "AntiFriz Roleplay Stuff"
   },
   "SETTINGS": {
-    "showMusicButton": {
-      "Name": "Show Music Button (Actors)",
-      "Hint": "Show the Music button in Actor sheet header"
-    },
-    "showGalleryButton": {
-      "Name": "Show Gallery Button (Actors)",
-      "Hint": "Show the Gallery button in Actor sheet header"
-    },
-    "showItemMusicButton": {
-      "Name": "Show Music Button (Items)",
-      "Hint": "Show the Music button in Item sheet header"
-    },
-    "showItemGalleryButton": {
-      "Name": "Show Gallery Button (Items)",
-      "Hint": "Show the Gallery button in Item sheet header"
+    "headerButtonsMenu": {
+      "Name": "Header Buttons",
+      "Label": "Configure Header Buttons",
+      "Hint": "Configure which buttons appear in Actor and Item sheet headers"
     },
     "debugMode": {
       "Name": "Debug Mode",
