@@ -286,7 +286,18 @@
       border-radius: var(--ars-border-radius);
       background: var(--ars-bg-primary);
       color: var(--ars-text-primary);
-      max-width: 4rem;
+      max-width: 5.5rem;
+      
+      &.invalid {
+         border-color: var(--ars-danger);
+         border-width: 2px;
+         
+         // Style only the first (invalid) option differently
+         option:first-child:disabled {
+            color: var(--ars-danger);
+            background: rgba(239, 68, 68, 0.1);
+         }
+      }
    }
    
    .broadcast-dropdown {

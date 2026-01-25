@@ -41,18 +41,43 @@
    
    $: isGM = game.user.isGM;
    
-   // Categories
-   const categories = [
+   // Categories from settings (with fallback)
+   const defaultCategories = [
       { id: 'theme', label: 'Theme', icon: 'fa-music' },
       { id: 'combat', label: 'Combat', icon: 'fa-swords' },
       { id: 'dramatic', label: 'Dramatic', icon: 'fa-theater-masks' },
       { id: 'ambient', label: 'Ambient', icon: 'fa-wind' }
    ];
    
-   $: groupedTracks = categories.map(cat => ({
-      ...cat,
-      tracks: tracks.filter(t => (t.category || 'theme') === cat.id)
-   })).filter(g => g.tracks.length > 0);
+   // Special category for tracks with invalid/missing category
+   const uncategorizedCategory = { id: '__uncategorized__', label: 'Uncategorized', icon: 'fa-question' };
+   
+   $: categories = game.settings.get(MODULE_ID, 'musicCategories') ?? defaultCategories;
+   $: categoryIds = new Set(categories.map(c => c.id));
+   
+   // Group tracks by category, putting invalid categories in "Uncategorized"
+   $: groupedTracks = (() => {
+      const groups = categories.map(cat => ({
+         ...cat,
+         tracks: tracks.filter(t => (t.category || 'theme') === cat.id)
+      })).filter(g => g.tracks.length > 0);
+      
+      // Find tracks with invalid categories
+      const uncategorizedTracks = tracks.filter(t => {
+         const trackCat = t.category || 'theme';
+         return !categoryIds.has(trackCat);
+      });
+      
+      // Add uncategorized group if needed
+      if (uncategorizedTracks.length > 0) {
+         groups.push({
+            ...uncategorizedCategory,
+            tracks: uncategorizedTracks
+         });
+      }
+      
+      return groups;
+   })();
    
    $: onlinePlayers = game.users.filter(u => u.active && !u.isGM);
    
@@ -337,6 +362,8 @@
                   {#each group.tracks as track (track.id)}
                      {@const isCurrentTrack = currentTrackId === track.id}
                      {@const isTrackPlaying = isCurrentTrack && isPlaying}
+                     {@const trackCategory = track.category || 'theme'}
+                     {@const isValidCategory = categoryIds.has(trackCategory)}
                      <div class="track-item" class:playing={isTrackPlaying} class:selected={isCurrentTrack}>
                         <!-- Play/Pause button -->
                         <button type="button" class="play-btn" on:click={() => playTrack(track)}>
@@ -371,8 +398,15 @@
                         
                         <!-- Actions -->
                         <div class="track-actions">
-                           <select class="category-select" value={track.category || 'theme'} 
-                              on:change={(e) => setCategoryForTrack(track, e.target.value)}>
+                           <select class="category-select" 
+                              class:invalid={!isValidCategory}
+                              value={trackCategory} 
+                              on:change={(e) => setCategoryForTrack(track, e.target.value)}
+                              title={!isValidCategory ? 'Category no longer exists - please select a new one' : ''}
+                           >
+                              {#if !isValidCategory}
+                                 <option value={trackCategory} disabled>⚠️ {trackCategory} (invalid)</option>
+                              {/if}
                               {#each categories as cat}
                                  <option value={cat.id}>{cat.label}</option>
                               {/each}

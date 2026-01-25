@@ -22,6 +22,18 @@
     "debugMode": {
       "Name": "Debug Mode",
       "Hint": "Enable debug logging to the browser console"
+    },
+    "musicCategories": {
+      "Name": "Music Categories",
+      "Hint": "Custom categories for organizing music tracks"
+    },
+    "musicCategoriesMenu": {
+      "Name": "Music Categories",
+      "Label": "Configure Categories",
+      "Hint": "Add, edit, or remove music categories",
+      "Title": "Music Categories Configuration",
+      "Notes": "Define custom categories for organizing character music. Changes apply to all actors and items.",
+      "AddCategory": "Add Category"
     }
   }
 }

@@ -1,5 +1,6 @@
 import { TJSGameSettings } from '#runtime/svelte/store/fvtt/settings';
 import { MODULE_ID } from '#config';
+import { MusicCategoriesApp } from '#applications';
 
 /**
  * TJSGameSettings instance for reactive Foundry settings
@@ -8,10 +9,64 @@ import { MODULE_ID } from '#config';
 export const AFSettings = new TJSGameSettings(MODULE_ID);
 
 /**
+ * Default music categories
+ */
+export const DEFAULT_MUSIC_CATEGORIES = [
+   { id: 'theme', label: 'Theme', icon: 'fa-music' },
+   { id: 'combat', label: 'Combat', icon: 'fa-swords' },
+   { id: 'dramatic', label: 'Dramatic', icon: 'fa-theater-masks' },
+   { id: 'ambient', label: 'Ambient', icon: 'fa-wind' }
+];
+
+/**
  * Register all system settings
  */
 export function registerSettings() {
+   _registerWorldSettings();
    _registerClientSettings();
+}
+
+/**
+ * Register world-scoped settings (shared by all users)
+ * @private
+ */
+function _registerWorldSettings() {
+   // Music categories (world setting, GM only)
+   game.settings.register(MODULE_ID, 'musicCategories', {
+      name: 'SETTINGS.musicCategories.Name',
+      hint: 'SETTINGS.musicCategories.Hint',
+      scope: 'world',
+      config: false, // Hidden, use custom menu
+      type: Array,
+      default: DEFAULT_MUSIC_CATEGORIES
+   });
+   
+   // Register settings menu for categories
+   game.settings.registerMenu(MODULE_ID, 'musicCategoriesMenu', {
+      name: 'SETTINGS.musicCategoriesMenu.Name',
+      label: 'SETTINGS.musicCategoriesMenu.Label',
+      hint: 'SETTINGS.musicCategoriesMenu.Hint',
+      icon: 'fas fa-music',
+      type: MusicCategoriesMenuProxy,
+      restricted: true // GM only
+   });
+}
+
+/**
+ * Proxy class to open the Svelte-based Music Categories App
+ * This is needed because settings.registerMenu expects a FormApplication-like class
+ */
+class MusicCategoriesMenuProxy extends FormApplication {
+   constructor(...args) {
+      super(...args);
+      // Immediately open the Svelte app
+      MusicCategoriesApp.open();
+   }
+   
+   // Override render to do nothing (we open Svelte app instead)
+   async render() {
+      return this;
+   }
 }
 
 /**
@@ -48,7 +103,7 @@ function _registerClientSettings() {
       default: true
    });
 
-    game.settings.register(MODULE_ID, 'showItemGalleryButton', {
+   game.settings.register(MODULE_ID, 'showItemGalleryButton', {
       name: 'SETTINGS.showItemGalleryButton.Name',
       hint: 'SETTINGS.showItemGalleryButton.Hint',
       scope: 'client',

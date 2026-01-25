@@ -310,6 +310,12 @@ function setContext(key, context) {
 function getContext(key) {
   return get_current_component().$$.context.get(key);
 }
+function bubble(component, event) {
+  const callbacks = component.$$.callbacks[event.type];
+  if (callbacks) {
+    callbacks.slice().forEach((fn) => fn.call(this, event));
+  }
+}
 const dirty_components = [];
 const binding_callbacks = [];
 let render_callbacks = [];
@@ -2238,156 +2244,6 @@ const constants = {
   moduleLabel: "Antifriz Roleplay Stuff"
 };
 const MODULE_ID = constants.moduleId;
-new TJSGameSettings(MODULE_ID);
-function registerSettings() {
-  _registerClientSettings();
-}
-function _registerClientSettings() {
-  game.settings.register(MODULE_ID, "showMusicButton", {
-    name: "SETTINGS.showMusicButton.Name",
-    hint: "SETTINGS.showMusicButton.Hint",
-    scope: "client",
-    config: true,
-    type: Boolean,
-    default: true
-  });
-  game.settings.register(MODULE_ID, "showGalleryButton", {
-    name: "SETTINGS.showGalleryButton.Name",
-    hint: "SETTINGS.showGalleryButton.Hint",
-    scope: "client",
-    config: true,
-    type: Boolean,
-    default: true
-  });
-  game.settings.register(MODULE_ID, "showItemMusicButton", {
-    name: "SETTINGS.showItemMusicButton.Name",
-    hint: "SETTINGS.showItemMusicButton.Hint",
-    scope: "client",
-    config: true,
-    type: Boolean,
-    default: true
-  });
-  game.settings.register(MODULE_ID, "showItemGalleryButton", {
-    name: "SETTINGS.showItemGalleryButton.Name",
-    hint: "SETTINGS.showItemGalleryButton.Hint",
-    scope: "client",
-    config: true,
-    type: Boolean,
-    default: true
-  });
-  game.settings.register(MODULE_ID, "debugMode", {
-    name: "SETTINGS.debugMode.Name",
-    hint: "SETTINGS.debugMode.Hint",
-    scope: "client",
-    config: true,
-    type: Boolean,
-    default: false
-  });
-}
-let broadcastAudio = null;
-function registerSocketListeners() {
-  game.socket.on(`module.${MODULE_ID}`, handleSocketMessage);
-}
-function handleSocketMessage(message) {
-  const { type, senderId, data } = message;
-  if (senderId === game.user.id) return;
-  if (data?.targetUsers && !data.targetUsers.includes(game.user.id)) return;
-  switch (type) {
-    case "playMusic":
-      handlePlayMusic(data);
-      break;
-    case "stopMusic":
-      handleStopMusic(data);
-      break;
-    case "syncMusic":
-      handleSyncMusic(data);
-      break;
-    case "setVolume":
-      handleSetVolume(data);
-      break;
-  }
-}
-function handlePlayMusic(data) {
-  const { path, name, actorName, volume = 0.5, currentTime = 0 } = data;
-  if (broadcastAudio) {
-    broadcastAudio.pause();
-    broadcastAudio.src = "";
-  }
-  broadcastAudio = new Audio(path);
-  broadcastAudio.volume = volume;
-  broadcastAudio.addEventListener("loadedmetadata", () => {
-    if (currentTime > 0) {
-      broadcastAudio.currentTime = currentTime;
-    }
-  }, { once: true });
-  const playPromise = broadcastAudio.play();
-  if (playPromise !== void 0) {
-    playPromise.then(() => {
-      ui.notifications.info(`🎵 Playing ${actorName}'s theme: ${name}`);
-    }).catch(() => {
-      new Dialog({
-        title: `🎵 ${actorName}'s Theme`,
-        content: `<p>Click play to hear <strong>${name}</strong></p>`,
-        buttons: {
-          play: {
-            icon: '<i class="fas fa-play"></i>',
-            label: "Play",
-            callback: () => {
-              broadcastAudio?.play().catch(() => {
-                ui.notifications.error(`Could not play audio: ${name}`);
-              });
-            }
-          },
-          skip: {
-            icon: '<i class="fas fa-times"></i>',
-            label: "Skip",
-            callback: () => {
-              if (broadcastAudio) {
-                broadcastAudio.src = "";
-                broadcastAudio = null;
-              }
-            }
-          }
-        },
-        default: "play"
-      }).render(true);
-    });
-  }
-  broadcastAudio.addEventListener("error", () => {
-    ui.notifications.error(`Failed to load ${actorName}'s theme: ${name}`);
-  });
-  broadcastAudio.addEventListener("ended", () => {
-    broadcastAudio = null;
-  });
-}
-function handleStopMusic(data) {
-  const { actorName } = data;
-  if (broadcastAudio) {
-    broadcastAudio.pause();
-    broadcastAudio.src = "";
-    broadcastAudio = null;
-    ui.notifications.info(`🎵 ${actorName}'s theme stopped`);
-  }
-}
-function handleSyncMusic(data) {
-  const { currentTime, isPlaying } = data;
-  if (!broadcastAudio) return;
-  if (Math.abs(broadcastAudio.currentTime - currentTime) > 2) {
-    broadcastAudio.currentTime = currentTime;
-  }
-  if (isPlaying && broadcastAudio.paused) {
-    broadcastAudio.play().catch(() => {
-    });
-  } else if (!isPlaying && !broadcastAudio.paused) {
-    broadcastAudio.pause();
-  }
-}
-function handleSetVolume(data) {
-  const { volume } = data;
-  if (broadcastAudio) {
-    broadcastAudio.volume = volume;
-  }
-}
 class ThemeObserver {
   /**
    * All readable theme stores.
@@ -15355,7 +15211,7 @@ function popoverTooltip(node, { cssClass, direction, isHTML, locked, tooltip }) 
     }
   };
 }
-function create_if_block$4(ctx) {
+function create_if_block$5(ctx) {
   let if_block_anchor;
   function select_block_type(ctx2, dirty) {
     if (
@@ -15498,7 +15354,7 @@ function create_if_block_1$3(ctx) {
     }
   };
 }
-function create_fragment$6(ctx) {
+function create_fragment$7(ctx) {
   let button_1;
   let button_1_class_value;
   let applyStyles_action;
@@ -15507,7 +15363,7 @@ function create_fragment$6(ctx) {
   let dispose;
   let if_block = (
     /*icon*/
-    ctx[2] && create_if_block$4(ctx)
+    ctx[2] && create_if_block$5(ctx)
   );
   return {
     c() {
@@ -15581,7 +15437,7 @@ function create_fragment$6(ctx) {
         if (if_block) {
           if_block.p(ctx2, dirty);
         } else {
-          if_block = create_if_block$4(ctx2);
+          if_block = create_if_block$5(ctx2);
           if_block.c();
           if_block.m(button_1, null);
         }
@@ -15638,7 +15494,7 @@ function create_fragment$6(ctx) {
     }
   };
 }
-function instance$6($$self, $$props, $$invalidate) {
+function instance$7($$self, $$props, $$invalidate) {
   let icon;
   let label;
   let tooltipDirection;
@@ -15740,7 +15596,7 @@ function instance$6($$self, $$props, $$invalidate) {
 class TJSHeaderButton extends SvelteComponent {
   constructor(options) {
     super();
-    init(this, options, instance$6, create_fragment$6, safe_not_equal, { button: 0, storeHeaderButtonNoLabel: 1 });
+    init(this, options, instance$7, create_fragment$7, safe_not_equal, { button: 0, storeHeaderButtonNoLabel: 1 });
   }
   get button() {
     return this.$$.ctx[0];
@@ -15757,12 +15613,12 @@ class TJSHeaderButton extends SvelteComponent {
     flush();
   }
 }
-function get_each_context$2(ctx, list, i) {
+function get_each_context$3(ctx, list, i) {
   const child_ctx = ctx.slice();
   child_ctx[40] = list[i];
   return child_ctx;
 }
-function get_each_context_1$1(ctx, list, i) {
+function get_each_context_1$3(ctx, list, i) {
   const child_ctx = ctx.slice();
   child_ctx[40] = list[i];
   return child_ctx;
@@ -15829,7 +15685,7 @@ function create_if_block_1$2(ctx) {
     }
   };
 }
-function create_if_block$3(ctx) {
+function create_if_block$4(ctx) {
   let img;
   let img_src_value;
   return {
@@ -15861,7 +15717,7 @@ function create_if_block$3(ctx) {
     }
   };
 }
-function create_each_block_1$1(ctx) {
+function create_each_block_1$3(ctx) {
   let switch_instance;
   let switch_instance_anchor;
   let current;
@@ -15946,7 +15802,7 @@ function create_each_block_1$1(ctx) {
     }
   };
 }
-function create_each_block$2(ctx) {
+function create_each_block$3(ctx) {
   let switch_instance;
   let switch_instance_anchor;
   let current;
@@ -16053,7 +15909,7 @@ function create_key_block(ctx) {
     if (
       /*mediaType*/
       ctx2[8] === "img"
-    ) return create_if_block$3;
+    ) return create_if_block$4;
     if (
       /*mediaType*/
       ctx2[8] === "font"
@@ -16071,7 +15927,7 @@ function create_key_block(ctx) {
   );
   let each_blocks_1 = [];
   for (let i = 0; i < each_value_1.length; i += 1) {
-    each_blocks_1[i] = create_each_block_1$1(get_each_context_1$1(ctx, each_value_1, i));
+    each_blocks_1[i] = create_each_block_1$3(get_each_context_1$3(ctx, each_value_1, i));
   }
   const out = (i) => transition_out(each_blocks_1[i], 1, 1, () => {
     each_blocks_1[i] = null;
@@ -16082,7 +15938,7 @@ function create_key_block(ctx) {
   );
   let each_blocks = [];
   for (let i = 0; i < each_value.length; i += 1) {
-    each_blocks[i] = create_each_block$2(get_each_context$2(ctx, each_value, i));
+    each_blocks[i] = create_each_block$3(get_each_context$3(ctx, each_value, i));
   }
   const out_1 = (i) => transition_out(each_blocks[i], 1, 1, () => {
     each_blocks[i] = null;
@@ -16197,12 +16053,12 @@ function create_key_block(ctx) {
         );
         let i;
         for (i = 0; i < each_value_1.length; i += 1) {
-          const child_ctx = get_each_context_1$1(ctx2, each_value_1, i);
+          const child_ctx = get_each_context_1$3(ctx2, each_value_1, i);
           if (each_blocks_1[i]) {
             each_blocks_1[i].p(child_ctx, dirty);
             transition_in(each_blocks_1[i], 1);
           } else {
-            each_blocks_1[i] = create_each_block_1$1(child_ctx);
+            each_blocks_1[i] = create_each_block_1$3(child_ctx);
             each_blocks_1[i].c();
             transition_in(each_blocks_1[i], 1);
             each_blocks_1[i].m(header, t3);
@@ -16222,12 +16078,12 @@ function create_key_block(ctx) {
         );
         let i;
         for (i = 0; i < each_value.length; i += 1) {
-          const child_ctx = get_each_context$2(ctx2, each_value, i);
+          const child_ctx = get_each_context$3(ctx2, each_value, i);
           if (each_blocks[i]) {
             each_blocks[i].p(child_ctx, dirty);
             transition_in(each_blocks[i], 1);
           } else {
-            each_blocks[i] = create_each_block$2(child_ctx);
+            each_blocks[i] = create_each_block$3(child_ctx);
             each_blocks[i].c();
             transition_in(each_blocks[i], 1);
             each_blocks[i].m(header, null);
@@ -16293,7 +16149,7 @@ function create_key_block(ctx) {
     }
   };
 }
-function create_fragment$5(ctx) {
+function create_fragment$6(ctx) {
   let previous_key = (
     /*draggable*/
     ctx[0]
@@ -16343,7 +16199,7 @@ function create_fragment$5(ctx) {
     }
   };
 }
-function instance$5($$self, $$props, $$invalidate) {
+function instance$6($$self, $$props, $$invalidate) {
   let $focusKeep;
   let $focusAuto;
   let $elementRoot;
@@ -16548,7 +16404,7 @@ function instance$5($$self, $$props, $$invalidate) {
 class TJSApplicationHeader extends SvelteComponent {
   constructor(options) {
     super();
-    init(this, options, instance$5, create_fragment$5, safe_not_equal, { draggable: 0, draggableOptions: 25 }, null, [-1, -1]);
+    init(this, options, instance$6, create_fragment$6, safe_not_equal, { draggable: 0, draggableOptions: 25 }, null, [-1, -1]);
   }
 }
 class ResizeHandleTransform {
@@ -16605,7 +16461,7 @@ class ResizeHandleTransform {
     return this.#pDeltaLocal;
   }
 }
-function create_fragment$4(ctx) {
+function create_fragment$5(ctx) {
   let div;
   let resizable_action;
   let mounted;
@@ -16669,7 +16525,7 @@ function create_fragment$4(ctx) {
     }
   };
 }
-function instance$4($$self, $$props, $$invalidate) {
+function instance$5($$self, $$props, $$invalidate) {
   let $storeElementRoot;
   let $storeMinimized;
   let $storeResizable;
@@ -16809,10 +16665,10 @@ function instance$4($$self, $$props, $$invalidate) {
 class ResizableHandle extends SvelteComponent {
   constructor(options) {
     super();
-    init(this, options, instance$4, create_fragment$4, safe_not_equal, { isResizable: 10 });
+    init(this, options, instance$5, create_fragment$5, safe_not_equal, { isResizable: 10 });
   }
 }
-function create_fragment$3(ctx) {
+function create_fragment$4(ctx) {
   let div;
   let mounted;
   let dispose;
@@ -16848,7 +16704,7 @@ function create_fragment$3(ctx) {
     }
   };
 }
-function instance$3($$self, $$props, $$invalidate) {
+function instance$4($$self, $$props, $$invalidate) {
   let { elementRoot = void 0 } = $$props;
   let { enabled = true } = $$props;
   let ignoreElements, wrapEl;
@@ -16888,7 +16744,7 @@ function instance$3($$self, $$props, $$invalidate) {
 class TJSFocusWrap extends SvelteComponent {
   constructor(options) {
     super();
-    init(this, options, instance$3, create_fragment$3, safe_not_equal, { elementRoot: 2, enabled: 3 });
+    init(this, options, instance$4, create_fragment$4, safe_not_equal, { elementRoot: 2, enabled: 3 });
   }
 }
 function create_else_block$2(ctx) {
@@ -17176,7 +17032,7 @@ function create_else_block$2(ctx) {
     }
   };
 }
-function create_if_block$2(ctx) {
+function create_if_block$3(ctx) {
   let div;
   let tjsapplicationheader;
   let t0;
@@ -17476,12 +17332,12 @@ function create_if_block$2(ctx) {
     }
   };
 }
-function create_fragment$2(ctx) {
+function create_fragment$3(ctx) {
   let current_block_type_index;
   let if_block;
   let if_block_anchor;
   let current;
-  const if_block_creators = [create_if_block$2, create_else_block$2];
+  const if_block_creators = [create_if_block$3, create_else_block$2];
   const if_blocks = [];
   function select_block_type(ctx2, dirty) {
     if (
@@ -17542,7 +17398,7 @@ function create_fragment$2(ctx) {
     }
   };
 }
-function instance$2($$self, $$props, $$invalidate) {
+function instance$3($$self, $$props, $$invalidate) {
   let appResizeObserver;
   let appClasses;
   let $focusKeep;
@@ -17889,8 +17745,8 @@ class ApplicationShell extends SvelteComponent {
     init(
       this,
       options,
-      instance$2,
-      create_fragment$2,
+      instance$3,
+      create_fragment$3,
       safe_not_equal,
       {
         elementContent: 0,
@@ -22062,63 +21918,76 @@ class TJSDocument {
     }
   }
 }
-function get_each_context$1(ctx, list, i) {
-  const child_ctx = ctx.slice();
-  child_ctx[46] = list[i];
-  return child_ctx;
-}
-function get_each_context_1(ctx, list, i) {
+function get_each_context$2(ctx, list, i) {
   const child_ctx = ctx.slice();
   child_ctx[49] = list[i];
+  return child_ctx;
+}
+function get_each_context_1$2(ctx, list, i) {
+  const child_ctx = ctx.slice();
+  child_ctx[52] = list[i];
   const constants_0 = (
     /*currentTrackId*/
     child_ctx[3] === /*track*/
-    child_ctx[49].id
+    child_ctx[52].id
   );
-  child_ctx[50] = constants_0;
+  child_ctx[53] = constants_0;
   const constants_1 = (
     /*isCurrentTrack*/
-    child_ctx[50] && /*isPlaying*/
-    child_ctx[5]
+    child_ctx[53] && /*isPlaying*/
+    child_ctx[7]
   );
-  child_ctx[51] = constants_1;
+  child_ctx[54] = constants_1;
+  const constants_2 = (
+    /*track*/
+    child_ctx[52].category || "theme"
+  );
+  child_ctx[55] = constants_2;
+  const constants_3 = (
+    /*categoryIds*/
+    child_ctx[5].has(
+      /*trackCategory*/
+      child_ctx[55]
+    )
+  );
+  child_ctx[56] = constants_3;
   return child_ctx;
 }
 function get_each_context_2(ctx, list, i) {
   const child_ctx = ctx.slice();
-  child_ctx[54] = list[i];
+  child_ctx[59] = list[i];
   return child_ctx;
 }
 function get_each_context_3(ctx, list, i) {
   const child_ctx = ctx.slice();
-  child_ctx[57] = list[i];
+  child_ctx[62] = list[i];
   return child_ctx;
 }
-function create_if_block_7(ctx) {
+function create_if_block_8(ctx) {
   let div;
   let span0;
   let t0_value = (
     /*currentTrack*/
-    ctx[11].name + ""
+    ctx[13].name + ""
   );
   let t0;
   let t1;
   let span1;
   let t2_value = formatTime(
     /*currentTime*/
-    ctx[7]
+    ctx[9]
   ) + "";
   let t2;
   let t3;
   let t4_value = formatTime(
     /*duration*/
-    ctx[8]
+    ctx[10]
   ) + "";
   let t4;
   let t5;
   let if_block = (
     /*isBroadcasting*/
-    ctx[9] && create_if_block_8()
+    ctx[11] && create_if_block_9()
   );
   return {
     c() {
@@ -22150,25 +22019,25 @@ function create_if_block_7(ctx) {
     },
     p(ctx2, dirty) {
       if (dirty[0] & /*currentTrack*/
-      2048 && t0_value !== (t0_value = /*currentTrack*/
-      ctx2[11].name + "")) set_data(t0, t0_value);
+      8192 && t0_value !== (t0_value = /*currentTrack*/
+      ctx2[13].name + "")) set_data(t0, t0_value);
       if (dirty[0] & /*currentTime*/
-      128 && t2_value !== (t2_value = formatTime(
+      512 && t2_value !== (t2_value = formatTime(
         /*currentTime*/
-        ctx2[7]
+        ctx2[9]
       ) + "")) set_data(t2, t2_value);
       if (dirty[0] & /*duration*/
-      256 && t4_value !== (t4_value = formatTime(
+      1024 && t4_value !== (t4_value = formatTime(
         /*duration*/
-        ctx2[8]
+        ctx2[10]
       ) + "")) set_data(t4, t4_value);
       if (
         /*isBroadcasting*/
-        ctx2[9]
+        ctx2[11]
       ) {
         if (if_block) ;
         else {
-          if_block = create_if_block_8();
+          if_block = create_if_block_9();
           if_block.c();
           if_block.m(div, null);
         }
@@ -22185,7 +22054,7 @@ function create_if_block_7(ctx) {
     }
   };
 }
-function create_if_block_8(ctx) {
+function create_if_block_9(ctx) {
   let span;
   return {
     c() {
@@ -22207,11 +22076,11 @@ function create_else_block$1(ctx) {
   let each_1_anchor;
   let each_value = ensure_array_like(
     /*groupedTracks*/
-    ctx[13]
+    ctx[15]
   );
   let each_blocks = [];
   for (let i = 0; i < each_value.length; i += 1) {
-    each_blocks[i] = create_each_block$1(get_each_context$1(ctx, each_value, i));
+    each_blocks[i] = create_each_block$2(get_each_context$2(ctx, each_value, i));
   }
   return {
     c() {
@@ -22229,19 +22098,19 @@ function create_else_block$1(ctx) {
       insert(target, each_1_anchor, anchor);
     },
     p(ctx2, dirty) {
-      if (dirty[0] & /*groupedTracks, currentTrackId, isPlaying, removeTrack, onlinePlayers, broadcastToPlayer, broadcastTrackToAll, toggleBroadcast, isBroadcasting, isGM, setCategoryForTrack, categories, currentTime, seekTo, duration, renameTrack, stopTrack, playTrack*/
-      64976808) {
+      if (dirty[0] & /*groupedTracks, currentTrackId, isPlaying, removeTrack, onlinePlayers, broadcastToPlayer, broadcastTrackToAll, toggleBroadcast, isBroadcasting, isGM, categoryIds, setCategoryForTrack, categories, currentTime, seekTo, duration, renameTrack, stopTrack, playTrack*/
+      129949416) {
         each_value = ensure_array_like(
           /*groupedTracks*/
-          ctx2[13]
+          ctx2[15]
         );
         let i;
         for (i = 0; i < each_value.length; i += 1) {
-          const child_ctx = get_each_context$1(ctx2, each_value, i);
+          const child_ctx = get_each_context$2(ctx2, each_value, i);
           if (each_blocks[i]) {
             each_blocks[i].p(child_ctx, dirty);
           } else {
-            each_blocks[i] = create_each_block$1(child_ctx);
+            each_blocks[i] = create_each_block$2(child_ctx);
             each_blocks[i].c();
             each_blocks[i].m(each_1_anchor.parentNode, each_1_anchor);
           }
@@ -22260,7 +22129,7 @@ function create_else_block$1(ctx) {
     }
   };
 }
-function create_if_block$1(ctx) {
+function create_if_block$2(ctx) {
   let div;
   return {
     c() {
@@ -22279,7 +22148,7 @@ function create_if_block$1(ctx) {
     }
   };
 }
-function create_if_block_6(ctx) {
+function create_if_block_7$1(ctx) {
   let button;
   let mounted;
   let dispose;
@@ -22298,7 +22167,7 @@ function create_if_block_6(ctx) {
           button,
           "click",
           /*stopTrack*/
-          ctx[20]
+          ctx[21]
         );
         mounted = true;
       }
@@ -22313,7 +22182,7 @@ function create_if_block_6(ctx) {
     }
   };
 }
-function create_if_block_5$1(ctx) {
+function create_if_block_6$1(ctx) {
   let div1;
   let div0;
   let mounted;
@@ -22321,9 +22190,9 @@ function create_if_block_5$1(ctx) {
   function click_handler_1(...args) {
     return (
       /*click_handler_1*/
-      ctx[29](
+      ctx[30](
         /*track*/
-        ctx[49],
+        ctx[52],
         ...args
       )
     );
@@ -22337,8 +22206,8 @@ function create_if_block_5$1(ctx) {
         div0,
         "width",
         /*currentTime*/
-        ctx[7] / /*duration*/
-        ctx[8] * 100 + "%"
+        ctx[9] / /*duration*/
+        ctx[10] * 100 + "%"
       );
       attr(div1, "class", "track-progress");
       attr(div1, "role", "slider");
@@ -22347,7 +22216,7 @@ function create_if_block_5$1(ctx) {
         div1,
         "aria-valuenow",
         /*currentTime*/
-        ctx[7]
+        ctx[9]
       );
     },
     m(target, anchor) {
@@ -22364,22 +22233,22 @@ function create_if_block_5$1(ctx) {
     p(new_ctx, dirty) {
       ctx = new_ctx;
       if (dirty[0] & /*currentTime, duration*/
-      384) {
+      1536) {
         set_style(
           div0,
           "width",
           /*currentTime*/
-          ctx[7] / /*duration*/
-          ctx[8] * 100 + "%"
+          ctx[9] / /*duration*/
+          ctx[10] * 100 + "%"
         );
       }
       if (dirty[0] & /*currentTime*/
-      128) {
+      512) {
         attr(
           div1,
           "aria-valuenow",
           /*currentTime*/
-          ctx[7]
+          ctx[9]
         );
       }
     },
@@ -22392,26 +22261,82 @@ function create_if_block_5$1(ctx) {
     }
   };
 }
+function create_if_block_5$1(ctx) {
+  let option;
+  let t0;
+  let t1_value = (
+    /*trackCategory*/
+    ctx[55] + ""
+  );
+  let t1;
+  let t2;
+  let option_value_value;
+  return {
+    c() {
+      option = element("option");
+      t0 = text("⚠️ ");
+      t1 = text(t1_value);
+      t2 = text(" (invalid)");
+      option.__value = option_value_value = /*trackCategory*/
+      ctx[55];
+      set_input_value(option, option.__value);
+      option.disabled = true;
+    },
+    m(target, anchor) {
+      insert(target, option, anchor);
+      append(option, t0);
+      append(option, t1);
+      append(option, t2);
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*groupedTracks*/
+      32768 && t1_value !== (t1_value = /*trackCategory*/
+      ctx2[55] + "")) set_data(t1, t1_value);
+      if (dirty[0] & /*groupedTracks, categories*/
+      32832 && option_value_value !== (option_value_value = /*trackCategory*/
+      ctx2[55])) {
+        option.__value = option_value_value;
+        set_input_value(option, option.__value);
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(option);
+      }
+    }
+  };
+}
 function create_each_block_3(ctx) {
   let option;
   let t_value = (
     /*cat*/
-    ctx[57].label + ""
+    ctx[62].label + ""
   );
   let t;
+  let option_value_value;
   return {
     c() {
       option = element("option");
       t = text(t_value);
-      option.__value = /*cat*/
-      ctx[57].id;
+      option.__value = option_value_value = /*cat*/
+      ctx[62].id;
       set_input_value(option, option.__value);
     },
     m(target, anchor) {
       insert(target, option, anchor);
       append(option, t);
     },
-    p: noop,
+    p(ctx2, dirty) {
+      if (dirty[0] & /*categories*/
+      64 && t_value !== (t_value = /*cat*/
+      ctx2[62].label + "")) set_data(t, t_value);
+      if (dirty[0] & /*categories*/
+      64 && option_value_value !== (option_value_value = /*cat*/
+      ctx2[62].id)) {
+        option.__value = option_value_value;
+        set_input_value(option, option.__value);
+      }
+    },
     d(detaching) {
       if (detaching) {
         detach(option);
@@ -22435,12 +22360,12 @@ function create_if_block_1$1(ctx) {
   function select_block_type_1(ctx2, dirty) {
     if (
       /*isCurrentTrack*/
-      ctx2[50] && /*isBroadcasting*/
-      ctx2[9]
+      ctx2[53] && /*isBroadcasting*/
+      ctx2[11]
     ) return create_if_block_3$1;
     if (
       /*isCurrentTrack*/
-      ctx2[50]
+      ctx2[53]
     ) return create_if_block_4$1;
   }
   let current_block_type = select_block_type_1(ctx);
@@ -22448,15 +22373,15 @@ function create_if_block_1$1(ctx) {
   function click_handler_2() {
     return (
       /*click_handler_2*/
-      ctx[31](
+      ctx[32](
         /*track*/
-        ctx[49]
+        ctx[52]
       )
     );
   }
   let each_value_2 = ensure_array_like(
     /*onlinePlayers*/
-    ctx[12]
+    ctx[14]
   );
   let each_blocks = [];
   for (let i = 0; i < each_value_2.length; i += 1) {
@@ -22464,7 +22389,7 @@ function create_if_block_1$1(ctx) {
   }
   let if_block1 = (
     /*onlinePlayers*/
-    ctx[12].length === 0 && create_if_block_2$1()
+    ctx[14].length === 0 && create_if_block_2$1()
   );
   return {
     c() {
@@ -22487,14 +22412,14 @@ function create_if_block_1$1(ctx) {
       attr(button0, "type", "button");
       attr(button0, "class", "broadcast-btn");
       attr(button0, "title", button0_title_value = /*isCurrentTrack*/
-      ctx[50] && /*isBroadcasting*/
-      ctx[9] ? "Broadcasting..." : "Broadcast");
+      ctx[53] && /*isBroadcasting*/
+      ctx[11] ? "Broadcasting..." : "Broadcast");
       toggle_class(
         button0,
         "active",
         /*isCurrentTrack*/
-        ctx[50] && /*isBroadcasting*/
-        ctx[9]
+        ctx[53] && /*isBroadcasting*/
+        ctx[11]
       );
       attr(button1, "type", "button");
       attr(div0, "class", "broadcast-menu");
@@ -22525,19 +22450,19 @@ function create_if_block_1$1(ctx) {
     p(new_ctx, dirty) {
       ctx = new_ctx;
       if (dirty[0] & /*currentTrackId, groupedTracks, isBroadcasting, categories*/
-      25096 && button0_title_value !== (button0_title_value = /*isCurrentTrack*/
-      ctx[50] && /*isBroadcasting*/
-      ctx[9] ? "Broadcasting..." : "Broadcast")) {
+      34888 && button0_title_value !== (button0_title_value = /*isCurrentTrack*/
+      ctx[53] && /*isBroadcasting*/
+      ctx[11] ? "Broadcasting..." : "Broadcast")) {
         attr(button0, "title", button0_title_value);
       }
       if (dirty[0] & /*currentTrackId, groupedTracks, isBroadcasting*/
-      8712) {
+      34824) {
         toggle_class(
           button0,
           "active",
           /*isCurrentTrack*/
-          ctx[50] && /*isBroadcasting*/
-          ctx[9]
+          ctx[53] && /*isBroadcasting*/
+          ctx[11]
         );
       }
       if (current_block_type === (current_block_type = select_block_type_1(ctx)) && if_block0) {
@@ -22551,10 +22476,10 @@ function create_if_block_1$1(ctx) {
         }
       }
       if (dirty[0] & /*broadcastToPlayer, groupedTracks, onlinePlayers*/
-      16789504) {
+      33603584) {
         each_value_2 = ensure_array_like(
           /*onlinePlayers*/
-          ctx[12]
+          ctx[14]
         );
         let i;
         for (i = 0; i < each_value_2.length; i += 1) {
@@ -22574,7 +22499,7 @@ function create_if_block_1$1(ctx) {
       }
       if (
         /*onlinePlayers*/
-        ctx[12].length === 0
+        ctx[14].length === 0
       ) {
         if (if_block1) ;
         else {
@@ -22618,7 +22543,7 @@ function create_if_block_4$1(ctx) {
           button,
           "click",
           /*toggleBroadcast*/
-          ctx[23]
+          ctx[24]
         );
         mounted = true;
       }
@@ -22650,7 +22575,7 @@ function create_if_block_3$1(ctx) {
           button,
           "click",
           /*toggleBroadcast*/
-          ctx[23]
+          ctx[24]
         );
         mounted = true;
       }
@@ -22671,7 +22596,7 @@ function create_each_block_2(ctx) {
   let t0;
   let t1_value = (
     /*player*/
-    ctx[54].name + ""
+    ctx[59].name + ""
   );
   let t1;
   let mounted;
@@ -22679,11 +22604,11 @@ function create_each_block_2(ctx) {
   function click_handler_3() {
     return (
       /*click_handler_3*/
-      ctx[32](
+      ctx[33](
         /*track*/
-        ctx[49],
+        ctx[52],
         /*player*/
-        ctx[54]
+        ctx[59]
       )
     );
   }
@@ -22709,8 +22634,8 @@ function create_each_block_2(ctx) {
     p(new_ctx, dirty) {
       ctx = new_ctx;
       if (dirty[0] & /*onlinePlayers*/
-      4096 && t1_value !== (t1_value = /*player*/
-      ctx[54].name + "")) set_data(t1, t1_value);
+      16384 && t1_value !== (t1_value = /*player*/
+      ctx[59].name + "")) set_data(t1, t1_value);
     },
     d(detaching) {
       if (detaching) {
@@ -22739,7 +22664,7 @@ function create_if_block_2$1(ctx) {
     }
   };
 }
-function create_each_block_1(key_1, ctx) {
+function create_each_block_1$2(key_1, ctx) {
   let div2;
   let button0;
   let i0;
@@ -22750,14 +22675,16 @@ function create_each_block_1(key_1, ctx) {
   let button1;
   let t2_value = (
     /*track*/
-    ctx[49].name + ""
+    ctx[52].name + ""
   );
   let t2;
   let t3;
   let t4;
   let div1;
   let select;
+  let if_block2_anchor;
   let select_value_value;
+  let select_title_value;
   let t5;
   let t6;
   let button2;
@@ -22766,33 +22693,35 @@ function create_each_block_1(key_1, ctx) {
   function click_handler() {
     return (
       /*click_handler*/
-      ctx[27](
+      ctx[28](
         /*track*/
-        ctx[49]
+        ctx[52]
       )
     );
   }
   let if_block0 = (
     /*isCurrentTrack*/
-    ctx[50] && create_if_block_6(ctx)
+    ctx[53] && create_if_block_7$1(ctx)
   );
   function dblclick_handler() {
     return (
       /*dblclick_handler*/
-      ctx[28](
+      ctx[29](
         /*track*/
-        ctx[49]
+        ctx[52]
       )
     );
   }
   let if_block1 = (
     /*isCurrentTrack*/
-    ctx[50] && /*duration*/
-    ctx[8] > 0 && create_if_block_5$1(ctx)
+    ctx[53] && /*duration*/
+    ctx[10] > 0 && create_if_block_6$1(ctx)
   );
+  let if_block2 = !/*isValidCategory*/
+  ctx[56] && create_if_block_5$1(ctx);
   let each_value_3 = ensure_array_like(
     /*categories*/
-    ctx[14]
+    ctx[6]
   );
   let each_blocks = [];
   for (let i = 0; i < each_value_3.length; i += 1) {
@@ -22801,23 +22730,23 @@ function create_each_block_1(key_1, ctx) {
   function change_handler(...args) {
     return (
       /*change_handler*/
-      ctx[30](
+      ctx[31](
         /*track*/
-        ctx[49],
+        ctx[52],
         ...args
       )
     );
   }
-  let if_block2 = (
+  let if_block3 = (
     /*isGM*/
-    ctx[10] && create_if_block_1$1(ctx)
+    ctx[12] && create_if_block_1$1(ctx)
   );
   function click_handler_4() {
     return (
       /*click_handler_4*/
-      ctx[33](
+      ctx[34](
         /*track*/
-        ctx[49]
+        ctx[52]
       )
     );
   }
@@ -22839,22 +22768,28 @@ function create_each_block_1(key_1, ctx) {
       t4 = space();
       div1 = element("div");
       select = element("select");
+      if (if_block2) if_block2.c();
+      if_block2_anchor = empty();
       for (let i = 0; i < each_blocks.length; i += 1) {
         each_blocks[i].c();
       }
       t5 = space();
-      if (if_block2) if_block2.c();
+      if (if_block3) if_block3.c();
       t6 = space();
       button2 = element("button");
       button2.innerHTML = `<i class="fas fa-trash"></i>`;
       attr(i0, "class", i0_class_value = "fas fa-" + /*isTrackPlaying*/
-      (ctx[51] ? "pause" : "play"));
+      (ctx[54] ? "pause" : "play"));
       attr(button0, "type", "button");
       attr(button0, "class", "play-btn");
       attr(button1, "type", "button");
       attr(button1, "class", "track-name");
       attr(div0, "class", "track-info");
       attr(select, "class", "category-select");
+      attr(select, "title", select_title_value = !/*isValidCategory*/
+      ctx[56] ? "Category no longer exists - please select a new one" : "");
+      toggle_class(select, "invalid", !/*isValidCategory*/
+      ctx[56]);
       attr(button2, "type", "button");
       attr(button2, "class", "delete-btn");
       attr(button2, "title", "Remove");
@@ -22864,13 +22799,13 @@ function create_each_block_1(key_1, ctx) {
         div2,
         "playing",
         /*isTrackPlaying*/
-        ctx[51]
+        ctx[54]
       );
       toggle_class(
         div2,
         "selected",
         /*isCurrentTrack*/
-        ctx[50]
+        ctx[53]
       );
       this.first = div2;
     },
@@ -22889,6 +22824,8 @@ function create_each_block_1(key_1, ctx) {
       append(div2, t4);
       append(div2, div1);
       append(div1, select);
+      if (if_block2) if_block2.m(select, null);
+      append(select, if_block2_anchor);
       for (let i = 0; i < each_blocks.length; i += 1) {
         if (each_blocks[i]) {
           each_blocks[i].m(select, null);
@@ -22896,11 +22833,11 @@ function create_each_block_1(key_1, ctx) {
       }
       select_option(
         select,
-        /*track*/
-        ctx[49].category || "theme"
+        /*trackCategory*/
+        ctx[55]
       );
       append(div1, t5);
-      if (if_block2) if_block2.m(div1, null);
+      if (if_block3) if_block3.m(div1, null);
       append(div1, t6);
       append(div1, button2);
       if (!mounted) {
@@ -22916,18 +22853,18 @@ function create_each_block_1(key_1, ctx) {
     p(new_ctx, dirty) {
       ctx = new_ctx;
       if (dirty[0] & /*currentTrackId, groupedTracks, isPlaying, categories*/
-      24616 && i0_class_value !== (i0_class_value = "fas fa-" + /*isTrackPlaying*/
-      (ctx[51] ? "pause" : "play"))) {
+      32968 && i0_class_value !== (i0_class_value = "fas fa-" + /*isTrackPlaying*/
+      (ctx[54] ? "pause" : "play"))) {
         attr(i0, "class", i0_class_value);
       }
       if (
         /*isCurrentTrack*/
-        ctx[50]
+        ctx[53]
       ) {
         if (if_block0) {
           if_block0.p(ctx, dirty);
         } else {
-          if_block0 = create_if_block_6(ctx);
+          if_block0 = create_if_block_7$1(ctx);
           if_block0.c();
           if_block0.m(div2, t1);
         }
@@ -22936,17 +22873,17 @@ function create_each_block_1(key_1, ctx) {
         if_block0 = null;
       }
       if (dirty[0] & /*groupedTracks*/
-      8192 && t2_value !== (t2_value = /*track*/
-      ctx[49].name + "")) set_data(t2, t2_value);
+      32768 && t2_value !== (t2_value = /*track*/
+      ctx[52].name + "")) set_data(t2, t2_value);
       if (
         /*isCurrentTrack*/
-        ctx[50] && /*duration*/
-        ctx[8] > 0
+        ctx[53] && /*duration*/
+        ctx[10] > 0
       ) {
         if (if_block1) {
           if_block1.p(ctx, dirty);
         } else {
-          if_block1 = create_if_block_5$1(ctx);
+          if_block1 = create_if_block_6$1(ctx);
           if_block1.c();
           if_block1.m(div0, null);
         }
@@ -22954,11 +22891,24 @@ function create_each_block_1(key_1, ctx) {
         if_block1.d(1);
         if_block1 = null;
       }
+      if (!/*isValidCategory*/
+      ctx[56]) {
+        if (if_block2) {
+          if_block2.p(ctx, dirty);
+        } else {
+          if_block2 = create_if_block_5$1(ctx);
+          if_block2.c();
+          if_block2.m(select, if_block2_anchor);
+        }
+      } else if (if_block2) {
+        if_block2.d(1);
+        if_block2 = null;
+      }
       if (dirty[0] & /*categories*/
-      16384) {
+      64) {
         each_value_3 = ensure_array_like(
           /*categories*/
-          ctx[14]
+          ctx[6]
         );
         let i;
         for (i = 0; i < each_value_3.length; i += 1) {
@@ -22977,45 +22927,55 @@ function create_each_block_1(key_1, ctx) {
         each_blocks.length = each_value_3.length;
       }
       if (dirty[0] & /*groupedTracks, categories*/
-      24576 && select_value_value !== (select_value_value = /*track*/
-      ctx[49].category || "theme")) {
+      32832 && select_value_value !== (select_value_value = /*trackCategory*/
+      ctx[55])) {
         select_option(
           select,
-          /*track*/
-          ctx[49].category || "theme"
+          /*trackCategory*/
+          ctx[55]
         );
+      }
+      if (dirty[0] & /*categoryIds, groupedTracks, categories*/
+      32864 && select_title_value !== (select_title_value = !/*isValidCategory*/
+      ctx[56] ? "Category no longer exists - please select a new one" : "")) {
+        attr(select, "title", select_title_value);
+      }
+      if (dirty[0] & /*categoryIds, groupedTracks*/
+      32800) {
+        toggle_class(select, "invalid", !/*isValidCategory*/
+        ctx[56]);
       }
       if (
         /*isGM*/
-        ctx[10]
+        ctx[12]
       ) {
-        if (if_block2) {
-          if_block2.p(ctx, dirty);
+        if (if_block3) {
+          if_block3.p(ctx, dirty);
         } else {
-          if_block2 = create_if_block_1$1(ctx);
-          if_block2.c();
-          if_block2.m(div1, t6);
+          if_block3 = create_if_block_1$1(ctx);
+          if_block3.c();
+          if_block3.m(div1, t6);
         }
-      } else if (if_block2) {
-        if_block2.d(1);
-        if_block2 = null;
+      } else if (if_block3) {
+        if_block3.d(1);
+        if_block3 = null;
       }
       if (dirty[0] & /*currentTrackId, groupedTracks, isPlaying*/
-      8232) {
+      32904) {
         toggle_class(
           div2,
           "playing",
           /*isTrackPlaying*/
-          ctx[51]
+          ctx[54]
         );
       }
       if (dirty[0] & /*currentTrackId, groupedTracks*/
-      8200) {
+      32776) {
         toggle_class(
           div2,
           "selected",
           /*isCurrentTrack*/
-          ctx[50]
+          ctx[53]
         );
       }
     },
@@ -23025,14 +22985,15 @@ function create_each_block_1(key_1, ctx) {
       }
       if (if_block0) if_block0.d();
       if (if_block1) if_block1.d();
-      destroy_each(each_blocks, detaching);
       if (if_block2) if_block2.d();
+      destroy_each(each_blocks, detaching);
+      if (if_block3) if_block3.d();
       mounted = false;
       run_all(dispose);
     }
   };
 }
-function create_each_block$1(ctx) {
+function create_each_block$2(ctx) {
   let div;
   let h3;
   let i;
@@ -23040,7 +23001,7 @@ function create_each_block$1(ctx) {
   let t0;
   let t1_value = (
     /*group*/
-    ctx[46].label + ""
+    ctx[49].label + ""
   );
   let t1;
   let t2;
@@ -23049,16 +23010,16 @@ function create_each_block$1(ctx) {
   let t3;
   let each_value_1 = ensure_array_like(
     /*group*/
-    ctx[46].tracks
+    ctx[49].tracks
   );
   const get_key = (ctx2) => (
     /*track*/
-    ctx2[49].id
+    ctx2[52].id
   );
   for (let i2 = 0; i2 < each_value_1.length; i2 += 1) {
-    let child_ctx = get_each_context_1(ctx, each_value_1, i2);
+    let child_ctx = get_each_context_1$2(ctx, each_value_1, i2);
     let key = get_key(child_ctx);
-    each_1_lookup.set(key, each_blocks[i2] = create_each_block_1(key, child_ctx));
+    each_1_lookup.set(key, each_blocks[i2] = create_each_block_1$2(key, child_ctx));
   }
   return {
     c() {
@@ -23073,7 +23034,7 @@ function create_each_block$1(ctx) {
       }
       t3 = space();
       attr(i, "class", i_class_value = "fas " + /*group*/
-      ctx[46].icon);
+      ctx[49].icon);
       attr(h3, "class", "group-title");
       attr(div, "class", "track-group");
     },
@@ -23093,20 +23054,20 @@ function create_each_block$1(ctx) {
     },
     p(ctx2, dirty) {
       if (dirty[0] & /*groupedTracks, categories*/
-      24576 && i_class_value !== (i_class_value = "fas " + /*group*/
-      ctx2[46].icon)) {
+      32832 && i_class_value !== (i_class_value = "fas " + /*group*/
+      ctx2[49].icon)) {
         attr(i, "class", i_class_value);
       }
       if (dirty[0] & /*groupedTracks*/
-      8192 && t1_value !== (t1_value = /*group*/
-      ctx2[46].label + "")) set_data(t1, t1_value);
-      if (dirty[0] & /*currentTrackId, groupedTracks, isPlaying, removeTrack, onlinePlayers, broadcastToPlayer, broadcastTrackToAll, toggleBroadcast, isBroadcasting, isGM, setCategoryForTrack, categories, currentTime, seekTo, duration, renameTrack, stopTrack, playTrack*/
-      64976808) {
+      32768 && t1_value !== (t1_value = /*group*/
+      ctx2[49].label + "")) set_data(t1, t1_value);
+      if (dirty[0] & /*currentTrackId, groupedTracks, isPlaying, removeTrack, onlinePlayers, broadcastToPlayer, broadcastTrackToAll, toggleBroadcast, isBroadcasting, isGM, categoryIds, setCategoryForTrack, categories, currentTime, seekTo, duration, renameTrack, stopTrack, playTrack*/
+      129949416) {
         each_value_1 = ensure_array_like(
           /*group*/
-          ctx2[46].tracks
+          ctx2[49].tracks
         );
-        each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx2, each_value_1, each_1_lookup, div, destroy_block, create_each_block_1, t3, get_each_context_1);
+        each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx2, each_value_1, each_1_lookup, div, destroy_block, create_each_block_1$2, t3, get_each_context_1$2);
       }
     },
     d(detaching) {
@@ -23119,7 +23080,7 @@ function create_each_block$1(ctx) {
     }
   };
 }
-function create_default_slot$1(ctx) {
+function create_default_slot$2(ctx) {
   let main;
   let header;
   let h2;
@@ -23147,14 +23108,14 @@ function create_default_slot$1(ctx) {
   let dispose;
   let if_block0 = (
     /*currentTrack*/
-    ctx[11] && /*isPlaying*/
-    ctx[5] && create_if_block_7(ctx)
+    ctx[13] && /*isPlaying*/
+    ctx[7] && create_if_block_8(ctx)
   );
   function select_block_type(ctx2, dirty) {
     if (
       /*tracks*/
       ctx2[2].length === 0
-    ) return create_if_block$1;
+    ) return create_if_block$2;
     return create_else_block$1;
   }
   let current_block_type = select_block_type(ctx);
@@ -23184,16 +23145,16 @@ function create_default_slot$1(ctx) {
       if_block1.c();
       attr(i0, "class", "fas fa-music");
       attr(i1, "class", i1_class_value = "fas fa-volume-" + /*volume*/
-      (ctx[6] > 0.5 ? "up" : (
+      (ctx[8] > 0.5 ? "up" : (
         /*volume*/
-        ctx[6] > 0 ? "down" : "mute"
+        ctx[8] > 0 ? "down" : "mute"
       )));
       attr(input, "type", "range");
       attr(input, "min", "0");
       attr(input, "max", "1");
       attr(input, "step", "0.05");
       input.value = /*volume*/
-      ctx[6];
+      ctx[8];
       attr(div0, "class", "volume-control");
       attr(div0, "title", "Volume");
       attr(button, "type", "button");
@@ -23231,13 +23192,13 @@ function create_default_slot$1(ctx) {
             input,
             "input",
             /*setVolume*/
-            ctx[21]
+            ctx[22]
           ),
           listen(
             button,
             "click",
             /*addTrack*/
-            ctx[15]
+            ctx[16]
           )
         ];
         mounted = true;
@@ -23248,27 +23209,27 @@ function create_default_slot$1(ctx) {
       16 && t1_value !== (t1_value = /*doc*/
       (ctx2[4]?.name ?? "Document") + "")) set_data(t1, t1_value);
       if (dirty[0] & /*volume*/
-      64 && i1_class_value !== (i1_class_value = "fas fa-volume-" + /*volume*/
-      (ctx2[6] > 0.5 ? "up" : (
+      256 && i1_class_value !== (i1_class_value = "fas fa-volume-" + /*volume*/
+      (ctx2[8] > 0.5 ? "up" : (
         /*volume*/
-        ctx2[6] > 0 ? "down" : "mute"
+        ctx2[8] > 0 ? "down" : "mute"
       )))) {
         attr(i1, "class", i1_class_value);
       }
       if (dirty[0] & /*volume*/
-      64) {
+      256) {
         input.value = /*volume*/
-        ctx2[6];
+        ctx2[8];
       }
       if (
         /*currentTrack*/
-        ctx2[11] && /*isPlaying*/
-        ctx2[5]
+        ctx2[13] && /*isPlaying*/
+        ctx2[7]
       ) {
         if (if_block0) {
           if_block0.p(ctx2, dirty);
         } else {
-          if_block0 = create_if_block_7(ctx2);
+          if_block0 = create_if_block_8(ctx2);
           if_block0.c();
           if_block0.m(main, t7);
         }
@@ -23298,15 +23259,15 @@ function create_default_slot$1(ctx) {
     }
   };
 }
-function create_fragment$1(ctx) {
+function create_fragment$2(ctx) {
   let applicationshell;
   let updating_elementRoot;
   let current;
   function applicationshell_elementRoot_binding(value) {
-    ctx[34](value);
+    ctx[35](value);
   }
   let applicationshell_props = {
-    $$slots: { default: [create_default_slot$1] },
+    $$slots: { default: [create_default_slot$2] },
     $$scope: { ctx }
   };
   if (
@@ -23328,9 +23289,9 @@ function create_fragment$1(ctx) {
     },
     p(ctx2, dirty) {
       const applicationshell_changes = {};
-      if (dirty[0] & /*tracks, groupedTracks, currentTrackId, isPlaying, onlinePlayers, isBroadcasting, isGM, currentTime, duration, currentTrack, volume, doc*/
-      16380 | dirty[1] & /*$$scope*/
-      536870912) {
+      if (dirty[0] & /*tracks, groupedTracks, currentTrackId, isPlaying, onlinePlayers, isBroadcasting, isGM, categoryIds, categories, currentTime, duration, currentTrack, volume, doc*/
+      65532 | dirty[2] & /*$$scope*/
+      8) {
         applicationshell_changes.$$scope = { dirty, ctx: ctx2 };
       }
       if (!updating_elementRoot && dirty[0] & /*elementRoot*/
@@ -23364,13 +23325,15 @@ function formatTime(seconds) {
 }
 const keydown_handler = () => {
 };
-function instance$1($$self, $$props, $$invalidate) {
+function instance$2($$self, $$props, $$invalidate) {
   let doc;
   let currentTrack;
   let isGM;
+  let categories;
+  let categoryIds;
   let groupedTracks;
   let onlinePlayers;
-  let $tjsDoc, $$unsubscribe_tjsDoc = noop, $$subscribe_tjsDoc = () => ($$unsubscribe_tjsDoc(), $$unsubscribe_tjsDoc = subscribe(tjsDoc, ($$value) => $$invalidate(26, $tjsDoc = $$value)), tjsDoc);
+  let $tjsDoc, $$unsubscribe_tjsDoc = noop, $$subscribe_tjsDoc = () => ($$unsubscribe_tjsDoc(), $$unsubscribe_tjsDoc = subscribe(tjsDoc, ($$value) => $$invalidate(27, $tjsDoc = $$value)), tjsDoc);
   $$self.$$.on_destroy.push(() => $$unsubscribe_tjsDoc());
   let { elementRoot = void 0 } = $$props;
   let { tjsDoc = null } = $$props;
@@ -23386,7 +23349,7 @@ function instance$1($$self, $$props, $$invalidate) {
   let duration = 0;
   let isBroadcasting = false;
   let syncInterval = null;
-  const categories = [
+  const defaultCategories = [
     {
       id: "theme",
       label: "Theme",
@@ -23408,14 +23371,19 @@ function instance$1($$self, $$props, $$invalidate) {
       icon: "fa-wind"
     }
   ];
+  const uncategorizedCategory = {
+    id: "__uncategorized__",
+    label: "Uncategorized",
+    icon: "fa-question"
+  };
   onMount(() => {
     audioElement = new Audio();
     audioElement.volume = volume;
-    audioElement.addEventListener("play", () => $$invalidate(5, isPlaying = true));
-    audioElement.addEventListener("pause", () => $$invalidate(5, isPlaying = false));
+    audioElement.addEventListener("play", () => $$invalidate(7, isPlaying = true));
+    audioElement.addEventListener("pause", () => $$invalidate(7, isPlaying = false));
     audioElement.addEventListener("ended", handleTrackEnded);
     audioElement.addEventListener("timeupdate", handleTimeUpdate);
-    audioElement.addEventListener("loadedmetadata", () => $$invalidate(8, duration = audioElement.duration || 0));
+    audioElement.addEventListener("loadedmetadata", () => $$invalidate(10, duration = audioElement.duration || 0));
   });
   onDestroy(() => {
     if (syncInterval) clearInterval(syncInterval);
@@ -23426,13 +23394,13 @@ function instance$1($$self, $$props, $$invalidate) {
     if (isBroadcasting) stopBroadcast();
   });
   function handleTrackEnded() {
-    $$invalidate(5, isPlaying = false);
-    $$invalidate(7, currentTime = 0);
+    $$invalidate(7, isPlaying = false);
+    $$invalidate(9, currentTime = 0);
     if (isBroadcasting) stopBroadcast();
   }
   function handleTimeUpdate() {
-    $$invalidate(7, currentTime = audioElement.currentTime);
-    $$invalidate(8, duration = audioElement.duration || 0);
+    $$invalidate(9, currentTime = audioElement.currentTime);
+    $$invalidate(10, duration = audioElement.duration || 0);
   }
   async function addTrack() {
     const picker = new FilePicker({
@@ -23494,8 +23462,8 @@ function instance$1($$self, $$props, $$invalidate) {
     if (audioElement) {
       audioElement.pause();
       audioElement.currentTime = 0;
-      $$invalidate(5, isPlaying = false);
-      $$invalidate(7, currentTime = 0);
+      $$invalidate(7, isPlaying = false);
+      $$invalidate(9, currentTime = 0);
     }
     if (isBroadcasting) {
       emitSocket("stopMusic", { docName: doc.name });
@@ -23503,7 +23471,7 @@ function instance$1($$self, $$props, $$invalidate) {
     }
   }
   function setVolume(e) {
-    $$invalidate(6, volume = parseFloat(e.target.value));
+    $$invalidate(8, volume = parseFloat(e.target.value));
     if (audioElement) audioElement.volume = volume;
     if (isBroadcasting) {
       emitSocket("setVolume", { volume });
@@ -23530,12 +23498,12 @@ function instance$1($$self, $$props, $$invalidate) {
   }
   function startBroadcast() {
     if (!isGM || !currentTrack) return;
-    $$invalidate(9, isBroadcasting = true);
+    $$invalidate(11, isBroadcasting = true);
     broadcastPlay(currentTrack);
     syncInterval = setInterval(syncState, 5e3);
   }
   function stopBroadcast() {
-    $$invalidate(9, isBroadcasting = false);
+    $$invalidate(11, isBroadcasting = false);
     if (syncInterval) {
       clearInterval(syncInterval);
       syncInterval = null;
@@ -23594,7 +23562,7 @@ function instance$1($$self, $$props, $$invalidate) {
   };
   $$self.$$.update = () => {
     if ($$self.$$.dirty[0] & /*tjsDoc, $tjsDoc*/
-    67108866) {
+    134217730) {
       $$invalidate(4, doc = tjsDoc ? $tjsDoc : null);
     }
     if ($$self.$$.dirty[0] & /*doc*/
@@ -23606,24 +23574,44 @@ function instance$1($$self, $$props, $$invalidate) {
     }
     if ($$self.$$.dirty[0] & /*tracks, currentTrackId*/
     12) {
-      $$invalidate(11, currentTrack = tracks.find((t) => t.id === currentTrackId));
+      $$invalidate(13, currentTrack = tracks.find((t) => t.id === currentTrackId));
     }
-    if ($$self.$$.dirty[0] & /*tracks*/
-    4) {
-      $$invalidate(13, groupedTracks = categories.map((cat) => ({
-        ...cat,
-        tracks: tracks.filter((t) => (t.category || "theme") === cat.id)
-      })).filter((g) => g.tracks.length > 0));
+    if ($$self.$$.dirty[0] & /*categories*/
+    64) {
+      $$invalidate(5, categoryIds = new Set(categories.map((c) => c.id)));
+    }
+    if ($$self.$$.dirty[0] & /*categories, tracks, categoryIds*/
+    100) {
+      $$invalidate(15, groupedTracks = (() => {
+        const groups = categories.map((cat) => ({
+          ...cat,
+          tracks: tracks.filter((t) => (t.category || "theme") === cat.id)
+        })).filter((g) => g.tracks.length > 0);
+        const uncategorizedTracks = tracks.filter((t) => {
+          const trackCat = t.category || "theme";
+          return !categoryIds.has(trackCat);
+        });
+        if (uncategorizedTracks.length > 0) {
+          groups.push({
+            ...uncategorizedCategory,
+            tracks: uncategorizedTracks
+          });
+        }
+        return groups;
+      })());
     }
   };
-  $$invalidate(10, isGM = game.user.isGM);
-  $$invalidate(12, onlinePlayers = game.users.filter((u) => u.active && !u.isGM));
+  $$invalidate(12, isGM = game.user.isGM);
+  $$invalidate(6, categories = game.settings.get(MODULE_ID, "musicCategories") ?? defaultCategories);
+  $$invalidate(14, onlinePlayers = game.users.filter((u) => u.active && !u.isGM));
   return [
     elementRoot,
     tjsDoc,
     tracks,
     currentTrackId,
     doc,
+    categoryIds,
+    categories,
     isPlaying,
     volume,
     currentTime,
@@ -23633,7 +23621,6 @@ function instance$1($$self, $$props, $$invalidate) {
     currentTrack,
     onlinePlayers,
     groupedTracks,
-    categories,
     addTrack,
     removeTrack,
     renameTrack,
@@ -23659,7 +23646,7 @@ function instance$1($$self, $$props, $$invalidate) {
 class CharacterMusicShell extends SvelteComponent {
   constructor(options) {
     super();
-    init(this, options, instance$1, create_fragment$1, safe_not_equal, { elementRoot: 0, tjsDoc: 1 }, null, [-1, -1]);
+    init(this, options, instance$2, create_fragment$2, safe_not_equal, { elementRoot: 0, tjsDoc: 1 }, null, [-1, -1, -1]);
   }
   get elementRoot() {
     return this.$$.ctx[0];
@@ -23676,32 +23663,42 @@ class CharacterMusicShell extends SvelteComponent {
     flush();
   }
 }
-function get_each_context(ctx, list, i) {
+function get_each_context$1(ctx, list, i) {
   const child_ctx = ctx.slice();
-  child_ctx[34] = list[i];
+  child_ctx[40] = list[i];
   const constants_0 = (
     /*activeTab*/
     child_ctx[2] === "portraits" && /*currentImg*/
     child_ctx[5] === /*item*/
-    child_ctx[34].path
+    child_ctx[40].path
   );
-  child_ctx[35] = constants_0;
+  child_ctx[41] = constants_0;
   const constants_1 = (
     /*activeTab*/
     child_ctx[2] === "tokens" && /*currentToken*/
-    child_ctx[9] === /*item*/
-    child_ctx[34].path
+    child_ctx[10] === /*item*/
+    child_ctx[40].path
   );
-  child_ctx[36] = constants_1;
+  child_ctx[42] = constants_1;
   const constants_2 = (
     /*isCurrentPortrait*/
-    child_ctx[35] || /*isCurrentToken*/
-    child_ctx[36]
+    child_ctx[41] || /*isCurrentToken*/
+    child_ctx[42]
   );
-  child_ctx[37] = constants_2;
+  child_ctx[43] = constants_2;
+  const constants_3 = (
+    /*item*/
+    child_ctx[40].ownership ?? "all"
+  );
+  child_ctx[44] = constants_3;
   return child_ctx;
 }
-function create_if_block_5(ctx) {
+function get_each_context_1$1(ctx, list, i) {
+  const child_ctx = ctx.slice();
+  child_ctx[47] = list[i];
+  return child_ctx;
+}
+function create_if_block_7(ctx) {
   let button;
   let img;
   let img_src_value;
@@ -23717,7 +23714,7 @@ function create_if_block_5(ctx) {
       span = element("span");
       span.textContent = "Token";
       if (!src_url_equal(img.src, img_src_value = /*currentToken*/
-      ctx[9])) attr(img, "src", img_src_value);
+      ctx[10])) attr(img, "src", img_src_value);
       attr(img, "alt", "Current Token");
       attr(span, "class", "preview-label");
       attr(button, "type", "button");
@@ -23739,16 +23736,16 @@ function create_if_block_5(ctx) {
         dispose = listen(
           button,
           "click",
-          /*click_handler_1*/
-          ctx[21]
+          /*click_handler_2*/
+          ctx[25]
         );
         mounted = true;
       }
     },
     p(ctx2, dirty) {
       if (dirty[0] & /*currentToken*/
-      512 && !src_url_equal(img.src, img_src_value = /*currentToken*/
-      ctx2[9])) {
+      1024 && !src_url_equal(img.src, img_src_value = /*currentToken*/
+      ctx2[10])) {
         attr(img, "src", img_src_value);
       }
       if (dirty[0] & /*activeTab*/
@@ -23795,7 +23792,7 @@ function create_else_block_1(ctx) {
     }
   };
 }
-function create_if_block_4(ctx) {
+function create_if_block_6(ctx) {
   let t;
   return {
     c() {
@@ -23812,14 +23809,14 @@ function create_if_block_4(ctx) {
     }
   };
 }
-function create_if_block_3(ctx) {
+function create_if_block_5(ctx) {
   let nav;
   let button0;
   let i0;
   let t0;
   let t1_value = (
     /*portraits*/
-    ctx[7].length + ""
+    ctx[8].length + ""
   );
   let t1;
   let t2;
@@ -23829,7 +23826,7 @@ function create_if_block_3(ctx) {
   let t4;
   let t5_value = (
     /*tokens*/
-    ctx[6].length + ""
+    ctx[7].length + ""
   );
   let t5;
   let t6;
@@ -23885,14 +23882,14 @@ function create_if_block_3(ctx) {
           listen(
             button0,
             "click",
-            /*click_handler_2*/
-            ctx[23]
+            /*click_handler_3*/
+            ctx[27]
           ),
           listen(
             button1,
             "click",
-            /*click_handler_3*/
-            ctx[24]
+            /*click_handler_4*/
+            ctx[28]
           )
         ];
         mounted = true;
@@ -23900,8 +23897,8 @@ function create_if_block_3(ctx) {
     },
     p(ctx2, dirty) {
       if (dirty[0] & /*portraits*/
-      128 && t1_value !== (t1_value = /*portraits*/
-      ctx2[7].length + "")) set_data(t1, t1_value);
+      256 && t1_value !== (t1_value = /*portraits*/
+      ctx2[8].length + "")) set_data(t1, t1_value);
       if (dirty[0] & /*activeTab*/
       4) {
         toggle_class(
@@ -23912,8 +23909,8 @@ function create_if_block_3(ctx) {
         );
       }
       if (dirty[0] & /*tokens*/
-      64 && t5_value !== (t5_value = /*tokens*/
-      ctx2[6].length + "")) set_data(t5, t5_value);
+      128 && t5_value !== (t5_value = /*tokens*/
+      ctx2[7].length + "")) set_data(t5, t5_value);
       if (dirty[0] & /*activeTab*/
       4) {
         toggle_class(
@@ -23939,16 +23936,16 @@ function create_else_block(ctx) {
   let each_1_anchor;
   let each_value = ensure_array_like(
     /*filteredList*/
-    ctx[10]
+    ctx[11]
   );
   const get_key = (ctx2) => (
     /*item*/
-    ctx2[34].path
+    ctx2[40].path
   );
   for (let i = 0; i < each_value.length; i += 1) {
-    let child_ctx = get_each_context(ctx, each_value, i);
+    let child_ctx = get_each_context$1(ctx, each_value, i);
     let key = get_key(child_ctx);
-    each_1_lookup.set(key, each_blocks[i] = create_each_block(key, child_ctx));
+    each_1_lookup.set(key, each_blocks[i] = create_each_block$1(key, child_ctx));
   }
   return {
     c() {
@@ -23966,13 +23963,13 @@ function create_else_block(ctx) {
       insert(target, each_1_anchor, anchor);
     },
     p(ctx2, dirty) {
-      if (dirty[0] & /*activeTab, currentImg, filteredList, currentToken, removeFromCategory, moveToCategory, isActor, isItem, togglePortrait, toggleToken*/
-      32564) {
+      if (dirty[0] & /*activeTab, currentImg, filteredList, currentToken, removeFromCategory, updateImageOwnership, OWNERSHIP_LEVELS, isGM, moveToCategory, isActor, isItem, togglePortrait, toggleToken*/
+      261748) {
         each_value = ensure_array_like(
           /*filteredList*/
-          ctx2[10]
+          ctx2[11]
         );
-        each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx2, each_value, each_1_lookup, each_1_anchor.parentNode, destroy_block, create_each_block, each_1_anchor, get_each_context);
+        each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx2, each_value, each_1_lookup, each_1_anchor.parentNode, destroy_block, create_each_block$1, each_1_anchor, get_each_context$1);
       }
     },
     d(detaching) {
@@ -23985,7 +23982,7 @@ function create_else_block(ctx) {
     }
   };
 }
-function create_if_block(ctx) {
+function create_if_block$1(ctx) {
   let div;
   let i;
   let t0;
@@ -23993,7 +23990,7 @@ function create_if_block(ctx) {
   let t1;
   let t2_value = (
     /*isItem*/
-    (ctx[8] ? "images" : (
+    (ctx[9] ? "images" : (
       /*activeTab*/
       ctx[2]
     )) + ""
@@ -24005,7 +24002,7 @@ function create_if_block(ctx) {
   let t5;
   let t6_value = (
     /*isItem*/
-    ctx[8] ? "Image" : (
+    ctx[9] ? "Image" : (
       /*activeTab*/
       ctx[2] === "portraits" ? "Portrait" : "Token"
     )
@@ -24046,14 +24043,14 @@ function create_if_block(ctx) {
     },
     p(ctx2, dirty) {
       if (dirty[0] & /*isItem, activeTab*/
-      260 && t2_value !== (t2_value = /*isItem*/
-      (ctx2[8] ? "images" : (
+      516 && t2_value !== (t2_value = /*isItem*/
+      (ctx2[9] ? "images" : (
         /*activeTab*/
         ctx2[2]
       )) + "")) set_data(t2, t2_value);
       if (dirty[0] & /*isItem, activeTab*/
-      260 && t6_value !== (t6_value = /*isItem*/
-      ctx2[8] ? "Image" : (
+      516 && t6_value !== (t6_value = /*isItem*/
+      ctx2[9] ? "Image" : (
         /*activeTab*/
         ctx2[2] === "portraits" ? "Portrait" : "Token"
       ))) set_data(t6, t6_value);
@@ -24065,7 +24062,7 @@ function create_if_block(ctx) {
     }
   };
 }
-function create_if_block_2(ctx) {
+function create_if_block_4(ctx) {
   let div;
   return {
     c() {
@@ -24083,18 +24080,67 @@ function create_if_block_2(ctx) {
     }
   };
 }
-function create_if_block_1(ctx) {
+function create_if_block_3(ctx) {
+  let div;
+  let i;
+  let i_class_value;
+  let div_title_value;
+  function func(...args) {
+    return (
+      /*func*/
+      ctx[29](
+        /*itemOwnership*/
+        ctx[44],
+        ...args
+      )
+    );
+  }
+  return {
+    c() {
+      div = element("div");
+      i = element("i");
+      attr(i, "class", i_class_value = "fas fa-" + /*itemOwnership*/
+      (ctx[44] === "gm" ? "eye-slash" : "lock"));
+      attr(div, "class", "ownership-badge");
+      attr(div, "title", div_title_value = "Visibility: " + /*OWNERSHIP_LEVELS*/
+      ctx[12].find(func)?.label);
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      append(div, i);
+    },
+    p(new_ctx, dirty) {
+      ctx = new_ctx;
+      if (dirty[0] & /*filteredList, OWNERSHIP_LEVELS*/
+      6144 && i_class_value !== (i_class_value = "fas fa-" + /*itemOwnership*/
+      (ctx[44] === "gm" ? "eye-slash" : "lock"))) {
+        attr(i, "class", i_class_value);
+      }
+      if (dirty[0] & /*filteredList, OWNERSHIP_LEVELS*/
+      6144 && div_title_value !== (div_title_value = "Visibility: " + /*OWNERSHIP_LEVELS*/
+      ctx[12].find(func)?.label)) {
+        attr(div, "title", div_title_value);
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+      }
+    }
+  };
+}
+function create_if_block_2(ctx) {
   let button;
   let i;
   let button_title_value;
   let mounted;
   let dispose;
-  function click_handler_5() {
+  function click_handler_6() {
     return (
-      /*click_handler_5*/
-      ctx[26](
+      /*click_handler_6*/
+      ctx[31](
         /*item*/
-        ctx[34]
+        ctx[40]
       )
     );
   }
@@ -24111,7 +24157,7 @@ function create_if_block_1(ctx) {
       insert(target, button, anchor);
       append(button, i);
       if (!mounted) {
-        dispose = listen(button, "click", stop_propagation(click_handler_5));
+        dispose = listen(button, "click", stop_propagation(click_handler_6));
         mounted = true;
       }
     },
@@ -24132,64 +24178,201 @@ function create_if_block_1(ctx) {
     }
   };
 }
-function create_each_block(key_1, ctx) {
+function create_if_block_1(ctx) {
+  let select;
+  let select_value_value;
+  let mounted;
+  let dispose;
+  let each_value_1 = ensure_array_like(
+    /*OWNERSHIP_LEVELS*/
+    ctx[12]
+  );
+  let each_blocks = [];
+  for (let i = 0; i < each_value_1.length; i += 1) {
+    each_blocks[i] = create_each_block_1$1(get_each_context_1$1(ctx, each_value_1, i));
+  }
+  function change_handler(...args) {
+    return (
+      /*change_handler*/
+      ctx[32](
+        /*item*/
+        ctx[40],
+        ...args
+      )
+    );
+  }
+  return {
+    c() {
+      select = element("select");
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        each_blocks[i].c();
+      }
+      attr(select, "class", "ownership-select");
+      attr(select, "title", "Who can see this image");
+    },
+    m(target, anchor) {
+      insert(target, select, anchor);
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        if (each_blocks[i]) {
+          each_blocks[i].m(select, null);
+        }
+      }
+      select_option(
+        select,
+        /*itemOwnership*/
+        ctx[44]
+      );
+      if (!mounted) {
+        dispose = [
+          listen(select, "click", stop_propagation(
+            /*click_handler*/
+            ctx[23]
+          )),
+          listen(select, "change", stop_propagation(change_handler))
+        ];
+        mounted = true;
+      }
+    },
+    p(new_ctx, dirty) {
+      ctx = new_ctx;
+      if (dirty[0] & /*OWNERSHIP_LEVELS*/
+      4096) {
+        each_value_1 = ensure_array_like(
+          /*OWNERSHIP_LEVELS*/
+          ctx[12]
+        );
+        let i;
+        for (i = 0; i < each_value_1.length; i += 1) {
+          const child_ctx = get_each_context_1$1(ctx, each_value_1, i);
+          if (each_blocks[i]) {
+            each_blocks[i].p(child_ctx, dirty);
+          } else {
+            each_blocks[i] = create_each_block_1$1(child_ctx);
+            each_blocks[i].c();
+            each_blocks[i].m(select, null);
+          }
+        }
+        for (; i < each_blocks.length; i += 1) {
+          each_blocks[i].d(1);
+        }
+        each_blocks.length = each_value_1.length;
+      }
+      if (dirty[0] & /*filteredList, OWNERSHIP_LEVELS*/
+      6144 && select_value_value !== (select_value_value = /*itemOwnership*/
+      ctx[44])) {
+        select_option(
+          select,
+          /*itemOwnership*/
+          ctx[44]
+        );
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(select);
+      }
+      destroy_each(each_blocks, detaching);
+      mounted = false;
+      run_all(dispose);
+    }
+  };
+}
+function create_each_block_1$1(ctx) {
+  let option;
+  let t_value = (
+    /*level*/
+    ctx[47].label + ""
+  );
+  let t;
+  return {
+    c() {
+      option = element("option");
+      t = text(t_value);
+      option.__value = /*level*/
+      ctx[47].value;
+      set_input_value(option, option.__value);
+    },
+    m(target, anchor) {
+      insert(target, option, anchor);
+      append(option, t);
+    },
+    p: noop,
+    d(detaching) {
+      if (detaching) {
+        detach(option);
+      }
+    }
+  };
+}
+function create_each_block$1(key_1, ctx) {
   let div2;
   let img;
   let img_src_value;
   let img_alt_value;
   let t0;
   let t1;
+  let t2;
   let div1;
   let span;
-  let t2_value = (
+  let t3_value = (
     /*item*/
-    ctx[34].name + ""
+    ctx[40].name + ""
   );
-  let t2;
   let t3;
+  let t4;
   let div0;
   let button0;
   let i0;
   let i0_class_value;
   let button0_title_value;
-  let t4;
   let t5;
-  let button1;
   let t6;
+  let t7;
+  let button1;
+  let t8;
   let mounted;
   let dispose;
   let if_block0 = (
     /*isCurrent*/
-    ctx[37] && create_if_block_2()
+    ctx[43] && create_if_block_4()
   );
-  function click_handler_4() {
-    return (
-      /*click_handler_4*/
-      ctx[25](
-        /*item*/
-        ctx[34]
-      )
-    );
-  }
   let if_block1 = (
-    /*isActor*/
-    ctx[4] && create_if_block_1(ctx)
+    /*isGM*/
+    ctx[6] && /*itemOwnership*/
+    ctx[44] !== "all" && create_if_block_3(ctx)
   );
-  function click_handler_6() {
+  function click_handler_5() {
     return (
-      /*click_handler_6*/
-      ctx[27](
+      /*click_handler_5*/
+      ctx[30](
         /*item*/
-        ctx[34]
+        ctx[40]
       )
     );
   }
-  function click_handler_7(...args) {
+  let if_block2 = (
+    /*isActor*/
+    ctx[4] && create_if_block_2(ctx)
+  );
+  let if_block3 = (
+    /*isGM*/
+    ctx[6] && create_if_block_1(ctx)
+  );
+  function click_handler_7() {
     return (
       /*click_handler_7*/
-      ctx[28](
+      ctx[33](
         /*item*/
-        ctx[34],
+        ctx[40]
+      )
+    );
+  }
+  function click_handler_8(...args) {
+    return (
+      /*click_handler_8*/
+      ctx[34](
+        /*item*/
+        ctx[40],
         ...args
       )
     );
@@ -24197,9 +24380,9 @@ function create_each_block(key_1, ctx) {
   function keydown_handler2(...args) {
     return (
       /*keydown_handler*/
-      ctx[29](
+      ctx[35](
         /*item*/
-        ctx[34],
+        ctx[40],
         ...args
       )
     );
@@ -24213,32 +24396,36 @@ function create_each_block(key_1, ctx) {
       t0 = space();
       if (if_block0) if_block0.c();
       t1 = space();
+      if (if_block1) if_block1.c();
+      t2 = space();
       div1 = element("div");
       span = element("span");
-      t2 = text(t2_value);
-      t3 = space();
+      t3 = text(t3_value);
+      t4 = space();
       div0 = element("div");
       button0 = element("button");
       i0 = element("i");
-      t4 = space();
-      if (if_block1) if_block1.c();
       t5 = space();
+      if (if_block2) if_block2.c();
+      t6 = space();
+      if (if_block3) if_block3.c();
+      t7 = space();
       button1 = element("button");
       button1.innerHTML = `<i class="fas fa-trash"></i>`;
-      t6 = space();
+      t8 = space();
       if (!src_url_equal(img.src, img_src_value = /*item*/
-      ctx[34].path)) attr(img, "src", img_src_value);
+      ctx[40].path)) attr(img, "src", img_src_value);
       attr(img, "alt", img_alt_value = /*item*/
-      ctx[34].name);
+      ctx[40].name);
       attr(img, "loading", "lazy");
       attr(span, "class", "image-name");
       attr(i0, "class", i0_class_value = "fas fa-" + /*isCurrent*/
-      (ctx[37] ? "times" : "check"));
+      (ctx[43] ? "times" : "check"));
       attr(button0, "type", "button");
       attr(button0, "title", button0_title_value = /*isCurrent*/
-      ctx[37] ? "Reset to default" : (
+      ctx[43] ? "Reset to default" : (
         /*isItem*/
-        ctx[8] ? "Set as Image" : (
+        ctx[9] ? "Set as Image" : (
           /*activeTab*/
           ctx[2] === "portraits" ? "Set as Portrait" : "Set as Token"
         )
@@ -24247,7 +24434,7 @@ function create_each_block(key_1, ctx) {
         button0,
         "active",
         /*isCurrent*/
-        ctx[37]
+        ctx[43]
       );
       attr(button1, "type", "button");
       attr(button1, "class", "remove");
@@ -24262,7 +24449,7 @@ function create_each_block(key_1, ctx) {
         div2,
         "is-current",
         /*isCurrent*/
-        ctx[37]
+        ctx[43]
       );
       this.first = div2;
     },
@@ -24272,23 +24459,27 @@ function create_each_block(key_1, ctx) {
       append(div2, t0);
       if (if_block0) if_block0.m(div2, null);
       append(div2, t1);
+      if (if_block1) if_block1.m(div2, null);
+      append(div2, t2);
       append(div2, div1);
       append(div1, span);
-      append(span, t2);
-      append(div1, t3);
+      append(span, t3);
+      append(div1, t4);
       append(div1, div0);
       append(div0, button0);
       append(button0, i0);
-      append(div0, t4);
-      if (if_block1) if_block1.m(div0, null);
       append(div0, t5);
+      if (if_block2) if_block2.m(div0, null);
+      append(div0, t6);
+      if (if_block3) if_block3.m(div0, null);
+      append(div0, t7);
       append(div0, button1);
-      append(div2, t6);
+      append(div2, t8);
       if (!mounted) {
         dispose = [
-          listen(button0, "click", stop_propagation(click_handler_4)),
-          listen(button1, "click", stop_propagation(click_handler_6)),
-          listen(div2, "click", click_handler_7),
+          listen(button0, "click", stop_propagation(click_handler_5)),
+          listen(button1, "click", stop_propagation(click_handler_7)),
+          listen(div2, "click", click_handler_8),
           listen(div2, "keydown", keydown_handler2)
         ];
         mounted = true;
@@ -24296,23 +24487,23 @@ function create_each_block(key_1, ctx) {
     },
     p(new_ctx, dirty) {
       ctx = new_ctx;
-      if (dirty[0] & /*filteredList*/
-      1024 && !src_url_equal(img.src, img_src_value = /*item*/
-      ctx[34].path)) {
+      if (dirty[0] & /*filteredList, OWNERSHIP_LEVELS*/
+      6144 && !src_url_equal(img.src, img_src_value = /*item*/
+      ctx[40].path)) {
         attr(img, "src", img_src_value);
       }
-      if (dirty[0] & /*filteredList*/
-      1024 && img_alt_value !== (img_alt_value = /*item*/
-      ctx[34].name)) {
+      if (dirty[0] & /*filteredList, OWNERSHIP_LEVELS*/
+      6144 && img_alt_value !== (img_alt_value = /*item*/
+      ctx[40].name)) {
         attr(img, "alt", img_alt_value);
       }
       if (
         /*isCurrent*/
-        ctx[37]
+        ctx[43]
       ) {
         if (if_block0) ;
         else {
-          if_block0 = create_if_block_2();
+          if_block0 = create_if_block_4();
           if_block0.c();
           if_block0.m(div2, t1);
         }
@@ -24320,19 +24511,35 @@ function create_each_block(key_1, ctx) {
         if_block0.d(1);
         if_block0 = null;
       }
+      if (
+        /*isGM*/
+        ctx[6] && /*itemOwnership*/
+        ctx[44] !== "all"
+      ) {
+        if (if_block1) {
+          if_block1.p(ctx, dirty);
+        } else {
+          if_block1 = create_if_block_3(ctx);
+          if_block1.c();
+          if_block1.m(div2, t2);
+        }
+      } else if (if_block1) {
+        if_block1.d(1);
+        if_block1 = null;
+      }
       if (dirty[0] & /*filteredList*/
-      1024 && t2_value !== (t2_value = /*item*/
-      ctx[34].name + "")) set_data(t2, t2_value);
-      if (dirty[0] & /*activeTab, currentImg, filteredList, currentToken*/
-      1572 && i0_class_value !== (i0_class_value = "fas fa-" + /*isCurrent*/
-      (ctx[37] ? "times" : "check"))) {
+      2048 && t3_value !== (t3_value = /*item*/
+      ctx[40].name + "")) set_data(t3, t3_value);
+      if (dirty[0] & /*activeTab, currentImg, filteredList, currentToken, OWNERSHIP_LEVELS*/
+      7204 && i0_class_value !== (i0_class_value = "fas fa-" + /*isCurrent*/
+      (ctx[43] ? "times" : "check"))) {
         attr(i0, "class", i0_class_value);
       }
-      if (dirty[0] & /*activeTab, currentImg, filteredList, currentToken, isItem*/
-      1828 && button0_title_value !== (button0_title_value = /*isCurrent*/
-      ctx[37] ? "Reset to default" : (
+      if (dirty[0] & /*activeTab, currentImg, filteredList, currentToken, isItem, OWNERSHIP_LEVELS*/
+      7716 && button0_title_value !== (button0_title_value = /*isCurrent*/
+      ctx[43] ? "Reset to default" : (
         /*isItem*/
-        ctx[8] ? "Set as Image" : (
+        ctx[9] ? "Set as Image" : (
           /*activeTab*/
           ctx[2] === "portraits" ? "Set as Portrait" : "Set as Token"
         )
@@ -24340,36 +24547,51 @@ function create_each_block(key_1, ctx) {
         attr(button0, "title", button0_title_value);
       }
       if (dirty[0] & /*activeTab, currentImg, filteredList, currentToken*/
-      1572) {
+      3108) {
         toggle_class(
           button0,
           "active",
           /*isCurrent*/
-          ctx[37]
+          ctx[43]
         );
       }
       if (
         /*isActor*/
         ctx[4]
       ) {
-        if (if_block1) {
-          if_block1.p(ctx, dirty);
+        if (if_block2) {
+          if_block2.p(ctx, dirty);
         } else {
-          if_block1 = create_if_block_1(ctx);
-          if_block1.c();
-          if_block1.m(div0, t5);
+          if_block2 = create_if_block_2(ctx);
+          if_block2.c();
+          if_block2.m(div0, t6);
         }
-      } else if (if_block1) {
-        if_block1.d(1);
-        if_block1 = null;
+      } else if (if_block2) {
+        if_block2.d(1);
+        if_block2 = null;
+      }
+      if (
+        /*isGM*/
+        ctx[6]
+      ) {
+        if (if_block3) {
+          if_block3.p(ctx, dirty);
+        } else {
+          if_block3 = create_if_block_1(ctx);
+          if_block3.c();
+          if_block3.m(div0, t7);
+        }
+      } else if (if_block3) {
+        if_block3.d(1);
+        if_block3 = null;
       }
       if (dirty[0] & /*activeTab, currentImg, filteredList, currentToken*/
-      1572) {
+      3108) {
         toggle_class(
           div2,
           "is-current",
           /*isCurrent*/
-          ctx[37]
+          ctx[43]
         );
       }
     },
@@ -24379,12 +24601,14 @@ function create_each_block(key_1, ctx) {
       }
       if (if_block0) if_block0.d();
       if (if_block1) if_block1.d();
+      if (if_block2) if_block2.d();
+      if (if_block3) if_block3.d();
       mounted = false;
       run_all(dispose);
     }
   };
 }
-function create_default_slot(ctx) {
+function create_default_slot$1(ctx) {
   let main;
   let header;
   let div0;
@@ -24395,7 +24619,7 @@ function create_default_slot(ctx) {
   let span;
   let t1_value = (
     /*isItem*/
-    ctx[8] ? "Image" : "Portrait"
+    ctx[9] ? "Image" : "Portrait"
   );
   let t1;
   let t2;
@@ -24416,26 +24640,26 @@ function create_default_slot(ctx) {
   let dispose;
   let if_block0 = (
     /*isActor*/
-    ctx[4] && create_if_block_5(ctx)
+    ctx[4] && create_if_block_7(ctx)
   );
   function select_block_type(ctx2, dirty) {
     if (
       /*isItem*/
-      ctx2[8]
-    ) return create_if_block_4;
+      ctx2[9]
+    ) return create_if_block_6;
     return create_else_block_1;
   }
   let current_block_type = select_block_type(ctx);
   let if_block1 = current_block_type(ctx);
   let if_block2 = (
     /*isActor*/
-    ctx[4] && create_if_block_3(ctx)
+    ctx[4] && create_if_block_5(ctx)
   );
   function select_block_type_1(ctx2, dirty) {
     if (
       /*filteredList*/
-      ctx2[10].length === 0
-    ) return create_if_block;
+      ctx2[11].length === 0
+    ) return create_if_block$1;
     return create_else_block;
   }
   let current_block_type_1 = select_block_type_1(ctx);
@@ -24531,20 +24755,20 @@ function create_default_slot(ctx) {
           listen(
             button0,
             "click",
-            /*click_handler*/
-            ctx[20]
+            /*click_handler_1*/
+            ctx[24]
           ),
           listen(
             button1,
             "click",
             /*browseForImage*/
-            ctx[15]
+            ctx[18]
           ),
           listen(
             input,
             "input",
             /*input_input_handler*/
-            ctx[22]
+            ctx[26]
           )
         ];
         mounted = true;
@@ -24557,8 +24781,8 @@ function create_default_slot(ctx) {
         attr(img, "src", img_src_value);
       }
       if (dirty[0] & /*isItem*/
-      256 && t1_value !== (t1_value = /*isItem*/
-      ctx2[8] ? "Image" : "Portrait")) set_data(t1, t1_value);
+      512 && t1_value !== (t1_value = /*isItem*/
+      ctx2[9] ? "Image" : "Portrait")) set_data(t1, t1_value);
       if (dirty[0] & /*activeTab*/
       4) {
         toggle_class(
@@ -24575,7 +24799,7 @@ function create_default_slot(ctx) {
         if (if_block0) {
           if_block0.p(ctx2, dirty);
         } else {
-          if_block0 = create_if_block_5(ctx2);
+          if_block0 = create_if_block_7(ctx2);
           if_block0.c();
           if_block0.m(div0, null);
         }
@@ -24609,7 +24833,7 @@ function create_default_slot(ctx) {
         if (if_block2) {
           if_block2.p(ctx2, dirty);
         } else {
-          if_block2 = create_if_block_3(ctx2);
+          if_block2 = create_if_block_5(ctx2);
           if_block2.c();
           if_block2.m(main, t8);
         }
@@ -24641,15 +24865,15 @@ function create_default_slot(ctx) {
     }
   };
 }
-function create_fragment(ctx) {
+function create_fragment$1(ctx) {
   let applicationshell;
   let updating_elementRoot;
   let current;
   function applicationshell_elementRoot_binding(value) {
-    ctx[30](value);
+    ctx[36](value);
   }
   let applicationshell_props = {
-    $$slots: { default: [create_default_slot] },
+    $$slots: { default: [create_default_slot$1] },
     $$scope: { ctx }
   };
   if (
@@ -24671,9 +24895,9 @@ function create_fragment(ctx) {
     },
     p(ctx2, dirty) {
       const applicationshell_changes = {};
-      if (dirty[0] & /*isItem, activeTab, filteredList, currentImg, currentToken, isActor, tokens, portraits, searchFilter*/
-      2044 | dirty[1] & /*$$scope*/
-      512) {
+      if (dirty[0] & /*isItem, activeTab, filteredList, currentImg, currentToken, isGM, isActor, tokens, portraits, searchFilter*/
+      4092 | dirty[1] & /*$$scope*/
+      524288) {
         applicationshell_changes.$$scope = { dirty, ctx: ctx2 };
       }
       if (!updating_elementRoot && dirty[0] & /*elementRoot*/
@@ -24706,10 +24930,11 @@ function showImagePopout(imagePath, title = "Image") {
 function handleImageClick(event, item) {
   showImagePopout(item.path, item.name);
 }
-function instance($$self, $$props, $$invalidate) {
+function instance$1($$self, $$props, $$invalidate) {
   let doc;
   let isActor;
   let isItem;
+  let isGM;
   let currentImg;
   let currentToken;
   let savedData;
@@ -24717,13 +24942,18 @@ function instance($$self, $$props, $$invalidate) {
   let tokens;
   let currentList;
   let filteredList;
-  let $tjsDoc, $$unsubscribe_tjsDoc = noop, $$subscribe_tjsDoc = () => ($$unsubscribe_tjsDoc(), $$unsubscribe_tjsDoc = subscribe(tjsDoc, ($$value) => $$invalidate(19, $tjsDoc = $$value)), tjsDoc);
+  let $tjsDoc, $$unsubscribe_tjsDoc = noop, $$subscribe_tjsDoc = () => ($$unsubscribe_tjsDoc(), $$unsubscribe_tjsDoc = subscribe(tjsDoc, ($$value) => $$invalidate(22, $tjsDoc = $$value)), tjsDoc);
   $$self.$$.on_destroy.push(() => $$unsubscribe_tjsDoc());
   let { elementRoot = void 0 } = $$props;
   let { tjsDoc = null } = $$props;
   $$subscribe_tjsDoc();
   const external = getContext("#external");
   external?.application;
+  const OWNERSHIP_LEVELS = [
+    { value: "all", label: "Everyone" },
+    { value: "owner", label: "Owner Only" },
+    { value: "gm", label: "GM Only" }
+  ];
   let activeTab = "portraits";
   let searchFilter = "";
   async function togglePortrait(imagePath) {
@@ -24735,15 +24965,21 @@ function instance($$self, $$props, $$invalidate) {
     const newSrc = currentToken === imagePath ? DEFAULT_IMG : imagePath;
     await doc.update({ "prototypeToken.texture.src": newSrc });
   }
-  async function saveToCategory(imagePath, category, name = "") {
+  async function saveToCategory(imagePath, category, name = "", ownership = "all") {
     const data = doc.getFlag(MODULE_ID, "gallery") ?? { portraits: [], tokens: [] };
     const list = data[category] ?? [];
     if (list.some((p) => p.path === imagePath)) return;
     list.push({
       path: imagePath,
       name: name || imagePath.split("/").pop().replace(/\.[^/.]+$/, ""),
+      ownership,
       addedAt: Date.now()
     });
+    await doc.setFlag(MODULE_ID, "gallery", { ...data, [category]: list });
+  }
+  async function updateImageOwnership(imagePath, category, ownership) {
+    const data = doc.getFlag(MODULE_ID, "gallery") ?? { portraits: [], tokens: [] };
+    const list = (data[category] ?? []).map((item) => item.path === imagePath ? { ...item, ownership } : item);
     await doc.setFlag(MODULE_ID, "gallery", { ...data, [category]: list });
   }
   async function removeFromCategory(imagePath, category) {
@@ -24790,18 +25026,23 @@ function instance($$self, $$props, $$invalidate) {
     });
     picker.render(true);
   }
-  const click_handler = () => showImagePopout(currentImg, "Image");
-  const click_handler_1 = () => showImagePopout(currentToken, "Token");
+  function click_handler(event) {
+    bubble.call(this, $$self, event);
+  }
+  const click_handler_1 = () => showImagePopout(currentImg, "Image");
+  const click_handler_2 = () => showImagePopout(currentToken, "Token");
   function input_input_handler() {
     searchFilter = this.value;
     $$invalidate(3, searchFilter);
   }
-  const click_handler_2 = () => $$invalidate(2, activeTab = "portraits");
-  const click_handler_3 = () => $$invalidate(2, activeTab = "tokens");
-  const click_handler_4 = (item) => activeTab === "portraits" ? togglePortrait(item.path) : toggleToken(item.path);
-  const click_handler_5 = (item) => moveToCategory(item.path, activeTab, activeTab === "portraits" ? "tokens" : "portraits");
-  const click_handler_6 = (item) => removeFromCategory(item.path, activeTab);
-  const click_handler_7 = (item, e) => handleImageClick(e, item);
+  const click_handler_3 = () => $$invalidate(2, activeTab = "portraits");
+  const click_handler_4 = () => $$invalidate(2, activeTab = "tokens");
+  const func = (itemOwnership, o) => o.value === itemOwnership;
+  const click_handler_5 = (item) => activeTab === "portraits" ? togglePortrait(item.path) : toggleToken(item.path);
+  const click_handler_6 = (item) => moveToCategory(item.path, activeTab, activeTab === "portraits" ? "tokens" : "portraits");
+  const change_handler = (item, e) => updateImageOwnership(item.path, activeTab, e.target.value);
+  const click_handler_7 = (item) => removeFromCategory(item.path, activeTab);
+  const click_handler_8 = (item, e) => handleImageClick(e, item);
   const keydown_handler2 = (item, e) => e.key === "Enter" && handleImageClick(e, item);
   function applicationshell_elementRoot_binding(value) {
     elementRoot = value;
@@ -24813,50 +25054,62 @@ function instance($$self, $$props, $$invalidate) {
   };
   $$self.$$.update = () => {
     if ($$self.$$.dirty[0] & /*tjsDoc, $tjsDoc*/
-    524290) {
-      $$invalidate(16, doc = tjsDoc ? $tjsDoc : null);
+    4194306) {
+      $$invalidate(19, doc = tjsDoc ? $tjsDoc : null);
     }
     if ($$self.$$.dirty[0] & /*doc*/
-    65536) {
+    524288) {
       $$invalidate(4, isActor = doc?.documentName === "Actor");
     }
     if ($$self.$$.dirty[0] & /*doc*/
-    65536) {
-      $$invalidate(8, isItem = doc?.documentName === "Item");
+    524288) {
+      $$invalidate(9, isItem = doc?.documentName === "Item");
     }
     if ($$self.$$.dirty[0] & /*doc*/
-    65536) {
+    524288) {
       $$invalidate(5, currentImg = doc?.img ?? DEFAULT_IMG);
     }
     if ($$self.$$.dirty[0] & /*isActor, doc, currentImg*/
-    65584) {
-      $$invalidate(9, currentToken = isActor ? doc?.prototypeToken?.texture?.src ?? currentImg : null);
+    524336) {
+      $$invalidate(10, currentToken = isActor ? doc?.prototypeToken?.texture?.src ?? currentImg : null);
     }
     if ($$self.$$.dirty[0] & /*isItem*/
-    256) {
+    512) {
       if (isItem) $$invalidate(2, activeTab = "portraits");
     }
     if ($$self.$$.dirty[0] & /*doc*/
-    65536) {
-      $$invalidate(18, savedData = doc?.getFlag(MODULE_ID, "gallery") ?? { portraits: [], tokens: [] });
+    524288) {
+      $$invalidate(21, savedData = doc?.getFlag(MODULE_ID, "gallery") ?? { portraits: [], tokens: [] });
     }
     if ($$self.$$.dirty[0] & /*savedData*/
-    262144) {
-      $$invalidate(7, portraits = savedData.portraits ?? []);
+    2097152) {
+      $$invalidate(8, portraits = savedData.portraits ?? []);
     }
     if ($$self.$$.dirty[0] & /*savedData*/
-    262144) {
-      $$invalidate(6, tokens = savedData.tokens ?? []);
+    2097152) {
+      $$invalidate(7, tokens = savedData.tokens ?? []);
     }
     if ($$self.$$.dirty[0] & /*activeTab, portraits, tokens*/
-    196) {
-      $$invalidate(17, currentList = activeTab === "portraits" ? portraits : tokens);
+    388) {
+      $$invalidate(20, currentList = activeTab === "portraits" ? portraits : tokens);
     }
-    if ($$self.$$.dirty[0] & /*currentList, searchFilter*/
-    131080) {
-      $$invalidate(10, filteredList = currentList.filter((item) => !searchFilter || item.name?.toLowerCase().includes(searchFilter.toLowerCase()) || item.path?.toLowerCase().includes(searchFilter.toLowerCase())));
+    if ($$self.$$.dirty[0] & /*currentList, searchFilter, isGM, doc*/
+    1572936) {
+      $$invalidate(11, filteredList = currentList.filter((item) => {
+        const matchesSearch = !searchFilter || item.name?.toLowerCase().includes(searchFilter.toLowerCase()) || item.path?.toLowerCase().includes(searchFilter.toLowerCase());
+        if (!matchesSearch) return false;
+        if (isGM) return true;
+        const ownership = item.ownership ?? "all";
+        if (ownership === "all") return true;
+        if (ownership === "gm") return false;
+        if (ownership === "owner") {
+          return doc?.testUserPermission?.(game.user, "OWNER") ?? false;
+        }
+        return true;
+      }));
     }
   };
+  $$invalidate(6, isGM = game.user.isGM);
   return [
     elementRoot,
     tjsDoc,
@@ -24864,13 +25117,16 @@ function instance($$self, $$props, $$invalidate) {
     searchFilter,
     isActor,
     currentImg,
+    isGM,
     tokens,
     portraits,
     isItem,
     currentToken,
     filteredList,
+    OWNERSHIP_LEVELS,
     togglePortrait,
     toggleToken,
+    updateImageOwnership,
     removeFromCategory,
     moveToCategory,
     browseForImage,
@@ -24880,13 +25136,16 @@ function instance($$self, $$props, $$invalidate) {
     $tjsDoc,
     click_handler,
     click_handler_1,
-    input_input_handler,
     click_handler_2,
+    input_input_handler,
     click_handler_3,
     click_handler_4,
+    func,
     click_handler_5,
     click_handler_6,
+    change_handler,
     click_handler_7,
+    click_handler_8,
     keydown_handler2,
     applicationshell_elementRoot_binding
   ];
@@ -24894,7 +25153,7 @@ function instance($$self, $$props, $$invalidate) {
 class PortraitGalleryShell extends SvelteComponent {
   constructor(options) {
     super();
-    init(this, options, instance, create_fragment, safe_not_equal, { elementRoot: 0, tjsDoc: 1 }, null, [-1, -1]);
+    init(this, options, instance$1, create_fragment$1, safe_not_equal, { elementRoot: 0, tjsDoc: 1 }, null, [-1, -1]);
   }
   get elementRoot() {
     return this.$$.ctx[0];
@@ -24908,6 +25167,1029 @@ class PortraitGalleryShell extends SvelteComponent {
   }
   set tjsDoc(tjsDoc) {
     this.$$set({ tjsDoc });
+    flush();
+  }
+}
+function get_each_context(ctx, list, i) {
+  const child_ctx = ctx.slice();
+  child_ctx[43] = list[i];
+  return child_ctx;
+}
+function get_each_context_1(ctx, list, i) {
+  const child_ctx = ctx.slice();
+  child_ctx[46] = list[i];
+  child_ctx[47] = list;
+  child_ctx[48] = i;
+  return child_ctx;
+}
+function create_each_block_1(key_1, ctx) {
+  let div;
+  let span;
+  let t0;
+  let button0;
+  let i1;
+  let i1_class_value;
+  let cat = (
+    /*cat*/
+    ctx[46]
+  );
+  let t1;
+  let input;
+  let input_value_value;
+  let t2;
+  let button1;
+  let i2;
+  let button1_disabled_value;
+  let t3;
+  let mounted;
+  let dispose;
+  const assign_button0 = () => (
+    /*button0_binding*/
+    ctx[27](button0, cat)
+  );
+  const unassign_button0 = () => (
+    /*button0_binding*/
+    ctx[27](null, cat)
+  );
+  function click_handler_1() {
+    return (
+      /*click_handler_1*/
+      ctx[28](
+        /*cat*/
+        ctx[46],
+        /*index*/
+        ctx[48]
+      )
+    );
+  }
+  function input_handler(...args) {
+    return (
+      /*input_handler*/
+      ctx[29](
+        /*index*/
+        ctx[48],
+        ...args
+      )
+    );
+  }
+  function click_handler_2() {
+    return (
+      /*click_handler_2*/
+      ctx[30](
+        /*index*/
+        ctx[48]
+      )
+    );
+  }
+  function dragstart_handler(...args) {
+    return (
+      /*dragstart_handler*/
+      ctx[31](
+        /*index*/
+        ctx[48],
+        ...args
+      )
+    );
+  }
+  function dragover_handler(...args) {
+    return (
+      /*dragover_handler*/
+      ctx[32](
+        /*index*/
+        ctx[48],
+        ...args
+      )
+    );
+  }
+  function drop_handler(...args) {
+    return (
+      /*drop_handler*/
+      ctx[33](
+        /*index*/
+        ctx[48],
+        ...args
+      )
+    );
+  }
+  return {
+    key: key_1,
+    first: null,
+    c() {
+      div = element("div");
+      span = element("span");
+      span.innerHTML = `<i class="fas fa-grip-vertical"></i>`;
+      t0 = space();
+      button0 = element("button");
+      i1 = element("i");
+      t1 = space();
+      input = element("input");
+      t2 = space();
+      button1 = element("button");
+      i2 = element("i");
+      t3 = space();
+      attr(span, "class", "drag-handle");
+      attr(i1, "class", i1_class_value = "fas " + /*cat*/
+      ctx[46].icon);
+      attr(button0, "type", "button");
+      attr(button0, "class", "icon-btn");
+      attr(button0, "title", "Select icon");
+      toggle_class(
+        button0,
+        "active",
+        /*openIconPicker*/
+        ctx[2] === /*cat*/
+        ctx[46].id
+      );
+      attr(input, "type", "text");
+      attr(input, "class", "label-input");
+      attr(input, "placeholder", "Category Name");
+      input.value = input_value_value = /*cat*/
+      ctx[46].label;
+      attr(i2, "class", "fas fa-trash");
+      attr(button1, "type", "button");
+      attr(button1, "class", "delete-btn");
+      attr(button1, "title", "Remove category");
+      button1.disabled = button1_disabled_value = /*categories*/
+      ctx[1].length <= 1;
+      attr(div, "class", "category-row");
+      attr(div, "draggable", "true");
+      attr(div, "role", "listitem");
+      toggle_class(
+        div,
+        "dragging",
+        /*draggedIndex*/
+        ctx[7] === /*index*/
+        ctx[48]
+      );
+      toggle_class(
+        div,
+        "drag-over",
+        /*dragOverIndex*/
+        ctx[8] === /*index*/
+        ctx[48] && /*draggedIndex*/
+        ctx[7] !== /*index*/
+        ctx[48]
+      );
+      this.first = div;
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      append(div, span);
+      append(div, t0);
+      append(div, button0);
+      append(button0, i1);
+      assign_button0();
+      append(div, t1);
+      append(div, input);
+      append(div, t2);
+      append(div, button1);
+      append(button1, i2);
+      append(div, t3);
+      if (!mounted) {
+        dispose = [
+          listen(button0, "click", stop_propagation(click_handler_1)),
+          listen(input, "input", input_handler),
+          listen(button1, "click", click_handler_2),
+          listen(div, "dragstart", dragstart_handler),
+          listen(div, "dragover", dragover_handler),
+          listen(
+            div,
+            "dragleave",
+            /*handleDragLeave*/
+            ctx[18]
+          ),
+          listen(div, "drop", drop_handler),
+          listen(
+            div,
+            "dragend",
+            /*handleDragEnd*/
+            ctx[20]
+          )
+        ];
+        mounted = true;
+      }
+    },
+    p(new_ctx, dirty) {
+      ctx = new_ctx;
+      if (dirty[0] & /*categories*/
+      2 && i1_class_value !== (i1_class_value = "fas " + /*cat*/
+      ctx[46].icon)) {
+        attr(i1, "class", i1_class_value);
+      }
+      if (cat !== /*cat*/
+      ctx[46]) {
+        unassign_button0();
+        cat = /*cat*/
+        ctx[46];
+        assign_button0();
+      }
+      if (dirty[0] & /*openIconPicker, categories*/
+      6) {
+        toggle_class(
+          button0,
+          "active",
+          /*openIconPicker*/
+          ctx[2] === /*cat*/
+          ctx[46].id
+        );
+      }
+      if (dirty[0] & /*categories*/
+      2 && input_value_value !== (input_value_value = /*cat*/
+      ctx[46].label) && input.value !== input_value_value) {
+        input.value = input_value_value;
+      }
+      if (dirty[0] & /*categories*/
+      2 && button1_disabled_value !== (button1_disabled_value = /*categories*/
+      ctx[1].length <= 1)) {
+        button1.disabled = button1_disabled_value;
+      }
+      if (dirty[0] & /*draggedIndex, categories*/
+      130) {
+        toggle_class(
+          div,
+          "dragging",
+          /*draggedIndex*/
+          ctx[7] === /*index*/
+          ctx[48]
+        );
+      }
+      if (dirty[0] & /*dragOverIndex, categories, draggedIndex*/
+      386) {
+        toggle_class(
+          div,
+          "drag-over",
+          /*dragOverIndex*/
+          ctx[8] === /*index*/
+          ctx[48] && /*draggedIndex*/
+          ctx[7] !== /*index*/
+          ctx[48]
+        );
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+      }
+      unassign_button0();
+      mounted = false;
+      run_all(dispose);
+    }
+  };
+}
+function create_default_slot(ctx) {
+  let main;
+  let p;
+  let t1;
+  let div0;
+  let each_blocks = [];
+  let each_1_lookup = /* @__PURE__ */ new Map();
+  let t2;
+  let div1;
+  let button0;
+  let t4;
+  let button1;
+  let t6;
+  let footer;
+  let button2;
+  let t8;
+  let button3;
+  let i2;
+  let t9;
+  let button3_disabled_value;
+  let mounted;
+  let dispose;
+  let each_value_1 = ensure_array_like(
+    /*categories*/
+    ctx[1]
+  );
+  const get_key = (ctx2) => (
+    /*cat*/
+    ctx2[46].id
+  );
+  for (let i = 0; i < each_value_1.length; i += 1) {
+    let child_ctx = get_each_context_1(ctx, each_value_1, i);
+    let key = get_key(child_ctx);
+    each_1_lookup.set(key, each_blocks[i] = create_each_block_1(key, child_ctx));
+  }
+  return {
+    c() {
+      main = element("main");
+      p = element("p");
+      p.textContent = "Define custom categories for organizing character music. \n         Drag to reorder. Changes apply to all actors and items.";
+      t1 = space();
+      div0 = element("div");
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        each_blocks[i].c();
+      }
+      t2 = space();
+      div1 = element("div");
+      button0 = element("button");
+      button0.innerHTML = `<i class="fas fa-plus"></i> Add Category`;
+      t4 = space();
+      button1 = element("button");
+      button1.innerHTML = `<i class="fas fa-undo"></i> Reset to Defaults`;
+      t6 = space();
+      footer = element("footer");
+      button2 = element("button");
+      button2.textContent = "Cancel";
+      t8 = space();
+      button3 = element("button");
+      i2 = element("i");
+      t9 = text(" Save Changes");
+      attr(p, "class", "description");
+      attr(div0, "class", "categories-list");
+      attr(button0, "type", "button");
+      attr(button0, "class", "add-btn");
+      attr(button1, "type", "button");
+      attr(button1, "class", "reset-btn");
+      attr(div1, "class", "add-row");
+      attr(button2, "type", "button");
+      attr(button2, "class", "cancel-btn");
+      attr(i2, "class", "fas fa-save");
+      attr(button3, "type", "button");
+      attr(button3, "class", "save-btn");
+      button3.disabled = button3_disabled_value = !/*hasChanges*/
+      ctx[4];
+      attr(footer, "class", "footer-actions");
+      attr(main, "class", "categories-shell");
+    },
+    m(target, anchor) {
+      insert(target, main, anchor);
+      append(main, p);
+      append(main, t1);
+      append(main, div0);
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        if (each_blocks[i]) {
+          each_blocks[i].m(div0, null);
+        }
+      }
+      append(main, t2);
+      append(main, div1);
+      append(div1, button0);
+      append(div1, t4);
+      append(div1, button1);
+      append(main, t6);
+      append(main, footer);
+      append(footer, button2);
+      append(footer, t8);
+      append(footer, button3);
+      append(button3, i2);
+      append(button3, t9);
+      if (!mounted) {
+        dispose = [
+          listen(
+            button0,
+            "click",
+            /*addCategory*/
+            ctx[11]
+          ),
+          listen(
+            button1,
+            "click",
+            /*resetToDefaults*/
+            ctx[22]
+          ),
+          listen(
+            button2,
+            "click",
+            /*cancel*/
+            ctx[23]
+          ),
+          listen(
+            button3,
+            "click",
+            /*saveCategories*/
+            ctx[21]
+          )
+        ];
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*draggedIndex, categories, dragOverIndex, handleDragStart, handleDragOver, handleDragLeave, handleDrop, handleDragEnd, removeCategory, updateCategory, iconButtons, openIconPicker, toggleIconPicker*/
+      2077126) {
+        each_value_1 = ensure_array_like(
+          /*categories*/
+          ctx2[1]
+        );
+        each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx2, each_value_1, each_1_lookup, div0, destroy_block, create_each_block_1, null, get_each_context_1);
+      }
+      if (dirty[0] & /*hasChanges*/
+      16 && button3_disabled_value !== (button3_disabled_value = !/*hasChanges*/
+      ctx2[4])) {
+        button3.disabled = button3_disabled_value;
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(main);
+      }
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        each_blocks[i].d();
+      }
+      mounted = false;
+      run_all(dispose);
+    }
+  };
+}
+function create_if_block(ctx) {
+  let div2;
+  let div0;
+  let t;
+  let div1;
+  let input;
+  let input_value_value;
+  let mounted;
+  let dispose;
+  let each_value = ensure_array_like(
+    /*availableIcons*/
+    ctx[10]
+  );
+  let each_blocks = [];
+  for (let i = 0; i < each_value.length; i += 1) {
+    each_blocks[i] = create_each_block(get_each_context(ctx, each_value, i));
+  }
+  return {
+    c() {
+      div2 = element("div");
+      div0 = element("div");
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        each_blocks[i].c();
+      }
+      t = space();
+      div1 = element("div");
+      input = element("input");
+      attr(div0, "class", "icon-grid");
+      attr(input, "type", "text");
+      attr(input, "placeholder", "fa-icon-name");
+      input.value = input_value_value = /*openCategory*/
+      ctx[9].icon;
+      attr(div1, "class", "icon-manual");
+      attr(div2, "class", "icon-picker-dropdown");
+      set_style(div2, "position", "fixed");
+      set_style(
+        div2,
+        "left",
+        /*pickerPosition*/
+        ctx[5].x + "px"
+      );
+      set_style(
+        div2,
+        "top",
+        /*pickerPosition*/
+        ctx[5].y + "px"
+      );
+      set_style(div2, "z-index", "10000");
+      attr(div2, "role", "menu");
+    },
+    m(target, anchor) {
+      insert(target, div2, anchor);
+      append(div2, div0);
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        if (each_blocks[i]) {
+          each_blocks[i].m(div0, null);
+        }
+      }
+      append(div2, t);
+      append(div2, div1);
+      append(div1, input);
+      if (!mounted) {
+        dispose = [
+          listen(
+            input,
+            "input",
+            /*input_handler_1*/
+            ctx[36]
+          ),
+          listen(
+            input,
+            "keydown",
+            /*keydown_handler_1*/
+            ctx[37]
+          ),
+          action_destroyer(portal.call(null, div2)),
+          listen(div2, "click", stop_propagation(
+            /*click_handler*/
+            ctx[25]
+          )),
+          listen(div2, "keydown", stop_propagation(
+            /*keydown_handler*/
+            ctx[26]
+          ))
+        ];
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*availableIcons, openCategory, selectIcon, openCategoryIndex*/
+      17928) {
+        each_value = ensure_array_like(
+          /*availableIcons*/
+          ctx2[10]
+        );
+        let i;
+        for (i = 0; i < each_value.length; i += 1) {
+          const child_ctx = get_each_context(ctx2, each_value, i);
+          if (each_blocks[i]) {
+            each_blocks[i].p(child_ctx, dirty);
+          } else {
+            each_blocks[i] = create_each_block(child_ctx);
+            each_blocks[i].c();
+            each_blocks[i].m(div0, null);
+          }
+        }
+        for (; i < each_blocks.length; i += 1) {
+          each_blocks[i].d(1);
+        }
+        each_blocks.length = each_value.length;
+      }
+      if (dirty[0] & /*openCategory*/
+      512 && input_value_value !== (input_value_value = /*openCategory*/
+      ctx2[9].icon) && input.value !== input_value_value) {
+        input.value = input_value_value;
+      }
+      if (dirty[0] & /*pickerPosition*/
+      32) {
+        set_style(
+          div2,
+          "left",
+          /*pickerPosition*/
+          ctx2[5].x + "px"
+        );
+      }
+      if (dirty[0] & /*pickerPosition*/
+      32) {
+        set_style(
+          div2,
+          "top",
+          /*pickerPosition*/
+          ctx2[5].y + "px"
+        );
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div2);
+      }
+      destroy_each(each_blocks, detaching);
+      mounted = false;
+      run_all(dispose);
+    }
+  };
+}
+function create_each_block(ctx) {
+  let button;
+  let i;
+  let t;
+  let mounted;
+  let dispose;
+  function click_handler_3() {
+    return (
+      /*click_handler_3*/
+      ctx[35](
+        /*icon*/
+        ctx[43]
+      )
+    );
+  }
+  return {
+    c() {
+      button = element("button");
+      i = element("i");
+      t = space();
+      attr(i, "class", "fas " + /*icon*/
+      ctx[43]);
+      attr(button, "type", "button");
+      attr(button, "class", "icon-option");
+      attr(
+        button,
+        "title",
+        /*icon*/
+        ctx[43]
+      );
+      toggle_class(
+        button,
+        "selected",
+        /*openCategory*/
+        ctx[9].icon === /*icon*/
+        ctx[43]
+      );
+    },
+    m(target, anchor) {
+      insert(target, button, anchor);
+      append(button, i);
+      append(button, t);
+      if (!mounted) {
+        dispose = listen(button, "click", click_handler_3);
+        mounted = true;
+      }
+    },
+    p(new_ctx, dirty) {
+      ctx = new_ctx;
+      if (dirty[0] & /*openCategory, availableIcons*/
+      1536) {
+        toggle_class(
+          button,
+          "selected",
+          /*openCategory*/
+          ctx[9].icon === /*icon*/
+          ctx[43]
+        );
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(button);
+      }
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_fragment(ctx) {
+  let applicationshell;
+  let updating_elementRoot;
+  let t;
+  let if_block_anchor;
+  let current;
+  let mounted;
+  let dispose;
+  function applicationshell_elementRoot_binding(value) {
+    ctx[34](value);
+  }
+  let applicationshell_props = {
+    $$slots: { default: [create_default_slot] },
+    $$scope: { ctx }
+  };
+  if (
+    /*elementRoot*/
+    ctx[0] !== void 0
+  ) {
+    applicationshell_props.elementRoot = /*elementRoot*/
+    ctx[0];
+  }
+  applicationshell = new ApplicationShell({ props: applicationshell_props });
+  binding_callbacks.push(() => bind(applicationshell, "elementRoot", applicationshell_elementRoot_binding));
+  let if_block = (
+    /*openIconPicker*/
+    ctx[2] && /*openCategory*/
+    ctx[9] && create_if_block(ctx)
+  );
+  return {
+    c() {
+      create_component(applicationshell.$$.fragment);
+      t = space();
+      if (if_block) if_block.c();
+      if_block_anchor = empty();
+    },
+    m(target, anchor) {
+      mount_component(applicationshell, target, anchor);
+      insert(target, t, anchor);
+      if (if_block) if_block.m(target, anchor);
+      insert(target, if_block_anchor, anchor);
+      current = true;
+      if (!mounted) {
+        dispose = listen(
+          window,
+          "click",
+          /*handleWindowClick*/
+          ctx[24]
+        );
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      const applicationshell_changes = {};
+      if (dirty[0] & /*hasChanges, categories, draggedIndex, dragOverIndex, iconButtons, openIconPicker*/
+      470 | dirty[1] & /*$$scope*/
+      262144) {
+        applicationshell_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      if (!updating_elementRoot && dirty[0] & /*elementRoot*/
+      1) {
+        updating_elementRoot = true;
+        applicationshell_changes.elementRoot = /*elementRoot*/
+        ctx2[0];
+        add_flush_callback(() => updating_elementRoot = false);
+      }
+      applicationshell.$set(applicationshell_changes);
+      if (
+        /*openIconPicker*/
+        ctx2[2] && /*openCategory*/
+        ctx2[9]
+      ) {
+        if (if_block) {
+          if_block.p(ctx2, dirty);
+        } else {
+          if_block = create_if_block(ctx2);
+          if_block.c();
+          if_block.m(if_block_anchor.parentNode, if_block_anchor);
+        }
+      } else if (if_block) {
+        if_block.d(1);
+        if_block = null;
+      }
+    },
+    i(local) {
+      if (current) return;
+      transition_in(applicationshell.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(applicationshell.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(t);
+        detach(if_block_anchor);
+      }
+      destroy_component(applicationshell, detaching);
+      if (if_block) if_block.d(detaching);
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function portal(node) {
+  document.body.appendChild(node);
+  return {
+    destroy() {
+      node.remove();
+    }
+  };
+}
+function instance($$self, $$props, $$invalidate) {
+  let openCategoryIndex;
+  let openCategory;
+  let { elementRoot = void 0 } = $$props;
+  const external = getContext("#external");
+  const application = external?.application;
+  const defaultCategories = [
+    {
+      id: "theme",
+      label: "Theme",
+      icon: "fa-music"
+    },
+    {
+      id: "combat",
+      label: "Combat",
+      icon: "fa-swords"
+    },
+    {
+      id: "dramatic",
+      label: "Dramatic",
+      icon: "fa-theater-masks"
+    },
+    {
+      id: "ambient",
+      label: "Ambient",
+      icon: "fa-wind"
+    }
+  ];
+  const availableIcons = [
+    "fa-music",
+    "fa-swords",
+    "fa-theater-masks",
+    "fa-wind",
+    "fa-heart",
+    "fa-skull",
+    "fa-hat-wizard",
+    "fa-moon",
+    "fa-sun",
+    "fa-bolt",
+    "fa-ghost",
+    "fa-crown",
+    "fa-campground",
+    "fa-water",
+    "fa-mountain",
+    "fa-city",
+    "fa-dragon",
+    "fa-dungeon",
+    "fa-fire",
+    "fa-snowflake",
+    "fa-star",
+    "fa-shield",
+    "fa-scroll",
+    "fa-gem",
+    "fa-coins"
+  ];
+  let categories = [];
+  let hasChanges = false;
+  let openIconPicker = null;
+  let pickerPosition = { x: 0, y: 0 };
+  let iconButtons = {};
+  let draggedIndex = null;
+  let dragOverIndex = null;
+  let portalContainer = null;
+  onMount(() => {
+    loadCategories();
+    portalContainer = document.createElement("div");
+    portalContainer.className = "antifriz-icon-picker-portal";
+    document.body.appendChild(portalContainer);
+  });
+  onDestroy(() => {
+    if (portalContainer) {
+      portalContainer.remove();
+    }
+  });
+  function loadCategories() {
+    const saved = game.settings.get(MODULE_ID, "musicCategories");
+    $$invalidate(1, categories = Array.isArray(saved) && saved.length > 0 ? JSON.parse(JSON.stringify(saved)) : JSON.parse(JSON.stringify(defaultCategories)));
+    $$invalidate(4, hasChanges = false);
+  }
+  function addCategory() {
+    const newId = `custom_${foundry.utils.randomID(8)}`;
+    $$invalidate(1, categories = [...categories, { id: newId, label: "", icon: "fa-music" }]);
+    $$invalidate(4, hasChanges = true);
+  }
+  function removeCategory(index) {
+    if (categories.length <= 1) {
+      ui.notifications.warn("At least one category is required.");
+      return;
+    }
+    $$invalidate(1, categories = categories.filter((_, i) => i !== index));
+    $$invalidate(4, hasChanges = true);
+  }
+  function updateCategory(index, field, value) {
+    $$invalidate(1, categories[index][field] = value, categories);
+    $$invalidate(1, categories);
+    $$invalidate(4, hasChanges = true);
+  }
+  function selectIcon(index, icon) {
+    updateCategory(index, "icon", icon);
+    $$invalidate(2, openIconPicker = null);
+  }
+  async function toggleIconPicker(catId, index) {
+    if (openIconPicker === catId) {
+      $$invalidate(2, openIconPicker = null);
+      return;
+    }
+    $$invalidate(2, openIconPicker = catId);
+    await tick();
+    const btn = iconButtons[catId];
+    if (btn) {
+      const rect = btn.getBoundingClientRect();
+      $$invalidate(5, pickerPosition = { x: rect.left, y: rect.bottom + 4 });
+    }
+  }
+  function handleDragStart(e, index) {
+    $$invalidate(7, draggedIndex = index);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", index.toString());
+  }
+  function handleDragOver(e, index) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    $$invalidate(8, dragOverIndex = index);
+  }
+  function handleDragLeave() {
+    $$invalidate(8, dragOverIndex = null);
+  }
+  function handleDrop(e, index) {
+    e.preventDefault();
+    if (draggedIndex !== null && draggedIndex !== index) {
+      const newCategories = [...categories];
+      const [removed] = newCategories.splice(draggedIndex, 1);
+      newCategories.splice(index, 0, removed);
+      $$invalidate(1, categories = newCategories);
+      $$invalidate(4, hasChanges = true);
+    }
+    $$invalidate(7, draggedIndex = null);
+    $$invalidate(8, dragOverIndex = null);
+  }
+  function handleDragEnd() {
+    $$invalidate(7, draggedIndex = null);
+    $$invalidate(8, dragOverIndex = null);
+  }
+  async function saveCategories() {
+    const valid = categories.filter((c) => c.label?.trim());
+    if (valid.length === 0) {
+      ui.notifications.error("At least one category with a name is required.");
+      return;
+    }
+    const cleaned = valid.map((c) => ({
+      id: c.id,
+      label: c.label.trim(),
+      icon: c.icon || "fa-music"
+    }));
+    await game.settings.set(MODULE_ID, "musicCategories", cleaned);
+    ui.notifications.info("Music categories saved!");
+    $$invalidate(4, hasChanges = false);
+    application?.close();
+  }
+  function resetToDefaults() {
+    $$invalidate(1, categories = JSON.parse(JSON.stringify(defaultCategories)));
+    $$invalidate(4, hasChanges = true);
+  }
+  function cancel() {
+    if (hasChanges) {
+      Dialog.confirm({
+        title: "Unsaved Changes",
+        content: "<p>You have unsaved changes. Discard them?</p>",
+        yes: () => application?.close(),
+        no: () => {
+        },
+        defaultYes: false
+      });
+    } else {
+      application?.close();
+    }
+  }
+  function handleWindowClick(e) {
+    if (openIconPicker && !e.target.closest(".icon-picker-dropdown") && !e.target.closest(".icon-btn")) {
+      $$invalidate(2, openIconPicker = null);
+    }
+  }
+  function click_handler(event) {
+    bubble.call(this, $$self, event);
+  }
+  function keydown_handler2(event) {
+    bubble.call(this, $$self, event);
+  }
+  function button0_binding($$value, cat) {
+    binding_callbacks[$$value ? "unshift" : "push"](() => {
+      iconButtons[cat.id] = $$value;
+      $$invalidate(6, iconButtons);
+    });
+  }
+  const click_handler_1 = (cat, index) => toggleIconPicker(cat.id);
+  const input_handler = (index, e) => updateCategory(index, "label", e.target.value);
+  const click_handler_2 = (index) => removeCategory(index);
+  const dragstart_handler = (index, e) => handleDragStart(e, index);
+  const dragover_handler = (index, e) => handleDragOver(e, index);
+  const drop_handler = (index, e) => handleDrop(e, index);
+  function applicationshell_elementRoot_binding(value) {
+    elementRoot = value;
+    $$invalidate(0, elementRoot);
+  }
+  const click_handler_3 = (icon) => selectIcon(openCategoryIndex, icon);
+  const input_handler_1 = (e) => updateCategory(openCategoryIndex, "icon", e.target.value);
+  const keydown_handler_1 = (e) => e.key === "Enter" && $$invalidate(2, openIconPicker = null);
+  $$self.$$set = ($$props2) => {
+    if ("elementRoot" in $$props2) $$invalidate(0, elementRoot = $$props2.elementRoot);
+  };
+  $$self.$$.update = () => {
+    if ($$self.$$.dirty[0] & /*openIconPicker, categories*/
+    6) {
+      $$invalidate(3, openCategoryIndex = openIconPicker ? categories.findIndex((c) => c.id === openIconPicker) : -1);
+    }
+    if ($$self.$$.dirty[0] & /*openCategoryIndex, categories*/
+    10) {
+      $$invalidate(9, openCategory = openCategoryIndex >= 0 ? categories[openCategoryIndex] : null);
+    }
+  };
+  return [
+    elementRoot,
+    categories,
+    openIconPicker,
+    openCategoryIndex,
+    hasChanges,
+    pickerPosition,
+    iconButtons,
+    draggedIndex,
+    dragOverIndex,
+    openCategory,
+    availableIcons,
+    addCategory,
+    removeCategory,
+    updateCategory,
+    selectIcon,
+    toggleIconPicker,
+    handleDragStart,
+    handleDragOver,
+    handleDragLeave,
+    handleDrop,
+    handleDragEnd,
+    saveCategories,
+    resetToDefaults,
+    cancel,
+    handleWindowClick,
+    click_handler,
+    keydown_handler2,
+    button0_binding,
+    click_handler_1,
+    input_handler,
+    click_handler_2,
+    dragstart_handler,
+    dragover_handler,
+    drop_handler,
+    applicationshell_elementRoot_binding,
+    click_handler_3,
+    input_handler_1,
+    keydown_handler_1
+  ];
+}
+class MusicCategoriesShell extends SvelteComponent {
+  constructor(options) {
+    super();
+    init(this, options, instance, create_fragment, safe_not_equal, { elementRoot: 0 }, null, [-1, -1]);
+  }
+  get elementRoot() {
+    return this.$$.ctx[0];
+  }
+  set elementRoot(elementRoot) {
+    this.$$set({ elementRoot });
     flush();
   }
 }
@@ -25089,6 +26371,239 @@ class PortraitGalleryApp extends SvelteApp {
    */
   get tjsDoc() {
     return this.#tjsDoc;
+  }
+}
+class MusicCategoriesApp extends SvelteApp {
+  /**
+   * @param {object} options - Application options
+   */
+  constructor(options = {}) {
+    super(options);
+  }
+  /**
+   * Static method to open the app.
+   * Prevents duplicate windows.
+   * @returns {MusicCategoriesApp}
+   */
+  static open() {
+    const existingApp = Object.values(ui.windows).find(
+      (w) => w instanceof MusicCategoriesApp
+    );
+    if (existingApp) {
+      existingApp.render(true, { focus: true });
+      return existingApp;
+    }
+    const app = new this();
+    app.render(true);
+    return app;
+  }
+  /**
+   * Default Application options
+   * @returns {SvelteApp.Options}
+   */
+  static get defaultOptions() {
+    return deepMerge(super.defaultOptions, {
+      id: "music-categories-config",
+      classes: ["antifriz-roleplay-stuff", "categories-config"],
+      title: "Music Categories",
+      width: 520,
+      height: 470,
+      resizable: true,
+      minimizable: false,
+      svelte: {
+        class: MusicCategoriesShell,
+        target: document.body,
+        intro: true,
+        props: {}
+      }
+    });
+  }
+}
+new TJSGameSettings(MODULE_ID);
+const DEFAULT_MUSIC_CATEGORIES = [
+  { id: "theme", label: "Theme", icon: "fa-music" },
+  { id: "combat", label: "Combat", icon: "fa-swords" },
+  { id: "dramatic", label: "Dramatic", icon: "fa-theater-masks" },
+  { id: "ambient", label: "Ambient", icon: "fa-wind" }
+];
+function registerSettings() {
+  _registerWorldSettings();
+  _registerClientSettings();
+}
+function _registerWorldSettings() {
+  game.settings.register(MODULE_ID, "musicCategories", {
+    name: "SETTINGS.musicCategories.Name",
+    hint: "SETTINGS.musicCategories.Hint",
+    scope: "world",
+    config: false,
+    // Hidden, use custom menu
+    type: Array,
+    default: DEFAULT_MUSIC_CATEGORIES
+  });
+  game.settings.registerMenu(MODULE_ID, "musicCategoriesMenu", {
+    name: "SETTINGS.musicCategoriesMenu.Name",
+    label: "SETTINGS.musicCategoriesMenu.Label",
+    hint: "SETTINGS.musicCategoriesMenu.Hint",
+    icon: "fas fa-music",
+    type: MusicCategoriesMenuProxy,
+    restricted: true
+    // GM only
+  });
+}
+class MusicCategoriesMenuProxy extends FormApplication {
+  constructor(...args) {
+    super(...args);
+    MusicCategoriesApp.open();
+  }
+  // Override render to do nothing (we open Svelte app instead)
+  async render() {
+    return this;
+  }
+}
+function _registerClientSettings() {
+  game.settings.register(MODULE_ID, "showMusicButton", {
+    name: "SETTINGS.showMusicButton.Name",
+    hint: "SETTINGS.showMusicButton.Hint",
+    scope: "client",
+    config: true,
+    type: Boolean,
+    default: true
+  });
+  game.settings.register(MODULE_ID, "showGalleryButton", {
+    name: "SETTINGS.showGalleryButton.Name",
+    hint: "SETTINGS.showGalleryButton.Hint",
+    scope: "client",
+    config: true,
+    type: Boolean,
+    default: true
+  });
+  game.settings.register(MODULE_ID, "showItemMusicButton", {
+    name: "SETTINGS.showItemMusicButton.Name",
+    hint: "SETTINGS.showItemMusicButton.Hint",
+    scope: "client",
+    config: true,
+    type: Boolean,
+    default: true
+  });
+  game.settings.register(MODULE_ID, "showItemGalleryButton", {
+    name: "SETTINGS.showItemGalleryButton.Name",
+    hint: "SETTINGS.showItemGalleryButton.Hint",
+    scope: "client",
+    config: true,
+    type: Boolean,
+    default: true
+  });
+  game.settings.register(MODULE_ID, "debugMode", {
+    name: "SETTINGS.debugMode.Name",
+    hint: "SETTINGS.debugMode.Hint",
+    scope: "client",
+    config: true,
+    type: Boolean,
+    default: false
+  });
+}
+let broadcastAudio = null;
+function registerSocketListeners() {
+  game.socket.on(`module.${MODULE_ID}`, handleSocketMessage);
+}
+function handleSocketMessage(message) {
+  const { type, senderId, data } = message;
+  if (senderId === game.user.id) return;
+  if (data?.targetUsers && !data.targetUsers.includes(game.user.id)) return;
+  switch (type) {
+    case "playMusic":
+      handlePlayMusic(data);
+      break;
+    case "stopMusic":
+      handleStopMusic(data);
+      break;
+    case "syncMusic":
+      handleSyncMusic(data);
+      break;
+    case "setVolume":
+      handleSetVolume(data);
+      break;
+  }
+}
+function handlePlayMusic(data) {
+  const { path, name, actorName, volume = 0.5, currentTime = 0 } = data;
+  if (broadcastAudio) {
+    broadcastAudio.pause();
+    broadcastAudio.src = "";
+  }
+  broadcastAudio = new Audio(path);
+  broadcastAudio.volume = volume;
+  broadcastAudio.addEventListener("loadedmetadata", () => {
+    if (currentTime > 0) {
+      broadcastAudio.currentTime = currentTime;
+    }
+  }, { once: true });
+  const playPromise = broadcastAudio.play();
+  if (playPromise !== void 0) {
+    playPromise.then(() => {
+      ui.notifications.info(`🎵 Playing ${actorName}'s theme: ${name}`);
+    }).catch(() => {
+      new Dialog({
+        title: `🎵 ${actorName}'s Theme`,
+        content: `<p>Click play to hear <strong>${name}</strong></p>`,
+        buttons: {
+          play: {
+            icon: '<i class="fas fa-play"></i>',
+            label: "Play",
+            callback: () => {
+              broadcastAudio?.play().catch(() => {
+                ui.notifications.error(`Could not play audio: ${name}`);
+              });
+            }
+          },
+          skip: {
+            icon: '<i class="fas fa-times"></i>',
+            label: "Skip",
+            callback: () => {
+              if (broadcastAudio) {
+                broadcastAudio.src = "";
+                broadcastAudio = null;
+              }
+            }
+          }
+        },
+        default: "play"
+      }).render(true);
+    });
+  }
+  broadcastAudio.addEventListener("error", () => {
+    ui.notifications.error(`Failed to load ${actorName}'s theme: ${name}`);
+  });
+  broadcastAudio.addEventListener("ended", () => {
+    broadcastAudio = null;
+  });
+}
+function handleStopMusic(data) {
+  const { actorName } = data;
+  if (broadcastAudio) {
+    broadcastAudio.pause();
+    broadcastAudio.src = "";
+    broadcastAudio = null;
+    ui.notifications.info(`🎵 ${actorName}'s theme stopped`);
+  }
+}
+function handleSyncMusic(data) {
+  const { currentTime, isPlaying } = data;
+  if (!broadcastAudio) return;
+  if (Math.abs(broadcastAudio.currentTime - currentTime) > 2) {
+    broadcastAudio.currentTime = currentTime;
+  }
+  if (isPlaying && broadcastAudio.paused) {
+    broadcastAudio.play().catch(() => {
+    });
+  } else if (!isPlaying && !broadcastAudio.paused) {
+    broadcastAudio.pause();
+  }
+}
+function handleSetVolume(data) {
+  const { volume } = data;
+  if (broadcastAudio) {
+    broadcastAudio.volume = volume;
   }
 }
 function injectActorHeaderButtons(sheet, buttons) {

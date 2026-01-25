@@ -4,6 +4,7 @@
    /**
     * PortraitGalleryShell - Manage images for Actors or Items.
     * Uses TJSDocument for reactive document updates.
+    * Supports ownership permissions for images.
     */
    import { getContext } from 'svelte';
    import { ApplicationShell } from '#runtime/svelte/component/application';
@@ -25,9 +26,17 @@
    // Check document type
    $: isActor = doc?.documentName === 'Actor';
    $: isItem = doc?.documentName === 'Item';
+   $: isGM = game.user.isGM;
    
    // Default images
    const DEFAULT_IMG = 'icons/svg/mystery-man.svg';
+   
+   // Ownership levels
+   const OWNERSHIP_LEVELS = [
+      { value: 'all', label: 'Everyone' },
+      { value: 'owner', label: 'Owner Only' },
+      { value: 'gm', label: 'GM Only' }
+   ];
    
    // Reactive image paths
    $: currentImg = doc?.img ?? DEFAULT_IMG;
@@ -46,12 +55,27 @@
    $: tokens = savedData.tokens ?? [];
    $: currentList = activeTab === 'portraits' ? portraits : tokens;
    
-   // Filtered list
-   $: filteredList = currentList.filter(item => 
-      !searchFilter || 
-      item.name?.toLowerCase().includes(searchFilter.toLowerCase()) ||
-      item.path?.toLowerCase().includes(searchFilter.toLowerCase())
-   );
+   // Filter list based on search AND ownership permissions
+   $: filteredList = currentList.filter(item => {
+      // Search filter
+      const matchesSearch = !searchFilter || 
+         item.name?.toLowerCase().includes(searchFilter.toLowerCase()) ||
+         item.path?.toLowerCase().includes(searchFilter.toLowerCase());
+      
+      if (!matchesSearch) return false;
+      
+      // Ownership filter (GM sees all)
+      if (isGM) return true;
+      
+      const ownership = item.ownership ?? 'all';
+      if (ownership === 'all') return true;
+      if (ownership === 'gm') return false;
+      if (ownership === 'owner') {
+         // Check if user has owner permission on the document
+         return doc?.testUserPermission?.(game.user, 'OWNER') ?? false;
+      }
+      return true;
+   });
    
    // ============================================
    // IMAGE POPOUT
@@ -76,7 +100,7 @@
       await doc.update({ 'prototypeToken.texture.src': newSrc });
    }
    
-   async function saveToCategory(imagePath, category, name = '') {
+   async function saveToCategory(imagePath, category, name = '', ownership = 'all') {
       const data = doc.getFlag(MODULE_ID, 'gallery') ?? { portraits: [], tokens: [] };
       const list = data[category] ?? [];
       
@@ -85,9 +109,18 @@
       list.push({
          path: imagePath,
          name: name || imagePath.split('/').pop().replace(/\.[^/.]+$/, ''),
+         ownership,
          addedAt: Date.now()
       });
       
+      await doc.setFlag(MODULE_ID, 'gallery', { ...data, [category]: list });
+   }
+   
+   async function updateImageOwnership(imagePath, category, ownership) {
+      const data = doc.getFlag(MODULE_ID, 'gallery') ?? { portraits: [], tokens: [] };
+      const list = (data[category] ?? []).map(item => 
+         item.path === imagePath ? { ...item, ownership } : item
+      );
       await doc.setFlag(MODULE_ID, 'gallery', { ...data, [category]: list });
    }
    
@@ -230,6 +263,7 @@
                   {@const isCurrentPortrait = activeTab === 'portraits' && currentImg === item.path}
                   {@const isCurrentToken = activeTab === 'tokens' && currentToken === item.path}
                   {@const isCurrent = isCurrentPortrait || isCurrentToken}
+                  {@const itemOwnership = item.ownership ?? 'all'}
                   <div 
                      class="image-card"
                      class:is-current={isCurrent}
@@ -244,6 +278,13 @@
                      {#if isCurrent}
                         <div class="status-badge">
                            <i class="fas fa-check"></i>
+                        </div>
+                     {/if}
+                     
+                     <!-- Ownership indicator (visible only to GM if not 'all') -->
+                     {#if isGM && itemOwnership !== 'all'}
+                        <div class="ownership-badge" title="Visibility: {OWNERSHIP_LEVELS.find(o => o.value === itemOwnership)?.label}">
+                           <i class="fas fa-{itemOwnership === 'gm' ? 'eye-slash' : 'lock'}"></i>
                         </div>
                      {/if}
                      
@@ -266,6 +307,20 @@
                               >
                                  <i class="fas fa-arrow-right-arrow-left"></i>
                               </button>
+                           {/if}
+                           <!-- Ownership selector (GM only) -->
+                           {#if isGM}
+                              <select 
+                                 class="ownership-select"
+                                 value={itemOwnership}
+                                 on:click|stopPropagation
+                                 on:change|stopPropagation={(e) => updateImageOwnership(item.path, activeTab, e.target.value)}
+                                 title="Who can see this image"
+                              >
+                                 {#each OWNERSHIP_LEVELS as level}
+                                    <option value={level.value}>{level.label}</option>
+                                 {/each}
+                              </select>
                            {/if}
                            <button 
                               type="button" 
