@@ -237,15 +237,17 @@ if ($CreateGitHubRelease) {
         $ReleaseNotes = "Release v$version"
     }
     
-    # Create release and upload module.zip
+    # Create release and upload module.json AND module.zip
     try {
         Write-Host "Creating release v$version on GitHub..." -ForegroundColor Cyan
-        gh release create "v$version" \
-            "module.json#module.json" \
+        gh release create "v$version" `
+            --title "v$version" `
+            --notes "$ReleaseNotes" `
+            "module.json#module.json" `
             "$outputFile#module.zip"
         
         Write-Host "GitHub release v$version created successfully!" -ForegroundColor Green
-        Write-Host "Uploaded: module.zip" -ForegroundColor Green
+        Write-Host "Uploaded: module.json, module.zip" -ForegroundColor Green
         
         # Get release URL
         $repoUrl = git config --get remote.origin.url
