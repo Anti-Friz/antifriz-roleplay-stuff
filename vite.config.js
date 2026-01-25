@@ -1,5 +1,6 @@
 /* eslint-env node */
 import { svelte }             from '@sveltejs/vite-plugin-svelte';
+import tsconfigPaths          from 'vite-tsconfig-paths';
 
 import {
    postcssConfig,
@@ -65,17 +66,18 @@ export default ({ mode }) =>
          port: 30001,
          open: '/game',
          proxy: {
+            // Rewrite incoming `module-id.js` request from Foundry to the dev server `index.mjs`.
+            // MUST be before the general proxy rules!
+            [`/${s_PACKAGE_ID}/dist/${moduleJSON.id}.js`]: {
+               target: 'http://localhost:30001',
+               rewrite: () => `/${s_PACKAGE_ID}/dist/index.mjs`,
+            },
+
             // Serves static files from main Foundry server.
             [`^(/${s_PACKAGE_ID}/(assets|lang|packs|dist/${moduleJSON.id}.css))`]: 'http://localhost:30000',
 
             // All other paths besides package ID path are served from main Foundry server.
             [`^(?!/${s_PACKAGE_ID}/)`]: 'http://localhost:30000',
-
-            // Rewrite incoming `module-id.js` request from Foundry to the dev server `index.js`.
-            [`/${s_PACKAGE_ID}/dist/${moduleJSON.id}.js`]: {
-               target: `http://localhost:30001/${s_PACKAGE_ID}/dist`,
-               rewrite: () => '/index.js',
-            },
 
             // Enable socket.io from main Foundry server.
             '/socket.io': { target: 'ws://localhost:30000', ws: true }
@@ -91,7 +93,7 @@ export default ({ mode }) =>
          target: ['es2022'],
          terserOptions: s_COMPRESS ? { ...terserConfig(), ecma: 2022 } : void 0,
          lib: {
-            entry: './index.js',
+            entry: './index.mjs',
             formats: ['es'],
             fileName: moduleJSON.id
          },
@@ -115,7 +117,8 @@ export default ({ mode }) =>
          svelte({
             compilerOptions,
             preprocess: sveltePreprocess()
-         })
+         }),
+         tsconfigPaths()
       ]
    };
 };

@@ -1,0 +1,33 @@
+
+/**
+ * AntiFriz Roleplay Stuff - Main stylesheet
+ * 
+ * Uses Foundry VTT CSS variables for theme integration.
+ * Follows TyphonJS Runtime Library (TRL) patterns.
+ */
+
+// Import component styles
+@use 'components/shared';
+@use 'components/music-shell';
+@use 'components/gallery-shell';
+
+// Base module styles (applied to all module applications)
+.antifriz-roleplay-stuff {
+   // TRL focus styles
+   --tjs-default-outline-focus-visible: 2px solid var(--color-text-hyperlink, #7c3aed);
+   
+   // App content padding
+   --tjs-app-content-padding: 0.5rem;
+}
+
+// Application-specific overrides using TRL theme system
+#character-music-app,
+#portrait-gallery-app {
+   &.themed.theme-dark {
+      --tjs-app-content-background: linear-gradient(135deg, rgba(26, 26, 46, 0.95) 10%, rgba(18, 18, 26, 0.95) 90%);
+   }
+   
+   &.themed.theme-light {
+      --tjs-app-content-background: linear-gradient(135deg, rgba(248, 249, 250, 0.95) 10%, rgba(240, 240, 245, 0.95) 90%);
+   }
+}

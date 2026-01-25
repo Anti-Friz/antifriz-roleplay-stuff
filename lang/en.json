@@ -1,5 +1,27 @@
 {
-  "TemplateESM": {
-    "title": "Template Svelte (ESM)"
+  "antifriz-roleplay-stuff": {
+    "title": "AntiFriz Roleplay Stuff"
+  },
+  "SETTINGS": {
+    "showMusicButton": {
+      "Name": "Show Music Button (Actors)",
+      "Hint": "Show the Music button in Actor sheet header"
+    },
+    "showGalleryButton": {
+      "Name": "Show Gallery Button (Actors)",
+      "Hint": "Show the Gallery button in Actor sheet header"
+    },
+    "showItemMusicButton": {
+      "Name": "Show Music Button (Items)",
+      "Hint": "Show the Music button in Item sheet header"
+    },
+    "showItemGalleryButton": {
+      "Name": "Show Gallery Button (Items)",
+      "Hint": "Show the Gallery button in Item sheet header"
+    },
+    "debugMode": {
+      "Name": "Debug Mode",
+      "Hint": "Enable debug logging to the browser console"
+    }
   }
 }

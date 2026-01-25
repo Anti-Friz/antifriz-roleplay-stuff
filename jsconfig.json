@@ -1,9 +1,18 @@
 {
-  "compilerOptions" : {
+  "compilerOptions": {
     "lib": ["ES2022", "DOM"],
     "module": "ES2022",
-    "moduleResolution" : "Bundler",
-    "target": "ES2022"
+    "moduleResolution": "bundler",
+    "target": "ES2022",
+    "baseUrl": ".",
+    "paths": {
+      "#applications": [ "src/apps/_module.mjs" ],
+      "#config": [ "src/config/_module.mjs" ],
+      "#hooks": [ "src/hooks/_module.mjs" ],
+      "#utils": [ "src/utils/_module.mjs" ],
+      "#view": [ "src/view/_module.mjs" ]
+    }
   },
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules"],
+  "include": ["src/**/*"]
 }

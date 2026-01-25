@@ -2,11 +2,11 @@
   "id": "antifriz-roleplay-stuff",
   "title": "AntiFriz roleplay stuff",
   "description": "Cool ideas for roleplay.",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "authors": [
     {
       "name": "AntiFriz",
-      "url": "YOUR URL HERE"
+      "url": "https://github.com/Anti-Friz/antifriz-roleplay-stuff"
     }
   ],
   "compatibility": {
@@ -14,10 +14,10 @@
     "verified": "13"
   },
   "esmodules": [
-    "dist/template-svelte-esm.js"
+    "dist/antifriz-roleplay-stuff.js"
   ],
   "styles": [
-    "dist/template-svelte-esm.css"
+    "dist/antifriz-roleplay-stuff.css"
   ],
   "flags": {
     "hotReload": {
@@ -32,13 +32,13 @@
       "path": "lang/en.json"
     }
   ],
-  "socket": false,
-  "url": "https://github.com/typhonjs-fvtt-demo/template-svelte-esm",
-  "readme": "https://github.com/typhonjs-fvtt-demo/template-svelte-esm/blob/master/README.md",
-  "bugs": "https://github.com/typhonjs-fvtt-demo/template-svelte-esm/issues",
-  "changelog": "https://github.com/typhonjs-fvtt-demo/template-svelte-esm/releases/latest/",
-  "manifest": "https://github.com/typhonjs-fvtt-demo/template-svelte-esm/releases/latest/download/module.json",
-  "download": "https://github.com/typhonjs-fvtt-demo/template-svelte-esm/releases/download/0.0.0/module.zip",
+  "socket": true,
+  "url": "https://github.com/Anti-Friz/antifriz-roleplay-stuff",
+  "readme": "https://github.com/Anti-Friz/antifriz-roleplay-stuff/blob/master/README.md",
+  "bugs": "https://github.com/Anti-Friz/antifriz-roleplay-stuff/issues",
+  "changelog": "https://github.com/Anti-Friz/antifriz-roleplay-stuff/releases/latest/",
+  "manifest": "https://github.com/Anti-Friz/antifriz-roleplay-stuff/releases/latest/download/module.json",
+  "download": "https://github.com/Anti-Friz/antifriz-roleplay-stuff/releases/download/0.0.0/module.zip",
   "protected": false,
   "coreTranslation": false,
   "library": false

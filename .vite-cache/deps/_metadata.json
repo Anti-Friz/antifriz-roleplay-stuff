@@ -1,0 +1,124 @@
+{
+  "hash": "eb370db8",
+  "configHash": "4e4bf91b",
+  "lockfileHash": "b386cd25",
+  "browserHash": "7b10910d",
+  "optimized": {
+    "svelte/animate": {
+      "src": "../../node_modules/svelte/src/runtime/animate/index.js",
+      "file": "svelte_animate.js",
+      "fileHash": "b2cfa411",
+      "needsInterop": false
+    },
+    "svelte/easing": {
+      "src": "../../node_modules/svelte/src/runtime/easing/index.js",
+      "file": "svelte_easing.js",
+      "fileHash": "ccc4f53d",
+      "needsInterop": false
+    },
+    "svelte/internal": {
+      "src": "../../node_modules/svelte/src/runtime/internal/index.js",
+      "file": "svelte_internal.js",
+      "fileHash": "b261c3d7",
+      "needsInterop": false
+    },
+    "svelte/internal/disclose-version": {
+      "src": "../../node_modules/svelte/src/runtime/internal/disclose-version/index.js",
+      "file": "svelte_internal_disclose-version.js",
+      "fileHash": "a9f8e902",
+      "needsInterop": false
+    },
+    "svelte/motion": {
+      "src": "../../node_modules/svelte/src/runtime/motion/index.js",
+      "file": "svelte_motion.js",
+      "fileHash": "2155ae65",
+      "needsInterop": false
+    },
+    "svelte/store": {
+      "src": "../../node_modules/svelte/src/runtime/store/index.js",
+      "file": "svelte_store.js",
+      "fileHash": "ce970e71",
+      "needsInterop": false
+    },
+    "svelte/transition": {
+      "src": "../../node_modules/svelte/src/runtime/transition/index.js",
+      "file": "svelte_transition.js",
+      "fileHash": "74b361c0",
+      "needsInterop": false
+    },
+    "svelte": {
+      "src": "../../node_modules/svelte/src/runtime/index.js",
+      "file": "svelte.js",
+      "fileHash": "c36c6c36",
+      "needsInterop": false
+    },
+    "@typhonjs-fvtt/runtime/svelte/store/fvtt/settings": {
+      "src": "../../node_modules/@typhonjs-fvtt/runtime/_dist/svelte/store/fvtt/settings/index.js",
+      "file": "@typhonjs-fvtt_runtime_svelte_store_fvtt_settings.js",
+      "fileHash": "1ee9b2a2",
+      "needsInterop": false
+    },
+    "@typhonjs-fvtt/runtime/svelte/application": {
+      "src": "../../node_modules/@typhonjs-fvtt/runtime/_dist/svelte/application/index.js",
+      "file": "@typhonjs-fvtt_runtime_svelte_application.js",
+      "fileHash": "42a3ced3",
+      "needsInterop": false
+    },
+    "@typhonjs-fvtt/runtime/util/object": {
+      "src": "../../node_modules/@typhonjs-fvtt/runtime/_dist/util/object/index.js",
+      "file": "@typhonjs-fvtt_runtime_util_object.js",
+      "fileHash": "079d1659",
+      "needsInterop": false
+    },
+    "@typhonjs-fvtt/runtime/svelte/component/application": {
+      "src": "../../node_modules/@typhonjs-fvtt/runtime/_dist/svelte/component/application/index.js",
+      "file": "@typhonjs-fvtt_runtime_svelte_component_application.js",
+      "fileHash": "0bc7e73e",
+      "needsInterop": false
+    },
+    "@typhonjs-fvtt/runtime/svelte/store/fvtt/document": {
+      "src": "../../node_modules/@typhonjs-fvtt/runtime/_dist/svelte/store/fvtt/document/index.js",
+      "file": "@typhonjs-fvtt_runtime_svelte_store_fvtt_document.js",
+      "fileHash": "4f504ada",
+      "needsInterop": false
+    }
+  },
+  "chunks": {
+    "chunk-DU6DBNUI": {
+      "file": "chunk-DU6DBNUI.js"
+    },
+    "chunk-C4DBGOHH": {
+      "file": "chunk-C4DBGOHH.js"
+    },
+    "chunk-MC3UIZRO": {
+      "file": "chunk-MC3UIZRO.js"
+    },
+    "chunk-LEKLXXTZ": {
+      "file": "chunk-LEKLXXTZ.js"
+    },
+    "chunk-X7HCJ7ZS": {
+      "file": "chunk-X7HCJ7ZS.js"
+    },
+    "chunk-3FJTWSRM": {
+      "file": "chunk-3FJTWSRM.js"
+    },
+    "chunk-M2FRMPL5": {
+      "file": "chunk-M2FRMPL5.js"
+    },
+    "chunk-KPMOB2R4": {
+      "file": "chunk-KPMOB2R4.js"
+    },
+    "chunk-WSHISOYD": {
+      "file": "chunk-WSHISOYD.js"
+    },
+    "chunk-GBPX7F5N": {
+      "file": "chunk-GBPX7F5N.js"
+    },
+    "chunk-CVMU2DPX": {
+      "file": "chunk-CVMU2DPX.js"
+    },
+    "chunk-PZ5AY32C": {
+      "file": "chunk-PZ5AY32C.js"
+    }
+  }
+}
