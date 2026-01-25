@@ -20,13 +20,21 @@ Hooks.once('ready', async function () {
    console.log(`${LOG_PREFIX} | Ready`);
 });
 
-// Add buttons to Actor sheets
+// ========================================
+// AppV1 Header Buttons (Legacy / v12 and prior)
+// ========================================
 Hooks.on('getActorSheetHeaderButtons', (sheet, buttons) => {
    utils.injectActorHeaderButtons(sheet, buttons);
 });
 
-// Add buttons to Item sheets
 Hooks.on('getItemSheetHeaderButtons', (sheet, buttons) => {
    utils.injectItemHeaderButtons(sheet, buttons);
+});
+
+// ========================================
+// AppV2 Header Buttons (Foundry v12+ DocumentSheetV2)
+// ========================================
+Hooks.on('renderDocumentSheetV2', (app, el) => {
+   utils.injectDocumentSheetV2Buttons(app, el);
 });
 

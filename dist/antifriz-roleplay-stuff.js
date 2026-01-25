@@ -25139,6 +25139,49 @@ function injectItemHeaderButtons(sheet, buttons) {
     });
   }
 }
+function injectDocumentSheetV2Buttons(app, el) {
+  if (!(app instanceof foundry.applications.api.ApplicationV2)) return;
+  const doc = app.document;
+  if (!doc) return;
+  const isActor = doc instanceof Actor;
+  const isItem = doc instanceof Item;
+  if (!isActor && !isItem) return;
+  const showGallery = isActor ? game.settings.get(MODULE_ID, "showGalleryButton") : game.settings.get(MODULE_ID, "showItemGalleryButton");
+  const showMusic = isActor ? game.settings.get(MODULE_ID, "showMusicButton") : game.settings.get(MODULE_ID, "showItemMusicButton");
+  if (!showGallery && !showMusic) return;
+  let html = el;
+  if (html instanceof jQuery) html = html[0];
+  const header = html.querySelector("header.window-header");
+  if (!header) return;
+  const refElement = header.querySelector('button[data-action="copyUuid"]') || header.querySelector('button[data-action="close"]') || header.querySelector(".window-title");
+  if (!refElement) return;
+  if (showMusic && !header.querySelector('button[data-action="antifriz-music"]')) {
+    const musicBtn = document.createElement("button");
+    musicBtn.type = "button";
+    musicBtn.dataset.action = "antifriz-music";
+    musicBtn.dataset.tooltip = "Music";
+    musicBtn.classList.add("header-control", "fas", "fa-music", "icon");
+    musicBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      CharacterMusicApp.open(doc);
+    });
+    refElement.before(musicBtn);
+  }
+  if (showGallery && !header.querySelector('button[data-action="antifriz-gallery"]')) {
+    const galleryBtn = document.createElement("button");
+    galleryBtn.type = "button";
+    galleryBtn.dataset.action = "antifriz-gallery";
+    galleryBtn.dataset.tooltip = "Gallery";
+    galleryBtn.classList.add("header-control", "fas", "fa-photo-film", "icon");
+    galleryBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      PortraitGalleryApp.open(doc);
+    });
+    refElement.before(galleryBtn);
+  }
+}
 const LOG_PREFIX = constants.moduleLabel;
 Hooks.once("init", async function() {
   registerSettings();
@@ -25152,5 +25195,8 @@ Hooks.on("getActorSheetHeaderButtons", (sheet, buttons) => {
 });
 Hooks.on("getItemSheetHeaderButtons", (sheet, buttons) => {
   injectItemHeaderButtons(sheet, buttons);
+});
+Hooks.on("renderDocumentSheetV2", (app, el) => {
+  injectDocumentSheetV2Buttons(app, el);
 });
 //# sourceMappingURL=antifriz-roleplay-stuff.js.map
