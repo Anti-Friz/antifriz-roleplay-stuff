@@ -30,6 +30,7 @@
   "scripts": {
     "build": "vite build",
     "dev": "vite",
-    "eslint": "eslint ."
+    "eslint": "eslint .",
+    "pkg": "npm run build && powershell -ExecutionPolicy Bypass -File ./scripts/build-release.ps1"
   }
 }
