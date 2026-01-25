@@ -576,7 +576,7 @@
 }
 .antifriz-roleplay-stuff.portrait-app .image-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
   gap: var(--ars-gap-md);
 }
 .antifriz-roleplay-stuff.portrait-app .empty-state {
@@ -953,6 +953,197 @@
 }
 .icon-picker-dropdown .icon-manual input::placeholder {
   color: var(--color-text-dark-secondary, #888);
+}
+
+/**
+ * Styles for PermissionPicker component
+ * Global styles because dropdown is portaled to body
+ */
+.permission-picker {
+  display: inline-flex;
+}
+.permission-picker .permission-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  color: white;
+  font-size: 0.6875rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.permission-picker .permission-btn:hover, .permission-picker .permission-btn.active {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+.permission-picker .permission-btn .label {
+  max-width: 5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.permission-picker .permission-btn .fa-caret-down {
+  font-size: 0.5rem;
+  opacity: 0.7;
+}
+.permission-picker.compact .permission-btn {
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  justify-content: center;
+}
+
+.permission-dropdown {
+  min-width: 160px;
+  background: var(--color-bg-option, #2a2a3e);
+  border: 1px solid var(--color-border-light-tertiary, #4a4a5a);
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+}
+.permission-dropdown .options-list {
+  display: flex;
+  flex-direction: column;
+}
+.permission-dropdown .option-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: transparent;
+  border: none;
+  color: var(--color-text-dark-primary, #eee);
+  font-size: 0.8125rem;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.1s;
+}
+.permission-dropdown .option-item i:first-child {
+  width: 1rem;
+  text-align: center;
+  color: var(--color-text-dark-secondary, #aaa);
+}
+.permission-dropdown .option-item span {
+  flex: 1;
+}
+.permission-dropdown .option-item .check-mark {
+  color: #7c3aed;
+  font-size: 0.75rem;
+}
+.permission-dropdown .option-item:hover {
+  background: rgba(124, 58, 237, 0.15);
+}
+.permission-dropdown .option-item.selected {
+  background: rgba(124, 58, 237, 0.1);
+}
+.permission-dropdown .user-picker {
+  display: flex;
+  flex-direction: column;
+  max-height: 300px;
+}
+.permission-dropdown .picker-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--color-border-light-tertiary, #4a4a5a);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-text-dark-primary, #eee);
+}
+.permission-dropdown .back-btn {
+  width: 1.5rem;
+  height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--color-text-dark-secondary, #aaa);
+  cursor: pointer;
+  border-radius: 3px;
+}
+.permission-dropdown .back-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-text-dark-primary, #eee);
+}
+.permission-dropdown .users-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.375rem 0;
+}
+.permission-dropdown .user-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.permission-dropdown .user-item:hover {
+  background: rgba(124, 58, 237, 0.1);
+}
+.permission-dropdown .user-item input[type=checkbox] {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  cursor: pointer;
+  accent-color: #7c3aed;
+}
+.permission-dropdown .user-item .user-avatar {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--color-bg-btn, #3a3a4e);
+}
+.permission-dropdown .user-item .user-name {
+  flex: 1;
+  font-size: 0.8125rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.permission-dropdown .user-item .online-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  background: #22c55e;
+  border-radius: 50%;
+}
+.permission-dropdown .no-players {
+  padding: 1rem;
+  text-align: center;
+  color: var(--color-text-dark-secondary, #888);
+  font-size: 0.8125rem;
+}
+.permission-dropdown .picker-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  border-top: 1px solid var(--color-border-light-tertiary, #4a4a5a);
+  background: rgba(0, 0, 0, 0.1);
+}
+.permission-dropdown .selected-count {
+  font-size: 0.75rem;
+  color: var(--color-text-dark-secondary, #aaa);
+}
+.permission-dropdown .apply-btn {
+  padding: 0.375rem 0.75rem;
+  background: #7c3aed;
+  border: none;
+  border-radius: 3px;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+.permission-dropdown .apply-btn:hover {
+  filter: brightness(1.1);
 }
 
 .antifriz-roleplay-stuff {

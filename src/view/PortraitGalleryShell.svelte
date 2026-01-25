@@ -9,6 +9,8 @@
    import { getContext } from 'svelte';
    import { ApplicationShell } from '#runtime/svelte/component/application';
    import { MODULE_ID } from '#config';
+   import { canUserSee, normalizePermission, getPermissionLabel, getPermissionIcon, PERMISSION_TYPES } from '#utils';
+   import PermissionPicker from './components/PermissionPicker.svelte';
    
    // Required for TRL ApplicationShell
    export let elementRoot = void 0;
@@ -30,13 +32,6 @@
    
    // Default images
    const DEFAULT_IMG = 'icons/svg/mystery-man.svg';
-   
-   // Ownership levels
-   const OWNERSHIP_LEVELS = [
-      { value: 'all', label: 'Everyone' },
-      { value: 'owner', label: 'Owner Only' },
-      { value: 'gm', label: 'GM Only' }
-   ];
    
    // Reactive image paths
    $: currentImg = doc?.img ?? DEFAULT_IMG;
@@ -64,17 +59,8 @@
       
       if (!matchesSearch) return false;
       
-      // Ownership filter (GM sees all)
-      if (isGM) return true;
-      
-      const ownership = item.ownership ?? 'all';
-      if (ownership === 'all') return true;
-      if (ownership === 'gm') return false;
-      if (ownership === 'owner') {
-         // Check if user has owner permission on the document
-         return doc?.testUserPermission?.(game.user, 'OWNER') ?? false;
-      }
-      return true;
+      // Ownership filter using centralized permission system
+      return canUserSee(item.ownership, game.user, doc);
    });
    
    // ============================================
@@ -263,7 +249,7 @@
                   {@const isCurrentPortrait = activeTab === 'portraits' && currentImg === item.path}
                   {@const isCurrentToken = activeTab === 'tokens' && currentToken === item.path}
                   {@const isCurrent = isCurrentPortrait || isCurrentToken}
-                  {@const itemOwnership = item.ownership ?? 'all'}
+                  {@const itemPermission = normalizePermission(item.ownership)}
                   <div 
                      class="image-card"
                      class:is-current={isCurrent}
@@ -282,9 +268,9 @@
                      {/if}
                      
                      <!-- Ownership indicator (visible only to GM if not 'all') -->
-                     {#if isGM && itemOwnership !== 'all'}
-                        <div class="ownership-badge" title="Visibility: {OWNERSHIP_LEVELS.find(o => o.value === itemOwnership)?.label}">
-                           <i class="fas fa-{itemOwnership === 'gm' ? 'eye-slash' : 'lock'}"></i>
+                     {#if isGM && itemPermission.type !== PERMISSION_TYPES.ALL}
+                        <div class="ownership-badge" title="Visibility: {getPermissionLabel(item.ownership)}">
+                           <i class="fas {getPermissionIcon(item.ownership)}"></i>
                         </div>
                      {/if}
                      
@@ -310,17 +296,13 @@
                            {/if}
                            <!-- Ownership selector (GM only) -->
                            {#if isGM}
-                              <select 
-                                 class="ownership-select"
-                                 value={itemOwnership}
-                                 on:click|stopPropagation
-                                 on:change|stopPropagation={(e) => updateImageOwnership(item.path, activeTab, e.target.value)}
-                                 title="Who can see this image"
-                              >
-                                 {#each OWNERSHIP_LEVELS as level}
-                                    <option value={level.value}>{level.label}</option>
-                                 {/each}
-                              </select>
+                              <div on:click|stopPropagation on:keydown|stopPropagation role="presentation">
+                                 <PermissionPicker 
+                                    value={item.ownership}
+                                    compact={true}
+                                    on:change={(e) => updateImageOwnership(item.path, activeTab, e.detail)}
+                                 />
+                              </div>
                            {/if}
                            <button 
                               type="button" 

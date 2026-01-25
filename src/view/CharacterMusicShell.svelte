@@ -8,6 +8,8 @@
    import { getContext, onMount, onDestroy } from 'svelte';
    import { ApplicationShell } from '#runtime/svelte/component/application';
    import { MODULE_ID } from '#config';
+   import { canUserSee, normalizePermission, getPermissionLabel, PERMISSION_TYPES } from '#utils';
+   import PermissionPicker from './components/PermissionPicker.svelte';
    
    export let elementRoot = void 0;
    export let tjsDoc = null;
@@ -27,6 +29,10 @@
    }
    
    $: currentTrack = tracks.find(t => t.id === currentTrackId);
+   
+   // Filter tracks based on permissions (GM sees all)
+   $: visibleTracks = tracks.filter(t => canUserSee(t.ownership, game.user, doc));
+
    
    // Audio state
    let audioElement = null;
@@ -56,14 +62,15 @@
    $: categoryIds = new Set(categories.map(c => c.id));
    
    // Group tracks by category, putting invalid categories in "Uncategorized"
+   // Uses visibleTracks (filtered by permissions) instead of all tracks
    $: groupedTracks = (() => {
       const groups = categories.map(cat => ({
          ...cat,
-         tracks: tracks.filter(t => (t.category || 'theme') === cat.id)
+         tracks: visibleTracks.filter(t => (t.category || 'theme') === cat.id)
       })).filter(g => g.tracks.length > 0);
       
       // Find tracks with invalid categories
-      const uncategorizedTracks = tracks.filter(t => {
+      const uncategorizedTracks = visibleTracks.filter(t => {
          const trackCat = t.category || 'theme';
          return !categoryIds.has(trackCat);
       });
@@ -170,6 +177,13 @@
          tracks.map(t => t.id === track.id ? { ...t, category } : t)
       );
    }
+   
+   async function setTrackOwnership(track, ownership) {
+      await doc.setFlag(MODULE_ID, 'music.tracks',
+         tracks.map(t => t.id === track.id ? { ...t, ownership } : t)
+      );
+   }
+   
    
    // ============================================
    // PLAYBACK CONTROLS
@@ -346,11 +360,16 @@
       
       <!-- Track List -->
       <div class="track-list">
-         {#if tracks.length === 0}
+         {#if visibleTracks.length === 0}
             <div class="empty-state">
                <i class="fas fa-music fa-3x"></i>
-               <p>No tracks added yet</p>
-               <p class="hint">Click + to add character music</p>
+               {#if tracks.length === 0}
+                  <p>No tracks added yet</p>
+                  <p class="hint">Click + to add character music</p>
+               {:else}
+                  <p>No tracks visible</p>
+                  <p class="hint">All tracks are hidden from you</p>
+               {/if}
             </div>
          {:else}
             {#each groupedTracks as group}
@@ -412,8 +431,14 @@
                               {/each}
                            </select>
                            
-                           
                            {#if isGM}
+                              <!-- Permission picker -->
+                              <PermissionPicker 
+                                 value={track.ownership}
+                                 compact={true}
+                                 on:change={(e) => setTrackOwnership(track, e.detail)}
+                              />
+                              
                               <!-- Broadcast dropdown (with toggle for current track) -->
                               <div class="broadcast-dropdown">
                                  <button 

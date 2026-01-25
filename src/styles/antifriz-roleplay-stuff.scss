@@ -1,5 +1,6 @@
 
 
+
 /**
  * AntiFriz Roleplay Stuff - Main stylesheet
  * 
@@ -12,6 +13,7 @@
 @use 'components/music-shell';
 @use 'components/gallery-shell';
 @use 'components/categories-shell';
+@use 'components/permission-picker';
 
 // Base module styles (applied to all module applications)
 .antifriz-roleplay-stuff {
