@@ -31,6 +31,7 @@
     "build": "vite build",
     "dev": "vite",
     "eslint": "eslint .",
-    "pkg": "npm run build && powershell -ExecutionPolicy Bypass -File ./scripts/build-release.ps1"
+    "pkg": "npm run build && powershell -ExecutionPolicy Bypass -File ./scripts/build-release.ps1",
+    "rls": "npm run build && powershell -ExecutionPolicy Bypass -File ./scripts/build-release.ps1 -CreateGitHubRelease"
   }
 }
