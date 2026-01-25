@@ -7,6 +7,11 @@ import { MODULE_ID } from '#config';
 let broadcastAudio = null;
 
 /**
+ * Error handler reference (to remove before stopping)
+ */
+let audioErrorHandler = null;
+
+/**
  * Register socket listeners for the module
  */
 export function registerSocketListeners() {
@@ -30,8 +35,14 @@ function handleSocketMessage(message) {
       case 'playMusic':
          handlePlayMusic(data);
          break;
+      case 'pauseMusic':
+         handlePauseMusic(data);
+         break;
       case 'stopMusic':
          handleStopMusic(data);
+         break;
+      case 'seekMusic':
+         handleSeekMusic(data);
          break;
       case 'syncMusic':
          handleSyncMusic(data);
@@ -43,17 +54,30 @@ function handleSocketMessage(message) {
 }
 
 /**
+ * Clean up current broadcast audio
+ */
+function cleanupBroadcastAudio() {
+   if (broadcastAudio) {
+      // Remove error handler before setting src to empty
+      if (audioErrorHandler) {
+         broadcastAudio.removeEventListener('error', audioErrorHandler);
+         audioErrorHandler = null;
+      }
+      broadcastAudio.pause();
+      broadcastAudio.src = '';
+      broadcastAudio = null;
+   }
+}
+
+/**
  * Handle play music command from GM
  * @param {object} data - Music data
  */
 function handlePlayMusic(data) {
    const { path, name, actorName, volume = 0.5, currentTime = 0 } = data;
    
-   // Stop any currently playing broadcast audio
-   if (broadcastAudio) {
-      broadcastAudio.pause();
-      broadcastAudio.src = '';
-   }
+   // Clean up any currently playing broadcast audio
+   cleanupBroadcastAudio();
    
    // Create new audio element
    broadcastAudio = new Audio(path);
@@ -93,10 +117,7 @@ function handlePlayMusic(data) {
                      icon: '<i class="fas fa-times"></i>',
                      label: 'Skip',
                      callback: () => {
-                        if (broadcastAudio) {
-                           broadcastAudio.src = '';
-                           broadcastAudio = null;
-                        }
+                        cleanupBroadcastAudio();
                      }
                   }
                },
@@ -105,13 +126,25 @@ function handlePlayMusic(data) {
          });
    }
    
-   broadcastAudio.addEventListener('error', () => {
+   // Store error handler reference so we can remove it later
+   audioErrorHandler = () => {
       ui.notifications.error(`Failed to load ${actorName}'s theme: ${name}`);
-   });
+   };
+   broadcastAudio.addEventListener('error', audioErrorHandler);
    
    broadcastAudio.addEventListener('ended', () => {
-      broadcastAudio = null;
+      cleanupBroadcastAudio();
    });
+}
+
+/**
+ * Handle pause music command from GM
+ * @param {object} data - Pause data
+ */
+function handlePauseMusic(data) {
+   if (broadcastAudio && !broadcastAudio.paused) {
+      broadcastAudio.pause();
+   }
 }
 
 /**
@@ -122,10 +155,22 @@ function handleStopMusic(data) {
    const { actorName } = data;
    
    if (broadcastAudio) {
-      broadcastAudio.pause();
-      broadcastAudio.src = '';
-      broadcastAudio = null;
-      ui.notifications.info(`🎵 ${actorName}'s theme stopped`);
+      cleanupBroadcastAudio();
+      if (actorName) {
+         ui.notifications.info(`🎵 ${actorName}'s theme stopped`);
+      }
+   }
+}
+
+/**
+ * Handle seek music command from GM
+ * @param {object} data - Seek data
+ */
+function handleSeekMusic(data) {
+   const { currentTime } = data;
+   
+   if (broadcastAudio && currentTime !== undefined) {
+      broadcastAudio.currentTime = currentTime;
    }
 }
 

@@ -7,33 +7,41 @@
 /**
  * Shared CSS variables for AntiFriz Roleplay Stuff module.
  * Uses Foundry VTT CSS variables where possible for theme integration.
+ * 
+ * Usage: All module styles should use --ars-* variables for consistency.
+ * These automatically adapt to Foundry's light/dark theme.
  */
 .antifriz-roleplay-stuff {
   --ars-bg-primary: var(--color-bg-option, #1a1a2e);
   --ars-bg-secondary: var(--color-bg-option-hover, #2a2a4a);
   --ars-bg-hover: var(--color-bg-highlight, rgba(255, 255, 255, 0.1));
   --ars-bg-input: var(--color-bg-input, rgba(0, 0, 0, 0.3));
+  --ars-bg-btn: var(--color-bg-btn, #3a3a4e);
   --ars-text-primary: var(--color-text-primary, #e0e0e0);
-  --ars-text-secondary: var(--color-text-secondary, #888);
+  --ars-text-secondary: var(--color-text-dark-secondary, #888);
   --ars-text-hyperlink: var(--color-text-hyperlink, #7c3aed);
-  --ars-border-color: var(--color-border-highlight, #3a3a5a);
+  --ars-border-color: var(--color-border-light-tertiary, #3a3a5a);
   --ars-border-radius: var(--border-radius, 4px);
-  --ars-accent: var(--color-text-hyperlink, #7c3aed);
-  --ars-accent-hover: var(--color-text-hyperlink-hover, #6d28d9);
+  --ars-accent: #7c3aed;
+  --ars-accent-hover: #6d28d9;
   --ars-success: #22c55e;
   --ars-danger: #ef4444;
+  --ars-warning: #f59e0b;
   --ars-overlay-border: 1px solid var(--ars-border-color);
   --ars-overlay-border-radius: var(--ars-border-radius);
   --ars-overlay-padding: 0.5rem;
   --ars-overlay-background: var(--color-bg-option, rgba(0, 0, 0, 0.2));
+  --ars-gap-xs: 0.125rem;
   --ars-gap-sm: 0.25rem;
   --ars-gap-md: 0.5rem;
   --ars-gap-lg: 1rem;
+  --ars-gap-xl: 1.5rem;
   --ars-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
   --ars-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3);
   --ars-shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.4);
   --ars-transition-fast: 0.15s ease;
   --ars-transition-normal: 0.25s ease;
+  --ars-transition-slow: 0.35s ease;
   --tjs-default-outline-focus-visible: 2px solid var(--ars-accent);
 }
 
@@ -90,7 +98,7 @@
 .antifriz-roleplay-stuff.music-app .header-controls {
   display: flex;
   align-items: center;
-  gap: var(--ars-gap-md);
+  gap: var(--ars-gap-sm);
 }
 .antifriz-roleplay-stuff.music-app .volume-control {
   display: flex;
@@ -98,13 +106,13 @@
   gap: var(--ars-gap-sm);
 }
 .antifriz-roleplay-stuff.music-app .volume-control i {
-  font-size: 0.75rem;
+  font-size: 0.625rem;
   color: var(--ars-text-secondary);
-  width: 1rem;
+  width: 0.875rem;
   text-align: center;
 }
 .antifriz-roleplay-stuff.music-app .volume-control input[type=range] {
-  width: 4rem;
+  width: 3rem;
   height: 0.25rem;
   -webkit-appearance: none;
   background: var(--ars-bg-hover);
@@ -113,11 +121,107 @@
 }
 .antifriz-roleplay-stuff.music-app .volume-control input[type=range]::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 0.75rem;
-  height: 0.75rem;
+  width: 0.625rem;
+  height: 0.625rem;
   background: var(--ars-accent);
   border-radius: 50%;
   cursor: pointer;
+}
+.antifriz-roleplay-stuff.music-app .volume-control.player-volume i {
+  color: var(--ars-success);
+}
+.antifriz-roleplay-stuff.music-app .volume-control.player-volume input[type=range]::-webkit-slider-thumb {
+  background: var(--ars-success);
+}
+.antifriz-roleplay-stuff.music-app .broadcast-selector {
+  position: relative;
+}
+.antifriz-roleplay-stuff.music-app .broadcast-selector .broadcast-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--ars-gap-sm);
+  padding: 0.25rem 0.5rem;
+  background: var(--ars-bg-secondary);
+  border: var(--ars-overlay-border);
+  border-radius: var(--ars-border-radius);
+  color: var(--ars-text-secondary);
+  font-size: 0.625rem;
+  cursor: pointer;
+  transition: all var(--ars-transition-fast);
+}
+.antifriz-roleplay-stuff.music-app .broadcast-selector .broadcast-toggle:hover {
+  background: var(--ars-bg-hover);
+  color: var(--ars-text-primary);
+}
+.antifriz-roleplay-stuff.music-app .broadcast-selector .broadcast-toggle.active {
+  background: rgba(34, 197, 94, 0.2);
+  border-color: var(--ars-success);
+  color: var(--ars-success);
+}
+.antifriz-roleplay-stuff.music-app .broadcast-selector .broadcast-toggle .broadcast-badge {
+  font-size: 0.5rem;
+  background: var(--ars-success);
+  color: white;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.125rem;
+  white-space: nowrap;
+}
+.antifriz-roleplay-stuff.music-app .broadcast-selector .broadcast-dropdown-menu {
+  display: none;
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.25rem;
+  min-width: 140px;
+  background: var(--ars-bg-secondary);
+  border: var(--ars-overlay-border);
+  border-radius: var(--ars-border-radius);
+  box-shadow: var(--ars-shadow-md);
+  z-index: 100;
+  overflow: hidden;
+}
+.antifriz-roleplay-stuff.music-app .broadcast-selector .broadcast-dropdown-menu button {
+  display: flex;
+  align-items: center;
+  gap: var(--ars-gap-sm);
+  width: 100%;
+  padding: 0.375rem 0.5rem;
+  background: transparent;
+  border: none;
+  color: var(--ars-text-primary);
+  font-size: 0.6875rem;
+  cursor: pointer;
+  text-align: left;
+}
+.antifriz-roleplay-stuff.music-app .broadcast-selector .broadcast-dropdown-menu button i {
+  width: 1rem;
+  text-align: center;
+  color: var(--ars-text-secondary);
+}
+.antifriz-roleplay-stuff.music-app .broadcast-selector .broadcast-dropdown-menu button:hover {
+  background: var(--ars-bg-hover);
+}
+.antifriz-roleplay-stuff.music-app .broadcast-selector .broadcast-dropdown-menu button.selected {
+  background: rgba(34, 197, 94, 0.1);
+}
+.antifriz-roleplay-stuff.music-app .broadcast-selector .broadcast-dropdown-menu button.selected i {
+  color: var(--ars-success);
+}
+.antifriz-roleplay-stuff.music-app .broadcast-selector .broadcast-dropdown-menu .dropdown-divider {
+  height: 1px;
+  background: var(--ars-border-color);
+  margin: 0.25rem 0;
+}
+.antifriz-roleplay-stuff.music-app .broadcast-selector .broadcast-dropdown-menu .no-players {
+  display: block;
+  padding: 0.5rem;
+  color: var(--ars-text-secondary);
+  font-size: 0.625rem;
+  font-style: italic;
+  text-align: center;
+}
+.antifriz-roleplay-stuff.music-app .broadcast-selector.open .broadcast-dropdown-menu {
+  display: block;
 }
 .antifriz-roleplay-stuff.music-app .add-btn {
   width: 1.75rem;

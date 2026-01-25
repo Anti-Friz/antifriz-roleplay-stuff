@@ -1,5 +1,5 @@
 import { TJSGameSettings } from '#runtime/svelte/store/fvtt/settings';
-import { MODULE_ID } from '#config';
+import { MODULE_ID, DEFAULT_MUSIC_CATEGORIES } from '#config';
 import { MusicCategoriesApp } from '#applications';
 
 /**
@@ -7,16 +7,6 @@ import { MusicCategoriesApp } from '#applications';
  * @type {TJSGameSettings}
  */
 export const AFSettings = new TJSGameSettings(MODULE_ID);
-
-/**
- * Default music categories
- */
-export const DEFAULT_MUSIC_CATEGORIES = [
-   { id: 'theme', label: 'Theme', icon: 'fa-music' },
-   { id: 'combat', label: 'Combat', icon: 'fa-swords' },
-   { id: 'dramatic', label: 'Dramatic', icon: 'fa-theater-masks' },
-   { id: 'ambient', label: 'Ambient', icon: 'fa-wind' }
-];
 
 /**
  * Register all system settings

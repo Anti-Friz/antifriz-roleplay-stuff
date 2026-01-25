@@ -2268,6 +2268,17 @@ const constants = {
   moduleLabel: "Antifriz Roleplay Stuff"
 };
 const MODULE_ID = constants.moduleId;
+const DEFAULT_MUSIC_CATEGORIES = [
+  { id: "theme", label: "Theme", icon: "fa-music" },
+  { id: "combat", label: "Combat", icon: "fa-swords" },
+  { id: "dramatic", label: "Dramatic", icon: "fa-theater-masks" },
+  { id: "ambient", label: "Ambient", icon: "fa-wind" }
+];
+const UNCATEGORIZED_CATEGORY = {
+  id: "__uncategorized__",
+  label: "Uncategorized",
+  icon: "fa-question"
+};
 class ThemeObserver {
   /**
    * All readable theme stores.
@@ -22083,6 +22094,9 @@ function canUserSee(permission, user = game.user, document2 = null) {
       return true;
   }
 }
+function getOnlinePlayers() {
+  return game.users.filter((u) => u.active && !u.isGM);
+}
 function getAllPlayers() {
   return game.users.filter((u) => !u.isGM);
 }
@@ -22105,6 +22119,68 @@ function createPermission(type, users = []) {
     return { type, users };
   }
   return type;
+}
+async function confirmDelete(title, itemName = "this item") {
+  return Dialog.confirm({
+    title,
+    content: `<p>Are you sure you want to remove ${itemName}?</p>`,
+    defaultYes: false
+  });
+}
+async function promptRename(title, currentName) {
+  try {
+    const newName = await Dialog.prompt({
+      title,
+      content: `<input type="text" name="name" value="${currentName}" style="width: 100%">`,
+      callback: (html) => html.find('input[name="name"]').val()
+    });
+    if (newName && newName.trim() !== currentName) {
+      return newName.trim();
+    }
+    return null;
+  } catch (e) {
+    return null;
+  }
+}
+function confirmDiscardChanges(onConfirm) {
+  return Dialog.confirm({
+    title: "Unsaved Changes",
+    content: "<p>You have unsaved changes. Discard them?</p>",
+    yes: onConfirm,
+    no: () => {
+    },
+    defaultYes: false
+  });
+}
+function notifyError(message) {
+  ui.notifications.error(message);
+}
+function notifyWarn(message) {
+  ui.notifications.warn(message);
+}
+function notifyInfo(message) {
+  ui.notifications.info(message);
+}
+function openAudioPicker(callback, currentPath = "") {
+  const picker = new FilePicker({
+    type: "audio",
+    current: currentPath,
+    callback
+  });
+  picker.render(true);
+  return picker;
+}
+function openImagePicker(callback, currentPath = "") {
+  const picker = new foundry.applications.apps.FilePicker.implementation({
+    type: "image",
+    current: currentPath,
+    callback
+  });
+  picker.render(true);
+  return picker;
+}
+function getFilenameFromPath(path) {
+  return path.split("/").pop().replace(/\.[^/.]+$/, "");
 }
 function get_each_context_1$2(ctx, list, i) {
   const child_ctx = ctx.slice();
@@ -23054,74 +23130,493 @@ class PermissionPicker extends SvelteComponent {
 }
 function get_each_context$2(ctx, list, i) {
   const child_ctx = ctx.slice();
-  child_ctx[52] = list[i];
+  child_ctx[59] = list[i];
   return child_ctx;
 }
 function get_each_context_1$1(ctx, list, i) {
   const child_ctx = ctx.slice();
-  child_ctx[55] = list[i];
+  child_ctx[62] = list[i];
   const constants_0 = (
     /*currentTrackId*/
     child_ctx[3] === /*track*/
-    child_ctx[55].id
+    child_ctx[62].id
   );
-  child_ctx[56] = constants_0;
+  child_ctx[63] = constants_0;
   const constants_1 = (
     /*isCurrentTrack*/
-    child_ctx[56] && /*isPlaying*/
-    child_ctx[8]
+    child_ctx[63] && /*isPlaying*/
+    child_ctx[9]
   );
-  child_ctx[57] = constants_1;
+  child_ctx[64] = constants_1;
   const constants_2 = (
     /*track*/
-    child_ctx[55].category || "theme"
+    child_ctx[62].category || "theme"
   );
-  child_ctx[58] = constants_2;
+  child_ctx[65] = constants_2;
   const constants_3 = (
     /*categoryIds*/
-    child_ctx[5].has(
+    child_ctx[6].has(
       /*trackCategory*/
-      child_ctx[58]
+      child_ctx[65]
     )
   );
-  child_ctx[59] = constants_3;
+  child_ctx[66] = constants_3;
   return child_ctx;
 }
 function get_each_context_2(ctx, list, i) {
   const child_ctx = ctx.slice();
-  child_ctx[62] = list[i];
+  child_ctx[69] = list[i];
   return child_ctx;
 }
 function get_each_context_3(ctx, list, i) {
   const child_ctx = ctx.slice();
-  child_ctx[65] = list[i];
+  child_ctx[72] = list[i];
   return child_ctx;
 }
+function create_if_block_8(ctx) {
+  let div0;
+  let i0;
+  let t0;
+  let input;
+  let t1;
+  let div1;
+  let button;
+  let i1;
+  let t2;
+  let button_title_value;
+  let t3;
+  let mounted;
+  let dispose;
+  let if_block0 = (
+    /*isBroadcasting*/
+    ctx[16] && create_if_block_11(ctx)
+  );
+  let if_block1 = (
+    /*broadcastMenuOpen*/
+    ctx[14] && create_if_block_9(ctx)
+  );
+  return {
+    c() {
+      div0 = element("div");
+      i0 = element("i");
+      t0 = space();
+      input = element("input");
+      t1 = space();
+      div1 = element("div");
+      button = element("button");
+      i1 = element("i");
+      t2 = space();
+      if (if_block0) if_block0.c();
+      t3 = space();
+      if (if_block1) if_block1.c();
+      attr(i0, "class", "fas fa-users");
+      attr(input, "type", "range");
+      attr(input, "min", "0");
+      attr(input, "max", "1");
+      attr(input, "step", "0.05");
+      input.value = /*playerVolume*/
+      ctx[11];
+      attr(div0, "class", "volume-control player-volume");
+      attr(div0, "title", "Player Volume (Broadcast)");
+      attr(i1, "class", "fas fa-broadcast-tower");
+      attr(button, "type", "button");
+      attr(button, "class", "broadcast-toggle");
+      attr(button, "title", button_title_value = "Broadcast to: " + /*broadcastTargetLabel*/
+      ctx[17]);
+      toggle_class(
+        button,
+        "active",
+        /*isBroadcasting*/
+        ctx[16]
+      );
+      attr(div1, "class", "broadcast-selector");
+      toggle_class(
+        div1,
+        "open",
+        /*broadcastMenuOpen*/
+        ctx[14]
+      );
+    },
+    m(target, anchor) {
+      insert(target, div0, anchor);
+      append(div0, i0);
+      append(div0, t0);
+      append(div0, input);
+      insert(target, t1, anchor);
+      insert(target, div1, anchor);
+      append(div1, button);
+      append(button, i1);
+      append(button, t2);
+      if (if_block0) if_block0.m(button, null);
+      append(div1, t3);
+      if (if_block1) if_block1.m(div1, null);
+      if (!mounted) {
+        dispose = [
+          listen(
+            input,
+            "input",
+            /*setPlayerVolume*/
+            ctx[29]
+          ),
+          listen(
+            button,
+            "click",
+            /*click_handler*/
+            ctx[35]
+          )
+        ];
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*playerVolume*/
+      2048) {
+        input.value = /*playerVolume*/
+        ctx2[11];
+      }
+      if (
+        /*isBroadcasting*/
+        ctx2[16]
+      ) {
+        if (if_block0) {
+          if_block0.p(ctx2, dirty);
+        } else {
+          if_block0 = create_if_block_11(ctx2);
+          if_block0.c();
+          if_block0.m(button, null);
+        }
+      } else if (if_block0) {
+        if_block0.d(1);
+        if_block0 = null;
+      }
+      if (dirty[0] & /*broadcastTargetLabel*/
+      131072 && button_title_value !== (button_title_value = "Broadcast to: " + /*broadcastTargetLabel*/
+      ctx2[17])) {
+        attr(button, "title", button_title_value);
+      }
+      if (dirty[0] & /*isBroadcasting*/
+      65536) {
+        toggle_class(
+          button,
+          "active",
+          /*isBroadcasting*/
+          ctx2[16]
+        );
+      }
+      if (
+        /*broadcastMenuOpen*/
+        ctx2[14]
+      ) {
+        if (if_block1) {
+          if_block1.p(ctx2, dirty);
+        } else {
+          if_block1 = create_if_block_9(ctx2);
+          if_block1.c();
+          if_block1.m(div1, null);
+        }
+      } else if (if_block1) {
+        if_block1.d(1);
+        if_block1 = null;
+      }
+      if (dirty[0] & /*broadcastMenuOpen*/
+      16384) {
+        toggle_class(
+          div1,
+          "open",
+          /*broadcastMenuOpen*/
+          ctx2[14]
+        );
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div0);
+        detach(t1);
+        detach(div1);
+      }
+      if (if_block0) if_block0.d();
+      if (if_block1) if_block1.d();
+      mounted = false;
+      run_all(dispose);
+    }
+  };
+}
+function create_if_block_11(ctx) {
+  let span;
+  let t;
+  return {
+    c() {
+      span = element("span");
+      t = text(
+        /*broadcastTargetLabel*/
+        ctx[17]
+      );
+      attr(span, "class", "broadcast-badge");
+    },
+    m(target, anchor) {
+      insert(target, span, anchor);
+      append(span, t);
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*broadcastTargetLabel*/
+      131072) set_data(
+        t,
+        /*broadcastTargetLabel*/
+        ctx2[17]
+      );
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(span);
+      }
+    }
+  };
+}
 function create_if_block_9(ctx) {
+  let div1;
+  let button0;
+  let t1;
+  let button1;
+  let t3;
+  let div0;
+  let t4;
+  let t5;
+  let show_if = getOnlinePlayers().length === 0;
+  let mounted;
+  let dispose;
+  let each_value_3 = ensure_array_like(getOnlinePlayers());
+  let each_blocks = [];
+  for (let i = 0; i < each_value_3.length; i += 1) {
+    each_blocks[i] = create_each_block_3(get_each_context_3(ctx, each_value_3, i));
+  }
+  let if_block = show_if && create_if_block_10();
+  return {
+    c() {
+      div1 = element("div");
+      button0 = element("button");
+      button0.innerHTML = `<i class="fas fa-times"></i> Off`;
+      t1 = space();
+      button1 = element("button");
+      button1.innerHTML = `<i class="fas fa-globe"></i> All Players`;
+      t3 = space();
+      div0 = element("div");
+      t4 = space();
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        each_blocks[i].c();
+      }
+      t5 = space();
+      if (if_block) if_block.c();
+      attr(button0, "type", "button");
+      toggle_class(
+        button0,
+        "selected",
+        /*broadcastTarget*/
+        ctx[4] === "none"
+      );
+      attr(button1, "type", "button");
+      toggle_class(
+        button1,
+        "selected",
+        /*broadcastTarget*/
+        ctx[4] === "all"
+      );
+      attr(div0, "class", "dropdown-divider");
+      attr(div1, "class", "broadcast-dropdown-menu");
+    },
+    m(target, anchor) {
+      insert(target, div1, anchor);
+      append(div1, button0);
+      append(div1, t1);
+      append(div1, button1);
+      append(div1, t3);
+      append(div1, div0);
+      append(div1, t4);
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        if (each_blocks[i]) {
+          each_blocks[i].m(div1, null);
+        }
+      }
+      append(div1, t5);
+      if (if_block) if_block.m(div1, null);
+      if (!mounted) {
+        dispose = [
+          listen(
+            button0,
+            "click",
+            /*click_handler_1*/
+            ctx[36]
+          ),
+          listen(
+            button1,
+            "click",
+            /*click_handler_2*/
+            ctx[37]
+          )
+        ];
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*broadcastTarget*/
+      16) {
+        toggle_class(
+          button0,
+          "selected",
+          /*broadcastTarget*/
+          ctx2[4] === "none"
+        );
+      }
+      if (dirty[0] & /*broadcastTarget*/
+      16) {
+        toggle_class(
+          button1,
+          "selected",
+          /*broadcastTarget*/
+          ctx2[4] === "all"
+        );
+      }
+      if (dirty[1] & /*isPlayerInBroadcast, togglePlayerInBroadcast*/
+      6) {
+        each_value_3 = ensure_array_like(getOnlinePlayers());
+        let i;
+        for (i = 0; i < each_value_3.length; i += 1) {
+          const child_ctx = get_each_context_3(ctx2, each_value_3, i);
+          if (each_blocks[i]) {
+            each_blocks[i].p(child_ctx, dirty);
+          } else {
+            each_blocks[i] = create_each_block_3(child_ctx);
+            each_blocks[i].c();
+            each_blocks[i].m(div1, t5);
+          }
+        }
+        for (; i < each_blocks.length; i += 1) {
+          each_blocks[i].d(1);
+        }
+        each_blocks.length = each_value_3.length;
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div1);
+      }
+      destroy_each(each_blocks, detaching);
+      if (if_block) if_block.d();
+      mounted = false;
+      run_all(dispose);
+    }
+  };
+}
+function create_each_block_3(ctx) {
+  let button;
+  let i;
+  let t0;
+  let span;
+  let mounted;
+  let dispose;
+  function click_handler_3() {
+    return (
+      /*click_handler_3*/
+      ctx[38](
+        /*player*/
+        ctx[72]
+      )
+    );
+  }
+  return {
+    c() {
+      button = element("button");
+      i = element("i");
+      t0 = space();
+      span = element("span");
+      span.textContent = `${/*player*/
+      ctx[72].name}`;
+      attr(i, "class", "fas fa-" + /*isPlayerInBroadcast*/
+      (ctx[33](
+        /*player*/
+        ctx[72].id
+      ) ? "check-square" : "square"));
+      set_style(
+        span,
+        "color",
+        /*player*/
+        ctx[72].color
+      );
+      attr(button, "type", "button");
+      toggle_class(
+        button,
+        "selected",
+        /*isPlayerInBroadcast*/
+        ctx[33](
+          /*player*/
+          ctx[72].id
+        )
+      );
+    },
+    m(target, anchor) {
+      insert(target, button, anchor);
+      append(button, i);
+      append(button, t0);
+      append(button, span);
+      if (!mounted) {
+        dispose = listen(button, "click", click_handler_3);
+        mounted = true;
+      }
+    },
+    p(new_ctx, dirty) {
+      ctx = new_ctx;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(button);
+      }
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_if_block_10(ctx) {
+  let span;
+  return {
+    c() {
+      span = element("span");
+      span.textContent = "No players online";
+      attr(span, "class", "no-players");
+    },
+    m(target, anchor) {
+      insert(target, span, anchor);
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(span);
+      }
+    }
+  };
+}
+function create_if_block_6$1(ctx) {
   let div;
   let span0;
   let t0_value = (
     /*currentTrack*/
-    ctx[14].name + ""
+    ctx[15].name + ""
   );
   let t0;
   let t1;
   let span1;
   let t2_value = formatTime(
     /*currentTime*/
-    ctx[10]
+    ctx[12]
   ) + "";
   let t2;
   let t3;
   let t4_value = formatTime(
     /*duration*/
-    ctx[11]
+    ctx[13]
   ) + "";
   let t4;
   let t5;
   let if_block = (
     /*isBroadcasting*/
-    ctx[12] && create_if_block_10()
+    ctx[16] && create_if_block_7$1(ctx)
   );
   return {
     c() {
@@ -23153,25 +23648,26 @@ function create_if_block_9(ctx) {
     },
     p(ctx2, dirty) {
       if (dirty[0] & /*currentTrack*/
-      16384 && t0_value !== (t0_value = /*currentTrack*/
-      ctx2[14].name + "")) set_data(t0, t0_value);
+      32768 && t0_value !== (t0_value = /*currentTrack*/
+      ctx2[15].name + "")) set_data(t0, t0_value);
       if (dirty[0] & /*currentTime*/
-      1024 && t2_value !== (t2_value = formatTime(
+      4096 && t2_value !== (t2_value = formatTime(
         /*currentTime*/
-        ctx2[10]
+        ctx2[12]
       ) + "")) set_data(t2, t2_value);
       if (dirty[0] & /*duration*/
-      2048 && t4_value !== (t4_value = formatTime(
+      8192 && t4_value !== (t4_value = formatTime(
         /*duration*/
-        ctx2[11]
+        ctx2[13]
       ) + "")) set_data(t4, t4_value);
       if (
         /*isBroadcasting*/
-        ctx2[12]
+        ctx2[16]
       ) {
-        if (if_block) ;
-        else {
-          if_block = create_if_block_10();
+        if (if_block) {
+          if_block.p(ctx2, dirty);
+        } else {
+          if_block = create_if_block_7$1(ctx2);
           if_block.c();
           if_block.m(div, null);
         }
@@ -23188,16 +23684,36 @@ function create_if_block_9(ctx) {
     }
   };
 }
-function create_if_block_10(ctx) {
+function create_if_block_7$1(ctx) {
   let span;
+  let i;
+  let t0;
+  let t1;
   return {
     c() {
       span = element("span");
-      span.innerHTML = `<i class="fas fa-broadcast-tower"></i> LIVE`;
+      i = element("i");
+      t0 = space();
+      t1 = text(
+        /*broadcastTargetLabel*/
+        ctx[17]
+      );
+      attr(i, "class", "fas fa-broadcast-tower");
       attr(span, "class", "broadcast-indicator");
     },
     m(target, anchor) {
       insert(target, span, anchor);
+      append(span, i);
+      append(span, t0);
+      append(span, t1);
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*broadcastTargetLabel*/
+      131072) set_data(
+        t1,
+        /*broadcastTargetLabel*/
+        ctx2[17]
+      );
     },
     d(detaching) {
       if (detaching) {
@@ -23211,7 +23727,7 @@ function create_else_block_1$1(ctx) {
   let current;
   let each_value = ensure_array_like(
     /*groupedTracks*/
-    ctx[16]
+    ctx[18]
   );
   let each_blocks = [];
   for (let i = 0; i < each_value.length; i += 1) {
@@ -23237,11 +23753,11 @@ function create_else_block_1$1(ctx) {
       current = true;
     },
     p(ctx2, dirty) {
-      if (dirty[0] & /*groupedTracks, currentTrackId, isPlaying, removeTrack, onlinePlayers, broadcastToPlayer, broadcastTrackToAll, toggleBroadcast, isBroadcasting, setTrackOwnership, isGM, categoryIds, setCategoryForTrack, categories, currentTime, seekTo, duration, renameTrack, stopTrack, playTrack*/
-      519945640) {
+      if (dirty[0] & /*groupedTracks, currentTrackId, isPlaying, removeTrack, setTrackOwnership, isGM, categoryIds, setCategoryForTrack, categories, currentTime, seekTo, duration, renameTrack, stopTrack, playTrack*/
+      1338782536) {
         each_value = ensure_array_like(
           /*groupedTracks*/
-          ctx2[16]
+          ctx2[18]
         );
         let i;
         for (i = 0; i < each_value.length; i += 1) {
@@ -23333,7 +23849,7 @@ function create_if_block$2(ctx) {
     }
   };
 }
-function create_if_block_8(ctx) {
+function create_if_block_5$1(ctx) {
   let button;
   let mounted;
   let dispose;
@@ -23352,427 +23868,7 @@ function create_if_block_8(ctx) {
           button,
           "click",
           /*stopTrack*/
-          ctx[23]
-        );
-        mounted = true;
-      }
-    },
-    p: noop,
-    d(detaching) {
-      if (detaching) {
-        detach(button);
-      }
-      mounted = false;
-      dispose();
-    }
-  };
-}
-function create_if_block_7$1(ctx) {
-  let div1;
-  let div0;
-  let mounted;
-  let dispose;
-  function click_handler_1(...args) {
-    return (
-      /*click_handler_1*/
-      ctx[32](
-        /*track*/
-        ctx[55],
-        ...args
-      )
-    );
-  }
-  return {
-    c() {
-      div1 = element("div");
-      div0 = element("div");
-      attr(div0, "class", "progress-fill");
-      set_style(
-        div0,
-        "width",
-        /*currentTime*/
-        ctx[10] / /*duration*/
-        ctx[11] * 100 + "%"
-      );
-      attr(div1, "class", "track-progress");
-      attr(div1, "role", "slider");
-      attr(div1, "tabindex", "0");
-      attr(
-        div1,
-        "aria-valuenow",
-        /*currentTime*/
-        ctx[10]
-      );
-    },
-    m(target, anchor) {
-      insert(target, div1, anchor);
-      append(div1, div0);
-      if (!mounted) {
-        dispose = [
-          listen(div1, "click", click_handler_1),
-          listen(div1, "keydown", keydown_handler)
-        ];
-        mounted = true;
-      }
-    },
-    p(new_ctx, dirty) {
-      ctx = new_ctx;
-      if (dirty[0] & /*currentTime, duration*/
-      3072) {
-        set_style(
-          div0,
-          "width",
-          /*currentTime*/
-          ctx[10] / /*duration*/
-          ctx[11] * 100 + "%"
-        );
-      }
-      if (dirty[0] & /*currentTime*/
-      1024) {
-        attr(
-          div1,
-          "aria-valuenow",
-          /*currentTime*/
-          ctx[10]
-        );
-      }
-    },
-    d(detaching) {
-      if (detaching) {
-        detach(div1);
-      }
-      mounted = false;
-      run_all(dispose);
-    }
-  };
-}
-function create_if_block_6$1(ctx) {
-  let option;
-  let t0;
-  let t1_value = (
-    /*trackCategory*/
-    ctx[58] + ""
-  );
-  let t1;
-  let t2;
-  let option_value_value;
-  return {
-    c() {
-      option = element("option");
-      t0 = text("⚠️ ");
-      t1 = text(t1_value);
-      t2 = text(" (invalid)");
-      option.__value = option_value_value = /*trackCategory*/
-      ctx[58];
-      set_input_value(option, option.__value);
-      option.disabled = true;
-    },
-    m(target, anchor) {
-      insert(target, option, anchor);
-      append(option, t0);
-      append(option, t1);
-      append(option, t2);
-    },
-    p(ctx2, dirty) {
-      if (dirty[0] & /*groupedTracks*/
-      65536 && t1_value !== (t1_value = /*trackCategory*/
-      ctx2[58] + "")) set_data(t1, t1_value);
-      if (dirty[0] & /*groupedTracks, categories*/
-      65664 && option_value_value !== (option_value_value = /*trackCategory*/
-      ctx2[58])) {
-        option.__value = option_value_value;
-        set_input_value(option, option.__value);
-      }
-    },
-    d(detaching) {
-      if (detaching) {
-        detach(option);
-      }
-    }
-  };
-}
-function create_each_block_3(ctx) {
-  let option;
-  let t_value = (
-    /*cat*/
-    ctx[65].label + ""
-  );
-  let t;
-  let option_value_value;
-  return {
-    c() {
-      option = element("option");
-      t = text(t_value);
-      option.__value = option_value_value = /*cat*/
-      ctx[65].id;
-      set_input_value(option, option.__value);
-    },
-    m(target, anchor) {
-      insert(target, option, anchor);
-      append(option, t);
-    },
-    p(ctx2, dirty) {
-      if (dirty[0] & /*categories*/
-      128 && t_value !== (t_value = /*cat*/
-      ctx2[65].label + "")) set_data(t, t_value);
-      if (dirty[0] & /*categories*/
-      128 && option_value_value !== (option_value_value = /*cat*/
-      ctx2[65].id)) {
-        option.__value = option_value_value;
-        set_input_value(option, option.__value);
-      }
-    },
-    d(detaching) {
-      if (detaching) {
-        detach(option);
-      }
-    }
-  };
-}
-function create_if_block_2$1(ctx) {
-  let permissionpicker;
-  let t0;
-  let div1;
-  let button0;
-  let i0;
-  let button0_title_value;
-  let t1;
-  let div0;
-  let t2;
-  let button1;
-  let t4;
-  let t5;
-  let current;
-  let mounted;
-  let dispose;
-  function change_handler_1(...args) {
-    return (
-      /*change_handler_1*/
-      ctx[34](
-        /*track*/
-        ctx[55],
-        ...args
-      )
-    );
-  }
-  permissionpicker = new PermissionPicker({
-    props: {
-      value: (
-        /*track*/
-        ctx[55].ownership
-      ),
-      compact: true
-    }
-  });
-  permissionpicker.$on("change", change_handler_1);
-  function select_block_type_2(ctx2, dirty) {
-    if (
-      /*isCurrentTrack*/
-      ctx2[56] && /*isBroadcasting*/
-      ctx2[12]
-    ) return create_if_block_4$1;
-    if (
-      /*isCurrentTrack*/
-      ctx2[56]
-    ) return create_if_block_5$1;
-  }
-  let current_block_type = select_block_type_2(ctx);
-  let if_block0 = current_block_type && current_block_type(ctx);
-  function click_handler_2() {
-    return (
-      /*click_handler_2*/
-      ctx[35](
-        /*track*/
-        ctx[55]
-      )
-    );
-  }
-  let each_value_2 = ensure_array_like(
-    /*onlinePlayers*/
-    ctx[15]
-  );
-  let each_blocks = [];
-  for (let i = 0; i < each_value_2.length; i += 1) {
-    each_blocks[i] = create_each_block_2(get_each_context_2(ctx, each_value_2, i));
-  }
-  let if_block1 = (
-    /*onlinePlayers*/
-    ctx[15].length === 0 && create_if_block_3$1()
-  );
-  return {
-    c() {
-      create_component(permissionpicker.$$.fragment);
-      t0 = space();
-      div1 = element("div");
-      button0 = element("button");
-      i0 = element("i");
-      t1 = space();
-      div0 = element("div");
-      if (if_block0) if_block0.c();
-      t2 = space();
-      button1 = element("button");
-      button1.innerHTML = `<i class="fas fa-globe"></i> Play for All`;
-      t4 = space();
-      for (let i = 0; i < each_blocks.length; i += 1) {
-        each_blocks[i].c();
-      }
-      t5 = space();
-      if (if_block1) if_block1.c();
-      attr(i0, "class", "fas fa-broadcast-tower");
-      attr(button0, "type", "button");
-      attr(button0, "class", "broadcast-btn");
-      attr(button0, "title", button0_title_value = /*isCurrentTrack*/
-      ctx[56] && /*isBroadcasting*/
-      ctx[12] ? "Broadcasting..." : "Broadcast");
-      toggle_class(
-        button0,
-        "active",
-        /*isCurrentTrack*/
-        ctx[56] && /*isBroadcasting*/
-        ctx[12]
-      );
-      attr(button1, "type", "button");
-      attr(div0, "class", "broadcast-menu");
-      attr(div1, "class", "broadcast-dropdown");
-    },
-    m(target, anchor) {
-      mount_component(permissionpicker, target, anchor);
-      insert(target, t0, anchor);
-      insert(target, div1, anchor);
-      append(div1, button0);
-      append(button0, i0);
-      append(div1, t1);
-      append(div1, div0);
-      if (if_block0) if_block0.m(div0, null);
-      append(div0, t2);
-      append(div0, button1);
-      append(div0, t4);
-      for (let i = 0; i < each_blocks.length; i += 1) {
-        if (each_blocks[i]) {
-          each_blocks[i].m(div0, null);
-        }
-      }
-      append(div0, t5);
-      if (if_block1) if_block1.m(div0, null);
-      current = true;
-      if (!mounted) {
-        dispose = listen(button1, "click", click_handler_2);
-        mounted = true;
-      }
-    },
-    p(new_ctx, dirty) {
-      ctx = new_ctx;
-      const permissionpicker_changes = {};
-      if (dirty[0] & /*groupedTracks*/
-      65536) permissionpicker_changes.value = /*track*/
-      ctx[55].ownership;
-      permissionpicker.$set(permissionpicker_changes);
-      if (!current || dirty[0] & /*currentTrackId, groupedTracks, isBroadcasting, categories*/
-      69768 && button0_title_value !== (button0_title_value = /*isCurrentTrack*/
-      ctx[56] && /*isBroadcasting*/
-      ctx[12] ? "Broadcasting..." : "Broadcast")) {
-        attr(button0, "title", button0_title_value);
-      }
-      if (!current || dirty[0] & /*currentTrackId, groupedTracks, isBroadcasting*/
-      69640) {
-        toggle_class(
-          button0,
-          "active",
-          /*isCurrentTrack*/
-          ctx[56] && /*isBroadcasting*/
-          ctx[12]
-        );
-      }
-      if (current_block_type === (current_block_type = select_block_type_2(ctx)) && if_block0) {
-        if_block0.p(ctx, dirty);
-      } else {
-        if (if_block0) if_block0.d(1);
-        if_block0 = current_block_type && current_block_type(ctx);
-        if (if_block0) {
-          if_block0.c();
-          if_block0.m(div0, t2);
-        }
-      }
-      if (dirty[0] & /*broadcastToPlayer, groupedTracks, onlinePlayers*/
-      134316032) {
-        each_value_2 = ensure_array_like(
-          /*onlinePlayers*/
-          ctx[15]
-        );
-        let i;
-        for (i = 0; i < each_value_2.length; i += 1) {
-          const child_ctx = get_each_context_2(ctx, each_value_2, i);
-          if (each_blocks[i]) {
-            each_blocks[i].p(child_ctx, dirty);
-          } else {
-            each_blocks[i] = create_each_block_2(child_ctx);
-            each_blocks[i].c();
-            each_blocks[i].m(div0, t5);
-          }
-        }
-        for (; i < each_blocks.length; i += 1) {
-          each_blocks[i].d(1);
-        }
-        each_blocks.length = each_value_2.length;
-      }
-      if (
-        /*onlinePlayers*/
-        ctx[15].length === 0
-      ) {
-        if (if_block1) ;
-        else {
-          if_block1 = create_if_block_3$1();
-          if_block1.c();
-          if_block1.m(div0, null);
-        }
-      } else if (if_block1) {
-        if_block1.d(1);
-        if_block1 = null;
-      }
-    },
-    i(local) {
-      if (current) return;
-      transition_in(permissionpicker.$$.fragment, local);
-      current = true;
-    },
-    o(local) {
-      transition_out(permissionpicker.$$.fragment, local);
-      current = false;
-    },
-    d(detaching) {
-      if (detaching) {
-        detach(t0);
-        detach(div1);
-      }
-      destroy_component(permissionpicker, detaching);
-      if (if_block0) {
-        if_block0.d();
-      }
-      destroy_each(each_blocks, detaching);
-      if (if_block1) if_block1.d();
-      mounted = false;
-      dispose();
-    }
-  };
-}
-function create_if_block_5$1(ctx) {
-  let button;
-  let mounted;
-  let dispose;
-  return {
-    c() {
-      button = element("button");
-      button.innerHTML = `<i class="fas fa-play"></i> Start Broadcast`;
-      attr(button, "type", "button");
-    },
-    m(target, anchor) {
-      insert(target, button, anchor);
-      if (!mounted) {
-        dispose = listen(
-          button,
-          "click",
-          /*toggleBroadcast*/
-          ctx[26]
+          ctx[27]
         );
         mounted = true;
       }
@@ -23788,108 +23884,217 @@ function create_if_block_5$1(ctx) {
   };
 }
 function create_if_block_4$1(ctx) {
-  let button;
+  let div1;
+  let div0;
   let mounted;
   let dispose;
-  return {
-    c() {
-      button = element("button");
-      button.innerHTML = `<i class="fas fa-stop"></i> Stop Broadcast`;
-      attr(button, "type", "button");
-    },
-    m(target, anchor) {
-      insert(target, button, anchor);
-      if (!mounted) {
-        dispose = listen(
-          button,
-          "click",
-          /*toggleBroadcast*/
-          ctx[26]
-        );
-        mounted = true;
-      }
-    },
-    p: noop,
-    d(detaching) {
-      if (detaching) {
-        detach(button);
-      }
-      mounted = false;
-      dispose();
-    }
-  };
-}
-function create_each_block_2(ctx) {
-  let button;
-  let i;
-  let t0;
-  let t1_value = (
-    /*player*/
-    ctx[62].name + ""
-  );
-  let t1;
-  let mounted;
-  let dispose;
-  function click_handler_3() {
+  function click_handler_5(...args) {
     return (
-      /*click_handler_3*/
-      ctx[36](
+      /*click_handler_5*/
+      ctx[41](
         /*track*/
-        ctx[55],
-        /*player*/
-        ctx[62]
+        ctx[62],
+        ...args
       )
     );
   }
   return {
     c() {
-      button = element("button");
-      i = element("i");
-      t0 = space();
-      t1 = text(t1_value);
-      attr(i, "class", "fas fa-user");
-      attr(button, "type", "button");
+      div1 = element("div");
+      div0 = element("div");
+      attr(div0, "class", "progress-fill");
+      set_style(
+        div0,
+        "width",
+        /*currentTime*/
+        ctx[12] / /*duration*/
+        ctx[13] * 100 + "%"
+      );
+      attr(div1, "class", "track-progress");
+      attr(div1, "role", "slider");
+      attr(div1, "tabindex", "0");
+      attr(
+        div1,
+        "aria-valuenow",
+        /*currentTime*/
+        ctx[12]
+      );
     },
     m(target, anchor) {
-      insert(target, button, anchor);
-      append(button, i);
-      append(button, t0);
-      append(button, t1);
+      insert(target, div1, anchor);
+      append(div1, div0);
       if (!mounted) {
-        dispose = listen(button, "click", click_handler_3);
+        dispose = [
+          listen(div1, "click", click_handler_5),
+          listen(div1, "keydown", keydown_handler)
+        ];
         mounted = true;
       }
     },
     p(new_ctx, dirty) {
       ctx = new_ctx;
-      if (dirty[0] & /*onlinePlayers*/
-      32768 && t1_value !== (t1_value = /*player*/
-      ctx[62].name + "")) set_data(t1, t1_value);
+      if (dirty[0] & /*currentTime, duration*/
+      12288) {
+        set_style(
+          div0,
+          "width",
+          /*currentTime*/
+          ctx[12] / /*duration*/
+          ctx[13] * 100 + "%"
+        );
+      }
+      if (dirty[0] & /*currentTime*/
+      4096) {
+        attr(
+          div1,
+          "aria-valuenow",
+          /*currentTime*/
+          ctx[12]
+        );
+      }
     },
     d(detaching) {
       if (detaching) {
-        detach(button);
+        detach(div1);
       }
       mounted = false;
-      dispose();
+      run_all(dispose);
     }
   };
 }
 function create_if_block_3$1(ctx) {
-  let span;
+  let option;
+  let t0;
+  let t1_value = (
+    /*trackCategory*/
+    ctx[65] + ""
+  );
+  let t1;
+  let t2;
+  let option_value_value;
   return {
     c() {
-      span = element("span");
-      span.textContent = "No players online";
-      attr(span, "class", "no-players");
+      option = element("option");
+      t0 = text("⚠️ ");
+      t1 = text(t1_value);
+      t2 = text(" (invalid)");
+      option.__value = option_value_value = /*trackCategory*/
+      ctx[65];
+      set_input_value(option, option.__value);
+      option.disabled = true;
     },
     m(target, anchor) {
-      insert(target, span, anchor);
+      insert(target, option, anchor);
+      append(option, t0);
+      append(option, t1);
+      append(option, t2);
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*groupedTracks*/
+      262144 && t1_value !== (t1_value = /*trackCategory*/
+      ctx2[65] + "")) set_data(t1, t1_value);
+      if (dirty[0] & /*groupedTracks, categories*/
+      262400 && option_value_value !== (option_value_value = /*trackCategory*/
+      ctx2[65])) {
+        option.__value = option_value_value;
+        set_input_value(option, option.__value);
+      }
     },
     d(detaching) {
       if (detaching) {
-        detach(span);
+        detach(option);
       }
+    }
+  };
+}
+function create_each_block_2(ctx) {
+  let option;
+  let t_value = (
+    /*cat*/
+    ctx[69].label + ""
+  );
+  let t;
+  let option_value_value;
+  return {
+    c() {
+      option = element("option");
+      t = text(t_value);
+      option.__value = option_value_value = /*cat*/
+      ctx[69].id;
+      set_input_value(option, option.__value);
+    },
+    m(target, anchor) {
+      insert(target, option, anchor);
+      append(option, t);
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*categories*/
+      256 && t_value !== (t_value = /*cat*/
+      ctx2[69].label + "")) set_data(t, t_value);
+      if (dirty[0] & /*categories*/
+      256 && option_value_value !== (option_value_value = /*cat*/
+      ctx2[69].id)) {
+        option.__value = option_value_value;
+        set_input_value(option, option.__value);
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(option);
+      }
+    }
+  };
+}
+function create_if_block_2$1(ctx) {
+  let permissionpicker;
+  let current;
+  function change_handler_1(...args) {
+    return (
+      /*change_handler_1*/
+      ctx[43](
+        /*track*/
+        ctx[62],
+        ...args
+      )
+    );
+  }
+  permissionpicker = new PermissionPicker({
+    props: {
+      value: (
+        /*track*/
+        ctx[62].ownership
+      ),
+      compact: true
+    }
+  });
+  permissionpicker.$on("change", change_handler_1);
+  return {
+    c() {
+      create_component(permissionpicker.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(permissionpicker, target, anchor);
+      current = true;
+    },
+    p(new_ctx, dirty) {
+      ctx = new_ctx;
+      const permissionpicker_changes = {};
+      if (dirty[0] & /*groupedTracks*/
+      262144) permissionpicker_changes.value = /*track*/
+      ctx[62].ownership;
+      permissionpicker.$set(permissionpicker_changes);
+    },
+    i(local) {
+      if (current) return;
+      transition_in(permissionpicker.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(permissionpicker.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(permissionpicker, detaching);
     }
   };
 }
@@ -23904,7 +24109,7 @@ function create_each_block_1$1(key_1, ctx) {
   let button1;
   let t2_value = (
     /*track*/
-    ctx[55].name + ""
+    ctx[62].name + ""
   );
   let t2;
   let t3;
@@ -23920,63 +24125,63 @@ function create_each_block_1$1(key_1, ctx) {
   let current;
   let mounted;
   let dispose;
-  function click_handler() {
+  function click_handler_4() {
     return (
-      /*click_handler*/
-      ctx[30](
+      /*click_handler_4*/
+      ctx[39](
         /*track*/
-        ctx[55]
+        ctx[62]
       )
     );
   }
   let if_block0 = (
     /*isCurrentTrack*/
-    ctx[56] && create_if_block_8(ctx)
+    ctx[63] && create_if_block_5$1(ctx)
   );
   function dblclick_handler() {
     return (
       /*dblclick_handler*/
-      ctx[31](
+      ctx[40](
         /*track*/
-        ctx[55]
+        ctx[62]
       )
     );
   }
   let if_block1 = (
     /*isCurrentTrack*/
-    ctx[56] && /*duration*/
-    ctx[11] > 0 && create_if_block_7$1(ctx)
+    ctx[63] && /*duration*/
+    ctx[13] > 0 && create_if_block_4$1(ctx)
   );
   let if_block2 = !/*isValidCategory*/
-  ctx[59] && create_if_block_6$1(ctx);
-  let each_value_3 = ensure_array_like(
+  ctx[66] && create_if_block_3$1(ctx);
+  let each_value_2 = ensure_array_like(
     /*categories*/
-    ctx[7]
+    ctx[8]
   );
   let each_blocks = [];
-  for (let i = 0; i < each_value_3.length; i += 1) {
-    each_blocks[i] = create_each_block_3(get_each_context_3(ctx, each_value_3, i));
+  for (let i = 0; i < each_value_2.length; i += 1) {
+    each_blocks[i] = create_each_block_2(get_each_context_2(ctx, each_value_2, i));
   }
   function change_handler(...args) {
     return (
       /*change_handler*/
-      ctx[33](
+      ctx[42](
         /*track*/
-        ctx[55],
+        ctx[62],
         ...args
       )
     );
   }
   let if_block3 = (
     /*isGM*/
-    ctx[13] && create_if_block_2$1(ctx)
+    ctx[19] && create_if_block_2$1(ctx)
   );
-  function click_handler_4() {
+  function click_handler_6() {
     return (
-      /*click_handler_4*/
-      ctx[37](
+      /*click_handler_6*/
+      ctx[44](
         /*track*/
-        ctx[55]
+        ctx[62]
       )
     );
   }
@@ -24009,7 +24214,7 @@ function create_each_block_1$1(key_1, ctx) {
       button2 = element("button");
       button2.innerHTML = `<i class="fas fa-trash"></i>`;
       attr(i0, "class", i0_class_value = "fas fa-" + /*isTrackPlaying*/
-      (ctx[57] ? "pause" : "play"));
+      (ctx[64] ? "pause" : "play"));
       attr(button0, "type", "button");
       attr(button0, "class", "play-btn");
       attr(button1, "type", "button");
@@ -24017,9 +24222,9 @@ function create_each_block_1$1(key_1, ctx) {
       attr(div0, "class", "track-info");
       attr(select, "class", "category-select");
       attr(select, "title", select_title_value = !/*isValidCategory*/
-      ctx[59] ? "Category no longer exists - please select a new one" : "");
+      ctx[66] ? "Category no longer exists - please select a new one" : "");
       toggle_class(select, "invalid", !/*isValidCategory*/
-      ctx[59]);
+      ctx[66]);
       attr(button2, "type", "button");
       attr(button2, "class", "delete-btn");
       attr(button2, "title", "Remove");
@@ -24029,13 +24234,13 @@ function create_each_block_1$1(key_1, ctx) {
         div2,
         "playing",
         /*isTrackPlaying*/
-        ctx[57]
+        ctx[64]
       );
       toggle_class(
         div2,
         "selected",
         /*isCurrentTrack*/
-        ctx[56]
+        ctx[63]
       );
       this.first = div2;
     },
@@ -24064,7 +24269,7 @@ function create_each_block_1$1(key_1, ctx) {
       select_option(
         select,
         /*trackCategory*/
-        ctx[58]
+        ctx[65]
       );
       append(div1, t5);
       if (if_block3) if_block3.m(div1, null);
@@ -24073,10 +24278,10 @@ function create_each_block_1$1(key_1, ctx) {
       current = true;
       if (!mounted) {
         dispose = [
-          listen(button0, "click", click_handler),
+          listen(button0, "click", click_handler_4),
           listen(button1, "dblclick", dblclick_handler),
           listen(select, "change", change_handler),
-          listen(button2, "click", click_handler_4)
+          listen(button2, "click", click_handler_6)
         ];
         mounted = true;
       }
@@ -24084,18 +24289,18 @@ function create_each_block_1$1(key_1, ctx) {
     p(new_ctx, dirty) {
       ctx = new_ctx;
       if (!current || dirty[0] & /*currentTrackId, groupedTracks, isPlaying, categories*/
-      65928 && i0_class_value !== (i0_class_value = "fas fa-" + /*isTrackPlaying*/
-      (ctx[57] ? "pause" : "play"))) {
+      262920 && i0_class_value !== (i0_class_value = "fas fa-" + /*isTrackPlaying*/
+      (ctx[64] ? "pause" : "play"))) {
         attr(i0, "class", i0_class_value);
       }
       if (
         /*isCurrentTrack*/
-        ctx[56]
+        ctx[63]
       ) {
         if (if_block0) {
           if_block0.p(ctx, dirty);
         } else {
-          if_block0 = create_if_block_8(ctx);
+          if_block0 = create_if_block_5$1(ctx);
           if_block0.c();
           if_block0.m(div2, t1);
         }
@@ -24104,17 +24309,17 @@ function create_each_block_1$1(key_1, ctx) {
         if_block0 = null;
       }
       if ((!current || dirty[0] & /*groupedTracks*/
-      65536) && t2_value !== (t2_value = /*track*/
-      ctx[55].name + "")) set_data(t2, t2_value);
+      262144) && t2_value !== (t2_value = /*track*/
+      ctx[62].name + "")) set_data(t2, t2_value);
       if (
         /*isCurrentTrack*/
-        ctx[56] && /*duration*/
-        ctx[11] > 0
+        ctx[63] && /*duration*/
+        ctx[13] > 0
       ) {
         if (if_block1) {
           if_block1.p(ctx, dirty);
         } else {
-          if_block1 = create_if_block_7$1(ctx);
+          if_block1 = create_if_block_4$1(ctx);
           if_block1.c();
           if_block1.m(div0, null);
         }
@@ -24123,11 +24328,11 @@ function create_each_block_1$1(key_1, ctx) {
         if_block1 = null;
       }
       if (!/*isValidCategory*/
-      ctx[59]) {
+      ctx[66]) {
         if (if_block2) {
           if_block2.p(ctx, dirty);
         } else {
-          if_block2 = create_if_block_6$1(ctx);
+          if_block2 = create_if_block_3$1(ctx);
           if_block2.c();
           if_block2.m(select, if_block2_anchor);
         }
@@ -24136,18 +24341,18 @@ function create_each_block_1$1(key_1, ctx) {
         if_block2 = null;
       }
       if (dirty[0] & /*categories*/
-      128) {
-        each_value_3 = ensure_array_like(
+      256) {
+        each_value_2 = ensure_array_like(
           /*categories*/
-          ctx[7]
+          ctx[8]
         );
         let i;
-        for (i = 0; i < each_value_3.length; i += 1) {
-          const child_ctx = get_each_context_3(ctx, each_value_3, i);
+        for (i = 0; i < each_value_2.length; i += 1) {
+          const child_ctx = get_each_context_2(ctx, each_value_2, i);
           if (each_blocks[i]) {
             each_blocks[i].p(child_ctx, dirty);
           } else {
-            each_blocks[i] = create_each_block_3(child_ctx);
+            each_blocks[i] = create_each_block_2(child_ctx);
             each_blocks[i].c();
             each_blocks[i].m(select, null);
           }
@@ -24155,35 +24360,35 @@ function create_each_block_1$1(key_1, ctx) {
         for (; i < each_blocks.length; i += 1) {
           each_blocks[i].d(1);
         }
-        each_blocks.length = each_value_3.length;
+        each_blocks.length = each_value_2.length;
       }
       if (!current || dirty[0] & /*groupedTracks, categories*/
-      65664 && select_value_value !== (select_value_value = /*trackCategory*/
-      ctx[58])) {
+      262400 && select_value_value !== (select_value_value = /*trackCategory*/
+      ctx[65])) {
         select_option(
           select,
           /*trackCategory*/
-          ctx[58]
+          ctx[65]
         );
       }
       if (!current || dirty[0] & /*categoryIds, groupedTracks, categories*/
-      65696 && select_title_value !== (select_title_value = !/*isValidCategory*/
-      ctx[59] ? "Category no longer exists - please select a new one" : "")) {
+      262464 && select_title_value !== (select_title_value = !/*isValidCategory*/
+      ctx[66] ? "Category no longer exists - please select a new one" : "")) {
         attr(select, "title", select_title_value);
       }
       if (!current || dirty[0] & /*categoryIds, groupedTracks*/
-      65568) {
+      262208) {
         toggle_class(select, "invalid", !/*isValidCategory*/
-        ctx[59]);
+        ctx[66]);
       }
       if (
         /*isGM*/
-        ctx[13]
+        ctx[19]
       ) {
         if (if_block3) {
           if_block3.p(ctx, dirty);
           if (dirty[0] & /*isGM*/
-          8192) {
+          524288) {
             transition_in(if_block3, 1);
           }
         } else {
@@ -24200,21 +24405,21 @@ function create_each_block_1$1(key_1, ctx) {
         check_outros();
       }
       if (!current || dirty[0] & /*currentTrackId, groupedTracks, isPlaying*/
-      65800) {
+      262664) {
         toggle_class(
           div2,
           "playing",
           /*isTrackPlaying*/
-          ctx[57]
+          ctx[64]
         );
       }
       if (!current || dirty[0] & /*currentTrackId, groupedTracks*/
-      65544) {
+      262152) {
         toggle_class(
           div2,
           "selected",
           /*isCurrentTrack*/
-          ctx[56]
+          ctx[63]
         );
       }
     },
@@ -24249,7 +24454,7 @@ function create_each_block$2(ctx) {
   let t0;
   let t1_value = (
     /*group*/
-    ctx[52].label + ""
+    ctx[59].label + ""
   );
   let t1;
   let t2;
@@ -24259,11 +24464,11 @@ function create_each_block$2(ctx) {
   let current;
   let each_value_1 = ensure_array_like(
     /*group*/
-    ctx[52].tracks
+    ctx[59].tracks
   );
   const get_key = (ctx2) => (
     /*track*/
-    ctx2[55].id
+    ctx2[62].id
   );
   for (let i2 = 0; i2 < each_value_1.length; i2 += 1) {
     let child_ctx = get_each_context_1$1(ctx, each_value_1, i2);
@@ -24283,7 +24488,7 @@ function create_each_block$2(ctx) {
       }
       t3 = space();
       attr(i, "class", i_class_value = "fas " + /*group*/
-      ctx[52].icon);
+      ctx[59].icon);
       attr(h3, "class", "group-title");
       attr(div, "class", "track-group");
     },
@@ -24304,18 +24509,18 @@ function create_each_block$2(ctx) {
     },
     p(ctx2, dirty) {
       if (!current || dirty[0] & /*groupedTracks, categories*/
-      65664 && i_class_value !== (i_class_value = "fas " + /*group*/
-      ctx2[52].icon)) {
+      262400 && i_class_value !== (i_class_value = "fas " + /*group*/
+      ctx2[59].icon)) {
         attr(i, "class", i_class_value);
       }
       if ((!current || dirty[0] & /*groupedTracks*/
-      65536) && t1_value !== (t1_value = /*group*/
-      ctx2[52].label + "")) set_data(t1, t1_value);
-      if (dirty[0] & /*currentTrackId, groupedTracks, isPlaying, removeTrack, onlinePlayers, broadcastToPlayer, broadcastTrackToAll, toggleBroadcast, isBroadcasting, setTrackOwnership, isGM, categoryIds, setCategoryForTrack, categories, currentTime, seekTo, duration, renameTrack, stopTrack, playTrack*/
-      519945640) {
+      262144) && t1_value !== (t1_value = /*group*/
+      ctx2[59].label + "")) set_data(t1, t1_value);
+      if (dirty[0] & /*currentTrackId, groupedTracks, isPlaying, removeTrack, setTrackOwnership, isGM, categoryIds, setCategoryForTrack, categories, currentTime, seekTo, duration, renameTrack, stopTrack, playTrack*/
+      1338782536) {
         each_value_1 = ensure_array_like(
           /*group*/
-          ctx2[52].tracks
+          ctx2[59].tracks
         );
         group_outros();
         each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx2, each_value_1, each_1_lookup, div, outro_and_destroy_block, create_each_block_1$1, t3, get_each_context_1$1);
@@ -24407,7 +24612,7 @@ function create_default_slot$2(ctx) {
   let t0;
   let t1_value = (
     /*doc*/
-    (ctx[4]?.name ?? "Document") + ""
+    (ctx[5]?.name ?? "Document") + ""
   );
   let t1;
   let t2;
@@ -24415,35 +24620,39 @@ function create_default_slot$2(ctx) {
   let div1;
   let div0;
   let i1;
-  let i1_class_value;
   let t4;
   let input;
   let t5;
-  let button;
   let t6;
+  let button;
   let t7;
+  let t8;
   let div2;
   let current_block_type_index;
-  let if_block1;
+  let if_block2;
   let current;
   let mounted;
   let dispose;
   let if_block0 = (
+    /*isGM*/
+    ctx[19] && create_if_block_8(ctx)
+  );
+  let if_block1 = (
     /*currentTrack*/
-    ctx[14] && /*isPlaying*/
-    ctx[8] && create_if_block_9(ctx)
+    ctx[15] && /*isPlaying*/
+    ctx[9] && create_if_block_6$1(ctx)
   );
   const if_block_creators = [create_if_block$2, create_else_block_1$1];
   const if_blocks = [];
   function select_block_type(ctx2, dirty) {
     if (
       /*visibleTracks*/
-      ctx2[6].length === 0
+      ctx2[7].length === 0
     ) return 0;
     return 1;
   }
   current_block_type_index = select_block_type(ctx);
-  if_block1 = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx);
+  if_block2 = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx);
   return {
     c() {
       main = element("main");
@@ -24460,27 +24669,25 @@ function create_default_slot$2(ctx) {
       t4 = space();
       input = element("input");
       t5 = space();
+      if (if_block0) if_block0.c();
+      t6 = space();
       button = element("button");
       button.innerHTML = `<i class="fas fa-plus"></i>`;
-      t6 = space();
-      if (if_block0) if_block0.c();
       t7 = space();
+      if (if_block1) if_block1.c();
+      t8 = space();
       div2 = element("div");
-      if_block1.c();
+      if_block2.c();
       attr(i0, "class", "fas fa-music");
-      attr(i1, "class", i1_class_value = "fas fa-volume-" + /*volume*/
-      (ctx[9] > 0.5 ? "up" : (
-        /*volume*/
-        ctx[9] > 0 ? "down" : "mute"
-      )));
+      attr(i1, "class", "fas fa-headphones");
       attr(input, "type", "range");
       attr(input, "min", "0");
       attr(input, "max", "1");
       attr(input, "step", "0.05");
-      input.value = /*volume*/
-      ctx[9];
+      input.value = /*gmVolume*/
+      ctx[10];
       attr(div0, "class", "volume-control");
-      attr(div0, "title", "Volume");
+      attr(div0, "title", "Your Volume (GM)");
       attr(button, "type", "button");
       attr(button, "class", "add-btn");
       attr(button, "title", "Add Track");
@@ -24504,10 +24711,12 @@ function create_default_slot$2(ctx) {
       append(div0, t4);
       append(div0, input);
       append(div1, t5);
+      if (if_block0) if_block0.m(div1, null);
+      append(div1, t6);
       append(div1, button);
-      append(main, t6);
-      if (if_block0) if_block0.m(main, null);
       append(main, t7);
+      if (if_block1) if_block1.m(main, null);
+      append(main, t8);
       append(main, div2);
       if_blocks[current_block_type_index].m(div2, null);
       current = true;
@@ -24516,14 +24725,14 @@ function create_default_slot$2(ctx) {
           listen(
             input,
             "input",
-            /*setVolume*/
-            ctx[24]
+            /*setGmVolume*/
+            ctx[28]
           ),
           listen(
             button,
             "click",
             /*addTrack*/
-            ctx[17]
+            ctx[21]
           )
         ];
         mounted = true;
@@ -24531,36 +24740,43 @@ function create_default_slot$2(ctx) {
     },
     p(ctx2, dirty) {
       if ((!current || dirty[0] & /*doc*/
-      16) && t1_value !== (t1_value = /*doc*/
-      (ctx2[4]?.name ?? "Document") + "")) set_data(t1, t1_value);
-      if (!current || dirty[0] & /*volume*/
-      512 && i1_class_value !== (i1_class_value = "fas fa-volume-" + /*volume*/
-      (ctx2[9] > 0.5 ? "up" : (
-        /*volume*/
-        ctx2[9] > 0 ? "down" : "mute"
-      )))) {
-        attr(i1, "class", i1_class_value);
-      }
-      if (!current || dirty[0] & /*volume*/
-      512) {
-        input.value = /*volume*/
-        ctx2[9];
+      32) && t1_value !== (t1_value = /*doc*/
+      (ctx2[5]?.name ?? "Document") + "")) set_data(t1, t1_value);
+      if (!current || dirty[0] & /*gmVolume*/
+      1024) {
+        input.value = /*gmVolume*/
+        ctx2[10];
       }
       if (
-        /*currentTrack*/
-        ctx2[14] && /*isPlaying*/
-        ctx2[8]
+        /*isGM*/
+        ctx2[19]
       ) {
         if (if_block0) {
           if_block0.p(ctx2, dirty);
         } else {
-          if_block0 = create_if_block_9(ctx2);
+          if_block0 = create_if_block_8(ctx2);
           if_block0.c();
-          if_block0.m(main, t7);
+          if_block0.m(div1, t6);
         }
       } else if (if_block0) {
         if_block0.d(1);
         if_block0 = null;
+      }
+      if (
+        /*currentTrack*/
+        ctx2[15] && /*isPlaying*/
+        ctx2[9]
+      ) {
+        if (if_block1) {
+          if_block1.p(ctx2, dirty);
+        } else {
+          if_block1 = create_if_block_6$1(ctx2);
+          if_block1.c();
+          if_block1.m(main, t8);
+        }
+      } else if (if_block1) {
+        if_block1.d(1);
+        if_block1 = null;
       }
       let previous_block_index = current_block_type_index;
       current_block_type_index = select_block_type(ctx2);
@@ -24572,24 +24788,24 @@ function create_default_slot$2(ctx) {
           if_blocks[previous_block_index] = null;
         });
         check_outros();
-        if_block1 = if_blocks[current_block_type_index];
-        if (!if_block1) {
-          if_block1 = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx2);
-          if_block1.c();
+        if_block2 = if_blocks[current_block_type_index];
+        if (!if_block2) {
+          if_block2 = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx2);
+          if_block2.c();
         } else {
-          if_block1.p(ctx2, dirty);
+          if_block2.p(ctx2, dirty);
         }
-        transition_in(if_block1, 1);
-        if_block1.m(div2, null);
+        transition_in(if_block2, 1);
+        if_block2.m(div2, null);
       }
     },
     i(local) {
       if (current) return;
-      transition_in(if_block1);
+      transition_in(if_block2);
       current = true;
     },
     o(local) {
-      transition_out(if_block1);
+      transition_out(if_block2);
       current = false;
     },
     d(detaching) {
@@ -24597,6 +24813,7 @@ function create_default_slot$2(ctx) {
         detach(main);
       }
       if (if_block0) if_block0.d();
+      if (if_block1) if_block1.d();
       if_blocks[current_block_type_index].d();
       mounted = false;
       run_all(dispose);
@@ -24607,8 +24824,10 @@ function create_fragment$2(ctx) {
   let applicationshell;
   let updating_elementRoot;
   let current;
+  let mounted;
+  let dispose;
   function applicationshell_elementRoot_binding(value) {
-    ctx[38](value);
+    ctx[45](value);
   }
   let applicationshell_props = {
     $$slots: { default: [create_default_slot$2] },
@@ -24630,12 +24849,21 @@ function create_fragment$2(ctx) {
     m(target, anchor) {
       mount_component(applicationshell, target, anchor);
       current = true;
+      if (!mounted) {
+        dispose = listen(
+          window,
+          "click",
+          /*handleWindowClick*/
+          ctx[20]
+        );
+        mounted = true;
+      }
     },
     p(ctx2, dirty) {
       const applicationshell_changes = {};
-      if (dirty[0] & /*tracks, visibleTracks, groupedTracks, currentTrackId, isPlaying, onlinePlayers, isBroadcasting, isGM, categoryIds, categories, currentTime, duration, currentTrack, volume, doc*/
-      131068 | dirty[2] & /*$$scope*/
-      64) {
+      if (dirty[0] & /*tracks, visibleTracks, groupedTracks, currentTrackId, isPlaying, isGM, categoryIds, categories, currentTime, duration, broadcastTargetLabel, isBroadcasting, currentTrack, broadcastMenuOpen, broadcastTarget, playerVolume, gmVolume, doc*/
+      1048572 | dirty[2] & /*$$scope*/
+      8192) {
         applicationshell_changes.$$scope = { dirty, ctx: ctx2 };
       }
       if (!updating_elementRoot && dirty[0] & /*elementRoot*/
@@ -24658,6 +24886,8 @@ function create_fragment$2(ctx) {
     },
     d(detaching) {
       destroy_component(applicationshell, detaching);
+      mounted = false;
+      dispose();
     }
   };
 }
@@ -24674,11 +24904,12 @@ function instance$2($$self, $$props, $$invalidate) {
   let currentTrack;
   let visibleTracks;
   let isGM;
+  let isBroadcasting;
   let categories;
   let categoryIds;
   let groupedTracks;
-  let onlinePlayers;
-  let $tjsDoc, $$unsubscribe_tjsDoc = noop, $$subscribe_tjsDoc = () => ($$unsubscribe_tjsDoc(), $$unsubscribe_tjsDoc = subscribe(tjsDoc, ($$value) => $$invalidate(29, $tjsDoc = $$value)), tjsDoc);
+  let broadcastTargetLabel;
+  let $tjsDoc, $$unsubscribe_tjsDoc = noop, $$subscribe_tjsDoc = () => ($$unsubscribe_tjsDoc(), $$unsubscribe_tjsDoc = subscribe(tjsDoc, ($$value) => $$invalidate(34, $tjsDoc = $$value)), tjsDoc);
   $$self.$$.on_destroy.push(() => $$unsubscribe_tjsDoc());
   let { elementRoot = void 0 } = $$props;
   let { tjsDoc = null } = $$props;
@@ -24689,46 +24920,26 @@ function instance$2($$self, $$props, $$invalidate) {
   let currentTrackId = null;
   let audioElement = null;
   let isPlaying = false;
-  let volume = 0.5;
+  let gmVolume = 0.5;
+  let playerVolume = 0.5;
   let currentTime = 0;
   let duration = 0;
-  let isBroadcasting = false;
+  let broadcastMenuOpen = false;
+  let broadcastTarget = "none";
   let syncInterval = null;
-  const defaultCategories = [
-    {
-      id: "theme",
-      label: "Theme",
-      icon: "fa-music"
-    },
-    {
-      id: "combat",
-      label: "Combat",
-      icon: "fa-swords"
-    },
-    {
-      id: "dramatic",
-      label: "Dramatic",
-      icon: "fa-theater-masks"
-    },
-    {
-      id: "ambient",
-      label: "Ambient",
-      icon: "fa-wind"
+  function handleWindowClick(e) {
+    if (broadcastMenuOpen && !e.target.closest(".broadcast-selector")) {
+      $$invalidate(14, broadcastMenuOpen = false);
     }
-  ];
-  const uncategorizedCategory = {
-    id: "__uncategorized__",
-    label: "Uncategorized",
-    icon: "fa-question"
-  };
+  }
   onMount(() => {
     audioElement = new Audio();
-    audioElement.volume = volume;
-    audioElement.addEventListener("play", () => $$invalidate(8, isPlaying = true));
-    audioElement.addEventListener("pause", () => $$invalidate(8, isPlaying = false));
+    audioElement.volume = gmVolume;
+    audioElement.addEventListener("play", handlePlay);
+    audioElement.addEventListener("pause", handlePause);
     audioElement.addEventListener("ended", handleTrackEnded);
     audioElement.addEventListener("timeupdate", handleTimeUpdate);
-    audioElement.addEventListener("loadedmetadata", () => $$invalidate(11, duration = audioElement.duration || 0));
+    audioElement.addEventListener("loadedmetadata", () => $$invalidate(13, duration = audioElement.duration || 0));
   });
   onDestroy(() => {
     if (syncInterval) clearInterval(syncInterval);
@@ -24736,37 +24947,55 @@ function instance$2($$self, $$props, $$invalidate) {
       audioElement.pause();
       audioElement.src = "";
     }
-    if (isBroadcasting) stopBroadcast();
+    if (isBroadcasting) {
+      emitSocket("stopMusic", { actorName: doc?.name });
+    }
   });
+  function handlePlay() {
+    $$invalidate(9, isPlaying = true);
+    if (isBroadcasting && currentTrack) {
+      broadcastToTargets("playMusic", {
+        path: currentTrack.path,
+        name: currentTrack.name,
+        actorName: doc.name,
+        volume: playerVolume,
+        currentTime: audioElement?.currentTime || 0
+      });
+      startSyncInterval();
+    }
+  }
+  function handlePause() {
+    $$invalidate(9, isPlaying = false);
+    if (isBroadcasting) {
+      broadcastToTargets("pauseMusic", { actorName: doc.name });
+    }
+  }
   function handleTrackEnded() {
-    $$invalidate(8, isPlaying = false);
-    $$invalidate(10, currentTime = 0);
-    if (isBroadcasting) stopBroadcast();
+    $$invalidate(9, isPlaying = false);
+    $$invalidate(12, currentTime = 0);
+    if (isBroadcasting) {
+      broadcastToTargets("stopMusic", { actorName: doc.name });
+      stopSyncInterval();
+    }
   }
   function handleTimeUpdate() {
-    $$invalidate(10, currentTime = audioElement.currentTime);
-    $$invalidate(11, duration = audioElement.duration || 0);
+    $$invalidate(12, currentTime = audioElement.currentTime);
+    $$invalidate(13, duration = audioElement.duration || 0);
   }
   async function addTrack() {
-    const picker = new FilePicker({
-      type: "audio",
-      callback: async (path) => {
-        const newTrack = {
-          id: foundry.utils.randomID(),
-          name: path.split("/").pop().replace(/\.[^/.]+$/, ""),
-          path,
-          category: "theme"
-        };
-        await doc.setFlag(MODULE_ID, "music.tracks", [...tracks, newTrack]);
-      }
+    openAudioPicker(async (path) => {
+      const newTrack = {
+        id: foundry.utils.randomID(),
+        name: getFilenameFromPath(path),
+        path,
+        category: "theme"
+      };
+      await doc.setFlag(MODULE_ID, "music.tracks", [...tracks, newTrack]);
     });
-    picker.render(true);
   }
   async function removeTrack(trackId) {
-    const confirmed = await Dialog.confirm({
-      title: "Remove Track",
-      content: "<p>Are you sure you want to remove this track?</p>"
-    });
+    const track = tracks.find((t) => t.id === trackId);
+    const confirmed = await confirmDelete("Remove Track", track?.name || "this track");
     if (confirmed) {
       await doc.setFlag(MODULE_ID, "music.tracks", tracks.filter((t) => t.id !== trackId));
       if (currentTrackId === trackId) {
@@ -24776,12 +25005,8 @@ function instance$2($$self, $$props, $$invalidate) {
     }
   }
   async function renameTrack(track) {
-    const newName = await Dialog.prompt({
-      title: "Rename Track",
-      content: `<input type="text" name="name" value="${track.name}" style="width: 100%">`,
-      callback: (html) => html.find('input[name="name"]').val()
-    });
-    if (newName && newName !== track.name) {
+    const newName = await promptRename("Rename Track", track.name);
+    if (newName) {
       await doc.setFlag(MODULE_ID, "music.tracks", tracks.map((t) => t.id === track.id ? { ...t, name: newName } : t));
     }
   }
@@ -24795,34 +25020,32 @@ function instance$2($$self, $$props, $$invalidate) {
     if (!audioElement) return;
     if (currentTrackId === track.id && isPlaying) {
       audioElement.pause();
-      if (isBroadcasting) syncState();
     } else {
       $$invalidate(3, currentTrackId = track.id);
       audioElement.src = track.path;
       audioElement.play();
       await doc.setFlag(MODULE_ID, "music.currentTrack", track.id);
-      if (isBroadcasting) {
-        broadcastPlay(track);
-      }
     }
   }
   function stopTrack() {
     if (audioElement) {
       audioElement.pause();
       audioElement.currentTime = 0;
-      $$invalidate(8, isPlaying = false);
-      $$invalidate(10, currentTime = 0);
+      $$invalidate(9, isPlaying = false);
+      $$invalidate(12, currentTime = 0);
     }
     if (isBroadcasting) {
-      emitSocket("stopMusic", { docName: doc.name });
-      stopBroadcast();
+      broadcastToTargets("stopMusic", { actorName: doc.name });
     }
   }
-  function setVolume(e) {
-    $$invalidate(9, volume = parseFloat(e.target.value));
-    if (audioElement) audioElement.volume = volume;
+  function setGmVolume(e) {
+    $$invalidate(10, gmVolume = parseFloat(e.target.value));
+    if (audioElement) audioElement.volume = gmVolume;
+  }
+  function setPlayerVolume(e) {
+    $$invalidate(11, playerVolume = parseFloat(e.target.value));
     if (isBroadcasting) {
-      emitSocket("setVolume", { volume });
+      broadcastToTargets("setVolume", { volume: playerVolume });
     }
   }
   function seekTo(e, track) {
@@ -24830,77 +25053,79 @@ function instance$2($$self, $$props, $$invalidate) {
     const rect = e.currentTarget.getBoundingClientRect();
     const percent = (e.clientX - rect.left) / rect.width;
     audioElement.currentTime = percent * duration;
-    if (isBroadcasting) syncState();
+    if (isBroadcasting) {
+      broadcastToTargets("seekMusic", { currentTime: audioElement.currentTime });
+    }
   }
   function emitSocket(type, data) {
     game.socket.emit(`module.${MODULE_ID}`, { type, senderId: game.user.id, data });
   }
-  function broadcastPlay(track) {
-    emitSocket("playMusic", {
-      path: track.path,
-      name: track.name,
-      actorName: doc.name,
-      volume,
-      currentTime: audioElement?.currentTime || 0
-    });
+  function broadcastToTargets(type, data) {
+    if (broadcastTarget === "none") return;
+    const targetUsers = broadcastTarget === "all" ? void 0 : broadcastTarget;
+    emitSocket(type, { ...data, targetUsers });
   }
-  function startBroadcast() {
-    if (!isGM || !currentTrack) return;
-    $$invalidate(12, isBroadcasting = true);
-    broadcastPlay(currentTrack);
-    syncInterval = setInterval(syncState, 5e3);
+  function startSyncInterval() {
+    if (syncInterval) return;
+    syncInterval = setInterval(syncPlaybackState, 5e3);
   }
-  function stopBroadcast() {
-    $$invalidate(12, isBroadcasting = false);
+  function stopSyncInterval() {
     if (syncInterval) {
       clearInterval(syncInterval);
       syncInterval = null;
     }
   }
-  function syncState() {
+  function syncPlaybackState() {
     if (!isBroadcasting || !audioElement) return;
-    emitSocket("syncMusic", {
+    broadcastToTargets("syncMusic", {
       currentTime: audioElement.currentTime,
       isPlaying
     });
   }
-  function toggleBroadcast() {
-    if (isBroadcasting) {
-      emitSocket("stopMusic", { actorName: doc.name });
-      stopBroadcast();
-    } else {
-      startBroadcast();
+  function setBroadcastTarget(target) {
+    if (isBroadcasting && target === "none") {
+      broadcastToTargets("stopMusic", { actorName: doc.name });
+      stopSyncInterval();
+    }
+    $$invalidate(4, broadcastTarget = target);
+    if (target !== "none" && isPlaying && currentTrack) {
+      broadcastToTargets("playMusic", {
+        path: currentTrack.path,
+        name: currentTrack.name,
+        actorName: doc.name,
+        volume: playerVolume,
+        currentTime: audioElement?.currentTime || 0
+      });
+      startSyncInterval();
     }
   }
-  function broadcastToPlayer(track, userId) {
-    if (!isGM) return;
-    emitSocket("playMusic", {
-      path: track.path,
-      name: track.name,
-      actorName: doc.name,
-      volume,
-      currentTime: 0,
-      targetUsers: [userId]
-    });
+  function togglePlayerInBroadcast(userId) {
+    if (broadcastTarget === "none" || broadcastTarget === "all") {
+      setBroadcastTarget([userId]);
+    } else if (Array.isArray(broadcastTarget)) {
+      if (broadcastTarget.includes(userId)) {
+        const newTargets = broadcastTarget.filter((id) => id !== userId);
+        setBroadcastTarget(newTargets.length > 0 ? newTargets : "none");
+      } else {
+        setBroadcastTarget([...broadcastTarget, userId]);
+      }
+    }
   }
-  function broadcastTrackToAll(track) {
-    if (!isGM) return;
-    emitSocket("playMusic", {
-      path: track.path,
-      name: track.name,
-      actorName: doc.name,
-      volume,
-      currentTime: 0
-    });
+  function isPlayerInBroadcast(userId) {
+    if (broadcastTarget === "all") return true;
+    if (Array.isArray(broadcastTarget)) return broadcastTarget.includes(userId);
+    return false;
   }
-  const click_handler = (track) => playTrack(track);
+  const click_handler = () => $$invalidate(14, broadcastMenuOpen = !broadcastMenuOpen);
+  const click_handler_1 = () => setBroadcastTarget("none");
+  const click_handler_2 = () => setBroadcastTarget("all");
+  const click_handler_3 = (player) => togglePlayerInBroadcast(player.id);
+  const click_handler_4 = (track) => playTrack(track);
   const dblclick_handler = (track) => renameTrack(track);
-  const click_handler_1 = (track, e) => seekTo(e, track);
+  const click_handler_5 = (track, e) => seekTo(e, track);
   const change_handler = (track, e) => setCategoryForTrack(track, e.target.value);
   const change_handler_1 = (track, e) => setTrackOwnership(track, e.detail);
-  const click_handler_2 = (track) => broadcastTrackToAll(track);
-  const click_handler_3 = (track, player) => broadcastToPlayer(track, player.id);
-  const click_handler_4 = (track) => removeTrack(track.id);
+  const click_handler_6 = (track) => removeTrack(track.id);
   function applicationshell_elementRoot_binding(value) {
     elementRoot = value;
     $$invalidate(0, elementRoot);
@@ -24910,12 +25135,13 @@ function instance$2($$self, $$props, $$invalidate) {
     if ("tjsDoc" in $$props2) $$subscribe_tjsDoc($$invalidate(1, tjsDoc = $$props2.tjsDoc));
   };
   $$self.$$.update = () => {
-    if ($$self.$$.dirty[0] & /*tjsDoc, $tjsDoc*/
-    536870914) {
-      $$invalidate(4, doc = tjsDoc ? $tjsDoc : null);
+    if ($$self.$$.dirty[0] & /*tjsDoc*/
+    2 | $$self.$$.dirty[1] & /*$tjsDoc*/
+    8) {
+      $$invalidate(5, doc = tjsDoc ? $tjsDoc : null);
     }
     if ($$self.$$.dirty[0] & /*doc*/
-    16) {
+    32) {
       if (doc) {
         $$invalidate(2, tracks = doc.getFlag(MODULE_ID, "music.tracks") ?? []);
         $$invalidate(3, currentTrackId = doc.getFlag(MODULE_ID, "music.currentTrack") ?? null);
@@ -24923,19 +25149,23 @@ function instance$2($$self, $$props, $$invalidate) {
     }
     if ($$self.$$.dirty[0] & /*tracks, currentTrackId*/
     12) {
-      $$invalidate(14, currentTrack = tracks.find((t) => t.id === currentTrackId));
+      $$invalidate(15, currentTrack = tracks.find((t) => t.id === currentTrackId));
     }
     if ($$self.$$.dirty[0] & /*tracks, doc*/
-    20) {
-      $$invalidate(6, visibleTracks = tracks.filter((t) => canUserSee(t.ownership, game.user, doc)));
+    36) {
+      $$invalidate(7, visibleTracks = tracks.filter((t) => canUserSee(t.ownership, game.user, doc)));
+    }
+    if ($$self.$$.dirty[0] & /*broadcastTarget*/
+    16) {
+      $$invalidate(16, isBroadcasting = broadcastTarget !== "none");
     }
     if ($$self.$$.dirty[0] & /*categories*/
-    128) {
-      $$invalidate(5, categoryIds = new Set(categories.map((c) => c.id)));
+    256) {
+      $$invalidate(6, categoryIds = new Set(categories.map((c) => c.id)));
     }
     if ($$self.$$.dirty[0] & /*categories, visibleTracks, categoryIds*/
-    224) {
-      $$invalidate(16, groupedTracks = (() => {
+    448) {
+      $$invalidate(18, groupedTracks = (() => {
         const groups = categories.map((cat) => ({
           ...cat,
           tracks: visibleTracks.filter((t) => (t.category || "theme") === cat.id)
@@ -24946,35 +25176,54 @@ function instance$2($$self, $$props, $$invalidate) {
         });
         if (uncategorizedTracks.length > 0) {
           groups.push({
-            ...uncategorizedCategory,
+            ...UNCATEGORIZED_CATEGORY,
             tracks: uncategorizedTracks
           });
         }
         return groups;
       })());
     }
+    if ($$self.$$.dirty[0] & /*broadcastTarget*/
+    16) {
+      $$invalidate(17, broadcastTargetLabel = (() => {
+        if (broadcastTarget === "none") return "Off";
+        if (broadcastTarget === "all") return "All Players";
+        if (Array.isArray(broadcastTarget)) {
+          if (broadcastTarget.length === 0) return "Off";
+          if (broadcastTarget.length === 1) {
+            const user = game.users.get(broadcastTarget[0]);
+            return user?.name ?? "1 player";
+          }
+          return `${broadcastTarget.length} players`;
+        }
+        return "Off";
+      })());
+    }
   };
-  $$invalidate(13, isGM = game.user.isGM);
-  $$invalidate(7, categories = game.settings.get(MODULE_ID, "musicCategories") ?? defaultCategories);
-  $$invalidate(15, onlinePlayers = game.users.filter((u) => u.active && !u.isGM));
+  $$invalidate(19, isGM = game.user.isGM);
+  $$invalidate(8, categories = game.settings.get(MODULE_ID, "musicCategories") ?? DEFAULT_MUSIC_CATEGORIES);
   return [
     elementRoot,
     tjsDoc,
     tracks,
     currentTrackId,
+    broadcastTarget,
     doc,
     categoryIds,
     visibleTracks,
     categories,
     isPlaying,
-    volume,
+    gmVolume,
+    playerVolume,
     currentTime,
     duration,
-    isBroadcasting,
-    isGM,
+    broadcastMenuOpen,
     currentTrack,
-    onlinePlayers,
+    isBroadcasting,
+    broadcastTargetLabel,
     groupedTracks,
+    isGM,
+    handleWindowClick,
     addTrack,
     removeTrack,
     renameTrack,
@@ -24982,20 +25231,23 @@ function instance$2($$self, $$props, $$invalidate) {
     setTrackOwnership,
     playTrack,
     stopTrack,
-    setVolume,
+    setGmVolume,
+    setPlayerVolume,
     seekTo,
-    toggleBroadcast,
-    broadcastToPlayer,
-    broadcastTrackToAll,
+    setBroadcastTarget,
+    togglePlayerInBroadcast,
+    isPlayerInBroadcast,
     $tjsDoc,
     click_handler,
-    dblclick_handler,
     click_handler_1,
-    change_handler,
-    change_handler_1,
     click_handler_2,
     click_handler_3,
     click_handler_4,
+    dblclick_handler,
+    click_handler_5,
+    change_handler,
+    change_handler_1,
+    click_handler_6,
     applicationshell_elementRoot_binding
   ];
 }
@@ -25066,7 +25318,8 @@ function create_if_block_7(ctx) {
       span.textContent = "Token";
       if (!src_url_equal(img.src, img_src_value = /*currentToken*/
       ctx[9])) attr(img, "src", img_src_value);
-      attr(img, "alt", "Current Token");
+      attr(img, "alt", "");
+      attr(img, "role", "presentation");
       attr(span, "class", "preview-label");
       attr(button, "type", "button");
       attr(button, "class", "portrait-preview token");
@@ -26036,7 +26289,8 @@ function create_default_slot$1(ctx) {
       if_block3.c();
       if (!src_url_equal(img.src, img_src_value = /*currentImg*/
       ctx[5])) attr(img, "src", img_src_value);
-      attr(img, "alt", "Current Image");
+      attr(img, "alt", "");
+      attr(img, "role", "presentation");
       attr(span, "class", "preview-label");
       attr(button0, "type", "button");
       attr(button0, "class", "portrait-preview");
@@ -26369,19 +26623,17 @@ function instance$1($$self, $$props, $$invalidate) {
   async function browseForImage() {
     const category = activeTab;
     const currentPath = category === "portraits" ? currentImg : currentToken;
-    const picker = new foundry.applications.apps.FilePicker.implementation({
-      type: "image",
-      current: currentPath !== DEFAULT_IMG ? currentPath : "",
-      callback: async (path) => {
+    openImagePicker(
+      async (path) => {
         if (category === "portraits") {
           await doc.update({ img: path });
         } else if (isActor) {
           await doc.update({ "prototypeToken.texture.src": path });
         }
         await saveToCategory(path, category);
-      }
-    });
-    picker.render(true);
+      },
+      currentPath !== DEFAULT_IMG ? currentPath : ""
+    );
   }
   function click_handler(event) {
     bubble.call(this, $$self, event);
@@ -26523,14 +26775,14 @@ class PortraitGalleryShell extends SvelteComponent {
 }
 function get_each_context(ctx, list, i) {
   const child_ctx = ctx.slice();
-  child_ctx[43] = list[i];
+  child_ctx[42] = list[i];
   return child_ctx;
 }
 function get_each_context_1(ctx, list, i) {
   const child_ctx = ctx.slice();
-  child_ctx[46] = list[i];
-  child_ctx[47] = list;
-  child_ctx[48] = i;
+  child_ctx[45] = list[i];
+  child_ctx[46] = list;
+  child_ctx[47] = i;
   return child_ctx;
 }
 function create_each_block_1(key_1, ctx) {
@@ -26542,7 +26794,7 @@ function create_each_block_1(key_1, ctx) {
   let i1_class_value;
   let cat = (
     /*cat*/
-    ctx[46]
+    ctx[45]
   );
   let t1;
   let input;
@@ -26567,9 +26819,9 @@ function create_each_block_1(key_1, ctx) {
       /*click_handler_1*/
       ctx[28](
         /*cat*/
-        ctx[46],
+        ctx[45],
         /*index*/
-        ctx[48]
+        ctx[47]
       )
     );
   }
@@ -26578,7 +26830,7 @@ function create_each_block_1(key_1, ctx) {
       /*input_handler*/
       ctx[29](
         /*index*/
-        ctx[48],
+        ctx[47],
         ...args
       )
     );
@@ -26588,7 +26840,7 @@ function create_each_block_1(key_1, ctx) {
       /*click_handler_2*/
       ctx[30](
         /*index*/
-        ctx[48]
+        ctx[47]
       )
     );
   }
@@ -26597,7 +26849,7 @@ function create_each_block_1(key_1, ctx) {
       /*dragstart_handler*/
       ctx[31](
         /*index*/
-        ctx[48],
+        ctx[47],
         ...args
       )
     );
@@ -26607,7 +26859,7 @@ function create_each_block_1(key_1, ctx) {
       /*dragover_handler*/
       ctx[32](
         /*index*/
-        ctx[48],
+        ctx[47],
         ...args
       )
     );
@@ -26617,7 +26869,7 @@ function create_each_block_1(key_1, ctx) {
       /*drop_handler*/
       ctx[33](
         /*index*/
-        ctx[48],
+        ctx[47],
         ...args
       )
     );
@@ -26640,7 +26892,7 @@ function create_each_block_1(key_1, ctx) {
       t3 = space();
       attr(span, "class", "drag-handle");
       attr(i1, "class", i1_class_value = "fas " + /*cat*/
-      ctx[46].icon);
+      ctx[45].icon);
       attr(button0, "type", "button");
       attr(button0, "class", "icon-btn");
       attr(button0, "title", "Select icon");
@@ -26649,13 +26901,13 @@ function create_each_block_1(key_1, ctx) {
         "active",
         /*openIconPicker*/
         ctx[2] === /*cat*/
-        ctx[46].id
+        ctx[45].id
       );
       attr(input, "type", "text");
       attr(input, "class", "label-input");
       attr(input, "placeholder", "Category Name");
       input.value = input_value_value = /*cat*/
-      ctx[46].label;
+      ctx[45].label;
       attr(i2, "class", "fas fa-trash");
       attr(button1, "type", "button");
       attr(button1, "class", "delete-btn");
@@ -26670,16 +26922,16 @@ function create_each_block_1(key_1, ctx) {
         "dragging",
         /*draggedIndex*/
         ctx[7] === /*index*/
-        ctx[48]
+        ctx[47]
       );
       toggle_class(
         div,
         "drag-over",
         /*dragOverIndex*/
         ctx[8] === /*index*/
-        ctx[48] && /*draggedIndex*/
+        ctx[47] && /*draggedIndex*/
         ctx[7] !== /*index*/
-        ctx[48]
+        ctx[47]
       );
       this.first = div;
     },
@@ -26724,14 +26976,14 @@ function create_each_block_1(key_1, ctx) {
       ctx = new_ctx;
       if (dirty[0] & /*categories*/
       2 && i1_class_value !== (i1_class_value = "fas " + /*cat*/
-      ctx[46].icon)) {
+      ctx[45].icon)) {
         attr(i1, "class", i1_class_value);
       }
       if (cat !== /*cat*/
-      ctx[46]) {
+      ctx[45]) {
         unassign_button0();
         cat = /*cat*/
-        ctx[46];
+        ctx[45];
         assign_button0();
       }
       if (dirty[0] & /*openIconPicker, categories*/
@@ -26741,12 +26993,12 @@ function create_each_block_1(key_1, ctx) {
           "active",
           /*openIconPicker*/
           ctx[2] === /*cat*/
-          ctx[46].id
+          ctx[45].id
         );
       }
       if (dirty[0] & /*categories*/
       2 && input_value_value !== (input_value_value = /*cat*/
-      ctx[46].label) && input.value !== input_value_value) {
+      ctx[45].label) && input.value !== input_value_value) {
         input.value = input_value_value;
       }
       if (dirty[0] & /*categories*/
@@ -26761,7 +27013,7 @@ function create_each_block_1(key_1, ctx) {
           "dragging",
           /*draggedIndex*/
           ctx[7] === /*index*/
-          ctx[48]
+          ctx[47]
         );
       }
       if (dirty[0] & /*dragOverIndex, categories, draggedIndex*/
@@ -26771,9 +27023,9 @@ function create_each_block_1(key_1, ctx) {
           "drag-over",
           /*dragOverIndex*/
           ctx[8] === /*index*/
-          ctx[48] && /*draggedIndex*/
+          ctx[47] && /*draggedIndex*/
           ctx[7] !== /*index*/
-          ctx[48]
+          ctx[47]
         );
       }
     },
@@ -26815,7 +27067,7 @@ function create_default_slot(ctx) {
   );
   const get_key = (ctx2) => (
     /*cat*/
-    ctx2[46].id
+    ctx2[45].id
   );
   for (let i = 0; i < each_value_1.length; i += 1) {
     let child_ctx = get_each_context_1(ctx, each_value_1, i);
@@ -26991,7 +27243,8 @@ function create_if_block(ctx) {
         ctx[5].y + "px"
       );
       set_style(div2, "z-index", "10000");
-      attr(div2, "role", "menu");
+      attr(div2, "role", "listbox");
+      attr(div2, "tabindex", "-1");
     },
     m(target, anchor) {
       insert(target, div2, anchor);
@@ -27099,7 +27352,7 @@ function create_each_block(ctx) {
       /*click_handler_3*/
       ctx[35](
         /*icon*/
-        ctx[43]
+        ctx[42]
       )
     );
   }
@@ -27109,21 +27362,21 @@ function create_each_block(ctx) {
       i = element("i");
       t = space();
       attr(i, "class", "fas " + /*icon*/
-      ctx[43]);
+      ctx[42]);
       attr(button, "type", "button");
       attr(button, "class", "icon-option");
       attr(
         button,
         "title",
         /*icon*/
-        ctx[43]
+        ctx[42]
       );
       toggle_class(
         button,
         "selected",
         /*openCategory*/
         ctx[9].icon === /*icon*/
-        ctx[43]
+        ctx[42]
       );
     },
     m(target, anchor) {
@@ -27144,7 +27397,7 @@ function create_each_block(ctx) {
           "selected",
           /*openCategory*/
           ctx[9].icon === /*icon*/
-          ctx[43]
+          ctx[42]
         );
       }
     },
@@ -27213,7 +27466,7 @@ function create_fragment(ctx) {
       const applicationshell_changes = {};
       if (dirty[0] & /*hasChanges, categories, draggedIndex, dragOverIndex, iconButtons, openIconPicker*/
       470 | dirty[1] & /*$$scope*/
-      262144) {
+      131072) {
         applicationshell_changes.$$scope = { dirty, ctx: ctx2 };
       }
       if (!updating_elementRoot && dirty[0] & /*elementRoot*/
@@ -27276,28 +27529,6 @@ function instance($$self, $$props, $$invalidate) {
   let { elementRoot = void 0 } = $$props;
   const external = getContext("#external");
   const application = external?.application;
-  const defaultCategories = [
-    {
-      id: "theme",
-      label: "Theme",
-      icon: "fa-music"
-    },
-    {
-      id: "combat",
-      label: "Combat",
-      icon: "fa-swords"
-    },
-    {
-      id: "dramatic",
-      label: "Dramatic",
-      icon: "fa-theater-masks"
-    },
-    {
-      id: "ambient",
-      label: "Ambient",
-      icon: "fa-wind"
-    }
-  ];
   const availableIcons = [
     "fa-music",
     "fa-swords",
@@ -27346,7 +27577,7 @@ function instance($$self, $$props, $$invalidate) {
   });
   function loadCategories() {
     const saved = game.settings.get(MODULE_ID, "musicCategories");
-    $$invalidate(1, categories = Array.isArray(saved) && saved.length > 0 ? JSON.parse(JSON.stringify(saved)) : JSON.parse(JSON.stringify(defaultCategories)));
+    $$invalidate(1, categories = Array.isArray(saved) && saved.length > 0 ? JSON.parse(JSON.stringify(saved)) : JSON.parse(JSON.stringify(DEFAULT_MUSIC_CATEGORIES)));
     $$invalidate(4, hasChanges = false);
   }
   function addCategory() {
@@ -27356,7 +27587,7 @@ function instance($$self, $$props, $$invalidate) {
   }
   function removeCategory(index) {
     if (categories.length <= 1) {
-      ui.notifications.warn("At least one category is required.");
+      notifyWarn("At least one category is required.");
       return;
     }
     $$invalidate(1, categories = categories.filter((_, i) => i !== index));
@@ -27416,7 +27647,7 @@ function instance($$self, $$props, $$invalidate) {
   async function saveCategories() {
     const valid = categories.filter((c) => c.label?.trim());
     if (valid.length === 0) {
-      ui.notifications.error("At least one category with a name is required.");
+      notifyError("At least one category with a name is required.");
       return;
     }
     const cleaned = valid.map((c) => ({
@@ -27425,24 +27656,17 @@ function instance($$self, $$props, $$invalidate) {
       icon: c.icon || "fa-music"
     }));
     await game.settings.set(MODULE_ID, "musicCategories", cleaned);
-    ui.notifications.info("Music categories saved!");
+    notifyInfo("Music categories saved!");
     $$invalidate(4, hasChanges = false);
     application?.close();
   }
   function resetToDefaults() {
-    $$invalidate(1, categories = JSON.parse(JSON.stringify(defaultCategories)));
+    $$invalidate(1, categories = JSON.parse(JSON.stringify(DEFAULT_MUSIC_CATEGORIES)));
     $$invalidate(4, hasChanges = true);
   }
   function cancel() {
     if (hasChanges) {
-      Dialog.confirm({
-        title: "Unsaved Changes",
-        content: "<p>You have unsaved changes. Discard them?</p>",
-        yes: () => application?.close(),
-        no: () => {
-        },
-        defaultYes: false
-      });
+      confirmDiscardChanges(() => application?.close());
     } else {
       application?.close();
     }
@@ -27771,12 +27995,6 @@ class MusicCategoriesApp extends SvelteApp {
   }
 }
 new TJSGameSettings(MODULE_ID);
-const DEFAULT_MUSIC_CATEGORIES = [
-  { id: "theme", label: "Theme", icon: "fa-music" },
-  { id: "combat", label: "Combat", icon: "fa-swords" },
-  { id: "dramatic", label: "Dramatic", icon: "fa-theater-masks" },
-  { id: "ambient", label: "Ambient", icon: "fa-wind" }
-];
 function registerSettings() {
   _registerWorldSettings();
   _registerClientSettings();
@@ -27854,6 +28072,7 @@ function _registerClientSettings() {
   });
 }
 let broadcastAudio = null;
+let audioErrorHandler = null;
 function registerSocketListeners() {
   game.socket.on(`module.${MODULE_ID}`, handleSocketMessage);
 }
@@ -27865,8 +28084,14 @@ function handleSocketMessage(message) {
     case "playMusic":
       handlePlayMusic(data);
       break;
+    case "pauseMusic":
+      handlePauseMusic();
+      break;
     case "stopMusic":
       handleStopMusic(data);
+      break;
+    case "seekMusic":
+      handleSeekMusic(data);
       break;
     case "syncMusic":
       handleSyncMusic(data);
@@ -27876,12 +28101,20 @@ function handleSocketMessage(message) {
       break;
   }
 }
-function handlePlayMusic(data) {
-  const { path, name, actorName, volume = 0.5, currentTime = 0 } = data;
+function cleanupBroadcastAudio() {
   if (broadcastAudio) {
+    if (audioErrorHandler) {
+      broadcastAudio.removeEventListener("error", audioErrorHandler);
+      audioErrorHandler = null;
+    }
     broadcastAudio.pause();
     broadcastAudio.src = "";
+    broadcastAudio = null;
   }
+}
+function handlePlayMusic(data) {
+  const { path, name, actorName, volume = 0.5, currentTime = 0 } = data;
+  cleanupBroadcastAudio();
   broadcastAudio = new Audio(path);
   broadcastAudio.volume = volume;
   broadcastAudio.addEventListener("loadedmetadata", () => {
@@ -27911,10 +28144,7 @@ function handlePlayMusic(data) {
             icon: '<i class="fas fa-times"></i>',
             label: "Skip",
             callback: () => {
-              if (broadcastAudio) {
-                broadcastAudio.src = "";
-                broadcastAudio = null;
-              }
+              cleanupBroadcastAudio();
             }
           }
         },
@@ -27922,20 +28152,32 @@ function handlePlayMusic(data) {
       }).render(true);
     });
   }
-  broadcastAudio.addEventListener("error", () => {
+  audioErrorHandler = () => {
     ui.notifications.error(`Failed to load ${actorName}'s theme: ${name}`);
-  });
+  };
+  broadcastAudio.addEventListener("error", audioErrorHandler);
   broadcastAudio.addEventListener("ended", () => {
-    broadcastAudio = null;
+    cleanupBroadcastAudio();
   });
+}
+function handlePauseMusic(data) {
+  if (broadcastAudio && !broadcastAudio.paused) {
+    broadcastAudio.pause();
+  }
 }
 function handleStopMusic(data) {
   const { actorName } = data;
   if (broadcastAudio) {
-    broadcastAudio.pause();
-    broadcastAudio.src = "";
-    broadcastAudio = null;
-    ui.notifications.info(`🎵 ${actorName}'s theme stopped`);
+    cleanupBroadcastAudio();
+    if (actorName) {
+      ui.notifications.info(`🎵 ${actorName}'s theme stopped`);
+    }
+  }
+}
+function handleSeekMusic(data) {
+  const { currentTime } = data;
+  if (broadcastAudio && currentTime !== void 0) {
+    broadcastAudio.currentTime = currentTime;
   }
 }
 function handleSyncMusic(data) {

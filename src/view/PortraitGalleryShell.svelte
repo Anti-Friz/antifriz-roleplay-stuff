@@ -9,7 +9,7 @@
    import { getContext } from 'svelte';
    import { ApplicationShell } from '#runtime/svelte/component/application';
    import { MODULE_ID } from '#config';
-   import { canUserSee, normalizePermission, getPermissionLabel, getPermissionIcon, PERMISSION_TYPES } from '#utils';
+   import { canUserSee, normalizePermission, getPermissionLabel, getPermissionIcon, PERMISSION_TYPES, openImagePicker, getFilenameFromPath } from '#utils';
    import PermissionPicker from './components/PermissionPicker.svelte';
    
    // Required for TRL ApplicationShell
@@ -17,6 +17,7 @@
    
    // TJSDocument passed from application (reactive store)
    export let tjsDoc = null;
+   
    
    // Access application context
    const external = getContext('#external');
@@ -146,19 +147,14 @@
       const category = activeTab;
       const currentPath = category === 'portraits' ? currentImg : currentToken;
       
-      const picker = new foundry.applications.apps.FilePicker.implementation({
-         type: 'image',
-         current: currentPath !== DEFAULT_IMG ? currentPath : '',
-         callback: async (path) => {
-            if (category === 'portraits') {
-               await doc.update({ img: path });
-            } else if (isActor) {
-               await doc.update({ 'prototypeToken.texture.src': path });
-            }
-            await saveToCategory(path, category);
+      openImagePicker(async (path) => {
+         if (category === 'portraits') {
+            await doc.update({ img: path });
+         } else if (isActor) {
+            await doc.update({ 'prototypeToken.texture.src': path });
          }
-      });
-      picker.render(true);
+         await saveToCategory(path, category);
+      }, currentPath !== DEFAULT_IMG ? currentPath : '');
    }
    
    function handleImageClick(event, item) {
@@ -167,41 +163,41 @@
 </script>
 
 <ApplicationShell bind:elementRoot>
-   <main class="gallery-shell">
-      <!-- Header with current image preview -->
-      <header class="gallery-header">
-         <div class="current-portraits">
+<main class="gallery-shell">
+   <!-- Header with current image preview -->
+   <header class="gallery-header">
+      <div class="current-portraits">
+         <button 
+            type="button"
+            class="portrait-preview" 
+            class:active={activeTab === 'portraits'}
+            on:click={() => showImagePopout(currentImg, 'Image')}
+            title="Click to view full size"
+         >
+            <img src={currentImg} alt="" role="presentation" />
+            <span class="preview-label">{isItem ? 'Image' : 'Portrait'}</span>
+         </button>
+         {#if isActor}
             <button 
                type="button"
-               class="portrait-preview" 
-               class:active={activeTab === 'portraits'}
-               on:click={() => showImagePopout(currentImg, 'Image')}
+               class="portrait-preview token" 
+               class:active={activeTab === 'tokens'}
+               on:click={() => showImagePopout(currentToken, 'Token')}
                title="Click to view full size"
             >
-               <img src={currentImg} alt="Current Image" />
-               <span class="preview-label">{isItem ? 'Image' : 'Portrait'}</span>
+               <img src={currentToken} alt="" role="presentation" />
+               <span class="preview-label">Token</span>
             </button>
-            {#if isActor}
-               <button 
-                  type="button"
-                  class="portrait-preview token" 
-                  class:active={activeTab === 'tokens'}
-                  on:click={() => showImagePopout(currentToken, 'Token')}
-                  title="Click to view full size"
-               >
-                  <img src={currentToken} alt="Current Token" />
-                  <span class="preview-label">Token</span>
-               </button>
-            {/if}
-         </div>
+         {/if}
+      </div>
          
-         <button type="button" class="browse-btn" on:click={browseForImage}>
-            <i class="fas fa-folder-open"></i> 
-            {#if isItem}
-               Add Image
-            {:else}
-               {activeTab === 'portraits' ? 'Add Portrait' : 'Add Token'}
-            {/if}
+      <button type="button" class="browse-btn" on:click={browseForImage}>
+         <i class="fas fa-folder-open"></i> 
+         {#if isItem}
+            Add Image
+         {:else}
+            {activeTab === 'portraits' ? 'Add Portrait' : 'Add Token'}
+         {/if}
          </button>
       </header>
       

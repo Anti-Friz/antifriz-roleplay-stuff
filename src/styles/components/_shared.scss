@@ -1,49 +1,78 @@
 /**
  * Shared CSS variables for AntiFriz Roleplay Stuff module.
  * Uses Foundry VTT CSS variables where possible for theme integration.
+ * 
+ * Usage: All module styles should use --ars-* variables for consistency.
+ * These automatically adapt to Foundry's light/dark theme.
  */
 
 // Module CSS class for targeting all module applications
 .antifriz-roleplay-stuff {
-   // Foundry theme integration - these inherit from Foundry's theme system
+   // ==========================================
+   // Background Colors
+   // ==========================================
    --ars-bg-primary: var(--color-bg-option, #1a1a2e);
    --ars-bg-secondary: var(--color-bg-option-hover, #2a2a4a);
    --ars-bg-hover: var(--color-bg-highlight, rgba(255, 255, 255, 0.1));
    --ars-bg-input: var(--color-bg-input, rgba(0, 0, 0, 0.3));
+   --ars-bg-btn: var(--color-bg-btn, #3a3a4e);
    
+   // ==========================================
+   // Text Colors
+   // ==========================================
    --ars-text-primary: var(--color-text-primary, #e0e0e0);
-   --ars-text-secondary: var(--color-text-secondary, #888);
+   --ars-text-secondary: var(--color-text-dark-secondary, #888);
    --ars-text-hyperlink: var(--color-text-hyperlink, #7c3aed);
    
-   --ars-border-color: var(--color-border-highlight, #3a3a5a);
+   // ==========================================
+   // Border & Radius
+   // ==========================================
+   --ars-border-color: var(--color-border-light-tertiary, #3a3a5a);
    --ars-border-radius: var(--border-radius, 4px);
    
-   --ars-accent: var(--color-text-hyperlink, #7c3aed);
-   --ars-accent-hover: var(--color-text-hyperlink-hover, #6d28d9);
+   // ==========================================
+   // Accent & Status Colors
+   // ==========================================
+   --ars-accent: #7c3aed;
+   --ars-accent-hover: #6d28d9;
    --ars-success: #22c55e;
    --ars-danger: #ef4444;
+   --ars-warning: #f59e0b;
    
-   // Overlays - from TJS essential patterns
+   // ==========================================
+   // Overlays (from TJS essential patterns)
+   // ==========================================
    --ars-overlay-border: 1px solid var(--ars-border-color);
    --ars-overlay-border-radius: var(--ars-border-radius);
    --ars-overlay-padding: 0.5rem;
    --ars-overlay-background: var(--color-bg-option, rgba(0, 0, 0, 0.2));
    
+   // ==========================================
    // Spacing
+   // ==========================================
+   --ars-gap-xs: 0.125rem;
    --ars-gap-sm: 0.25rem;
    --ars-gap-md: 0.5rem;
    --ars-gap-lg: 1rem;
+   --ars-gap-xl: 1.5rem;
    
+   // ==========================================
    // Shadows
+   // ==========================================
    --ars-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
    --ars-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3);
    --ars-shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.4);
    
+   // ==========================================
    // Transitions
+   // ==========================================
    --ars-transition-fast: 0.15s ease;
    --ars-transition-normal: 0.25s ease;
+   --ars-transition-slow: 0.35s ease;
    
+   // ==========================================
    // Focus styles (from TJS patterns)
+   // ==========================================
    --tjs-default-outline-focus-visible: 2px solid var(--ars-accent);
 }
 

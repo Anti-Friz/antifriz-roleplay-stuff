@@ -7,20 +7,13 @@
     */
    import { getContext, onMount, onDestroy, tick } from 'svelte';
    import { ApplicationShell } from '#runtime/svelte/component/application';
-   import { MODULE_ID } from '#config';
+   import { MODULE_ID, DEFAULT_MUSIC_CATEGORIES } from '#config';
+   import { confirmDiscardChanges, notifyInfo, notifyWarn, notifyError } from '#utils';
    
    export let elementRoot = void 0;
    
    const external = getContext('#external');
    const application = external?.application;
-   
-   // Default categories (fallback)
-   const defaultCategories = [
-      { id: 'theme', label: 'Theme', icon: 'fa-music' },
-      { id: 'combat', label: 'Combat', icon: 'fa-swords' },
-      { id: 'dramatic', label: 'Dramatic', icon: 'fa-theater-masks' },
-      { id: 'ambient', label: 'Ambient', icon: 'fa-wind' }
-   ];
    
    // Available icons for grid picker
    const availableIcons = [
@@ -61,9 +54,10 @@
       const saved = game.settings.get(MODULE_ID, 'musicCategories');
       categories = Array.isArray(saved) && saved.length > 0 
          ? JSON.parse(JSON.stringify(saved))
-         : JSON.parse(JSON.stringify(defaultCategories));
+         : JSON.parse(JSON.stringify(DEFAULT_MUSIC_CATEGORIES));
       hasChanges = false;
    }
+   
    
    function addCategory() {
       const newId = `custom_${foundry.utils.randomID(8)}`;
@@ -77,7 +71,7 @@
    
    function removeCategory(index) {
       if (categories.length <= 1) {
-         ui.notifications.warn('At least one category is required.');
+         notifyWarn('At least one category is required.');
          return;
       }
       categories = categories.filter((_, i) => i !== index);
@@ -89,6 +83,7 @@
       categories = categories;
       hasChanges = true;
    }
+   
    
    function selectIcon(index, icon) {
       updateCategory(index, 'icon', icon);
@@ -153,7 +148,7 @@
    async function saveCategories() {
       const valid = categories.filter(c => c.label?.trim());
       if (valid.length === 0) {
-         ui.notifications.error('At least one category with a name is required.');
+         notifyError('At least one category with a name is required.');
          return;
       }
       
@@ -164,25 +159,19 @@
       }));
       
       await game.settings.set(MODULE_ID, 'musicCategories', cleaned);
-      ui.notifications.info('Music categories saved!');
+      notifyInfo('Music categories saved!');
       hasChanges = false;
       application?.close();
    }
    
    function resetToDefaults() {
-      categories = JSON.parse(JSON.stringify(defaultCategories));
+      categories = JSON.parse(JSON.stringify(DEFAULT_MUSIC_CATEGORIES));
       hasChanges = true;
    }
    
    function cancel() {
       if (hasChanges) {
-         Dialog.confirm({
-            title: 'Unsaved Changes',
-            content: '<p>You have unsaved changes. Discard them?</p>',
-            yes: () => application?.close(),
-            no: () => {},
-            defaultYes: false
-         });
+         confirmDiscardChanges(() => application?.close());
       } else {
          application?.close();
       }
@@ -292,7 +281,8 @@
       use:portal
       on:click|stopPropagation
       on:keydown|stopPropagation
-      role="menu"
+      role="listbox"
+      tabindex="-1"
    >
       <div class="icon-grid">
          {#each availableIcons as icon}

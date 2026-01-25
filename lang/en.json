@@ -35,5 +35,68 @@
       "Notes": "Define custom categories for organizing character music. Changes apply to all actors and items.",
       "AddCategory": "Add Category"
     }
+  },
+  "MUSIC": {
+    "Title": "{name}'s Music",
+    "AddTrack": "Add Track",
+    "RemoveTrack": "Remove Track",
+    "RenameTrack": "Rename Track",
+    "NoTracksYet": "No tracks added yet",
+    "NoTracksVisible": "No tracks visible",
+    "AllTracksHidden": "All tracks are hidden from you",
+    "ClickToAdd": "Click + to add character music",
+    "Stop": "Stop",
+    "Broadcast": "Broadcast",
+    "Broadcasting": "Broadcasting...",
+    "StartBroadcast": "Start Broadcast",
+    "StopBroadcast": "Stop Broadcast",
+    "PlayForAll": "Play for All",
+    "NoPlayersOnline": "No players online",
+    "CategoryInvalid": "Category no longer exists - please select a new one",
+    "Uncategorized": "Uncategorized"
+  },
+  "GALLERY": {
+    "Title": "{name}'s Gallery",
+    "AddPortrait": "Add Portrait",
+    "AddToken": "Add Token",
+    "AddImage": "Add Image",
+    "NoImagesYet": "No {type} saved yet",
+    "ClickToAdd": "Click \"Add {type}\" to browse and add images",
+    "Portraits": "Portraits",
+    "Tokens": "Tokens",
+    "SetAsPortrait": "Set as Portrait",
+    "SetAsToken": "Set as Token",
+    "SetAsImage": "Set as Image",
+    "ResetToDefault": "Reset to default",
+    "MoveTo": "Move to {category}",
+    "RemoveFromGallery": "Remove from gallery",
+    "ClickToViewFull": "Click to view full size"
+  },
+  "PERMISSIONS": {
+    "Everyone": "Everyone",
+    "OwnerOnly": "Owner Only",
+    "GMOnly": "GM Only",
+    "Custom": "Custom...",
+    "SelectPlayers": "Select Players",
+    "NoPlayersFound": "No players found",
+    "Selected": "{count} selected",
+    "Apply": "Apply",
+    "SetVisibility": "Set visibility: {level}"
+  },
+  "DIALOGS": {
+    "RemoveConfirm": "Are you sure you want to remove {name}?",
+    "UnsavedChanges": "Unsaved Changes",
+    "DiscardChanges": "You have unsaved changes. Discard them?",
+    "AtLeastOneCategory": "At least one category is required.",
+    "AtLeastOneCategoryWithName": "At least one category with a name is required.",
+    "CategoriesSaved": "Music categories saved!"
+  },
+  "COMMON": {
+    "Save": "Save",
+    "Cancel": "Cancel",
+    "Apply": "Apply",
+    "Reset": "Reset to Defaults",
+    "Search": "Search...",
+    "Online": "Online"
   }
 }

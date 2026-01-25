@@ -10,19 +10,25 @@ A Foundry VTT module that enhances roleplay immersion by adding character music 
 
 ### 🎵 Character Music Player
 - Add and manage background music tracks for your characters and items
-- Built-in audio player with playback controls
-- File picker integration for easy track selection
+- Built-in audio player with playback controls (play, pause, stop, seek)
+- Organize tracks by customizable categories (Theme, Combat, Dramatic, Ambient, etc.)
+- **GM Broadcast** - Stream music to specific players or all connected clients
+- **Permission System** - Control who can see/play each track (Everyone, Owner, GM Only, or Custom players)
 - Persistent music settings per actor/item
 - Real-time synchronization across all connected clients
 
 ### 🖼️ Portrait Gallery
 - Create visual galleries for characters and items
-- Upload and organize multiple portraits or images
-- Share visual references with other players
+- Separate tabs for **Portraits** and **Tokens** (Actors only)
+- One-click switch between portraits/tokens
+- **Permission System** - Control visibility per image (Everyone, Owner, GM Only, or Custom players)
+- Image search and filtering
+- Click to view full-size image popout
 - Perfect for character art, items, locations, and more
 
 ### ⚙️ Flexible Configuration
 - Toggle music and gallery buttons independently for Actors and Items
+- **Custom Music Categories** - Create, edit, reorder your own categories with drag & drop
 - Granular control through module settings
 - Debug mode for troubleshooting
 
@@ -62,6 +68,7 @@ Access module settings via **Configure Settings → Module Settings → AntiFriz
 - **Show Gallery Button (Actors)** - Toggle gallery button on Actor sheets
 - **Show Music Button (Items)** - Toggle music button on Item sheets
 - **Show Gallery Button (Items)** - Toggle gallery button on Item sheets
+- **Music Categories** - Configure custom music categories (GM only)
 - **Debug Mode** - Enable console logging for troubleshooting
 
 ## 🛠️ Technical Details
@@ -77,12 +84,15 @@ Built with modern web technologies for optimal performance:
 ```
 src/
 ├── apps/                       # SvelteApp application classes
-│   └── characterSheetAddition/ # Music & Gallery apps
+│   ├── characterSheetAddition/ # Music & Gallery apps
+│   └── settings/               # Settings apps (Music Categories)
 ├── config/                     # Module configuration constants
-├── hooks/                      # Foundry hooks & settings
-├── utils/                      # Helper functions & logger
+├── hooks/                      # Foundry hooks & settings registration
+├── utils/                      # Helper functions (permissions, logger)
 ├── view/                       # Svelte UI components
-└── styles/                     # SCSS stylesheets
+│   └── components/             # Reusable Svelte components
+└── styles/
+    └── components/             # SCSS component stylesheets
 ```
 
 ## 🔧 Development
@@ -91,6 +101,7 @@ src/
 - Node.js 18+ and npm
 - Foundry VTT v13+
 - Basic knowledge of JavaScript/Svelte (optional)
+
 
 ### Setup
 ```bash
