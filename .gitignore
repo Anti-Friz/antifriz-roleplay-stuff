@@ -428,3 +428,4 @@ FodyWeavers.xsd
 *.msp
 /DOCS
 /.vite-cache
+/module.zip
