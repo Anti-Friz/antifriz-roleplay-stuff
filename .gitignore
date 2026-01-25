@@ -427,3 +427,4 @@ FodyWeavers.xsd
 *.msm
 *.msp
 /DOCS/essential-svelte-esm-main
+/DOCS

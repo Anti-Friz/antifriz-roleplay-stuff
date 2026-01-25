@@ -1,63 +1,144 @@
-![template-svelte-esm](https://i.imgur.com/rmfWSrs.jpg)
+# AntiFriz Roleplay Stuff
 
+[![Foundry VTT](https://img.shields.io/badge/Foundry-v13-informational)](https://foundryvtt.com/)
+[![License](https://img.shields.io/github/license/Anti-Friz/antifriz-roleplay-stuff)](LICENSE)
+[![Latest Release](https://img.shields.io/github/v/release/Anti-Friz/antifriz-roleplay-stuff)](https://github.com/Anti-Friz/antifriz-roleplay-stuff/releases/latest)
 
-[![TyphonJS Discord](https://img.shields.io/discord/737953117999726592?label=TyphonJS%20Discord)](https://typhonjs.io/discord/)
-[![Twitch](https://img.shields.io/twitch/status/typhonrt?style=social)](https://www.twitch.tv/typhonrt)
-[![Code Style](https://img.shields.io/badge/code%20style-allman-yellowgreen.svg?style=flat)](https://en.wikipedia.org/wiki/Indent_style#Allman_style)
-[![License](https://img.shields.io/badge/license-MIT-yellowgreen.svg?style=flat)](https://github.com/typhonjs-fvtt-demo/template-svelte-esm/blob/main/LICENSE)
+A Foundry VTT module that enhances roleplay immersion by adding character music players and portrait galleries directly to Actor and Item sheets.
 
-Provides a bare-bones Foundry module template repo to get set up with using
-[TyphonJS Runtime Library](https://github.com/typhonjs-fvtt-lib/runtime) and [Svelte](https://svelte.dev/) on
-[Foundry VTT](https://foundryvtt.com/) with ES Modules.
+## ✨ Features
 
-Triple licensed under the [CC0](https://github.com/typhonjs-fvtt-demo/template-svelte-esm/blob/main/LICENSE-CC0),
-[MIT](https://github.com/typhonjs-fvtt-demo/template-svelte-esm/blob/main/LICENSE-MIT), or
-[Unlicense](https://github.com/typhonjs-fvtt-demo/template-svelte-esm/blob/main/LICENSE-UNLICENSE). This repo is
-intended as public domain / freely available starter code that you can use for any project you choose and licensed
-however you see fit with no restrictions.
+### 🎵 Character Music Player
+- Add and manage background music tracks for your characters and items
+- Built-in audio player with playback controls
+- File picker integration for easy track selection
+- Persistent music settings per actor/item
+- Real-time synchronization across all connected clients
 
-## About:
-Getting started with a new library or development methodology can be difficult. This template repo contains a
-bare-bones setup suitable to start working on your own module. Certainly do check out
-[Essential Svelte (ESM)](https://github.com/typhonjs-fvtt-demo/essential-svelte-esm) for more involved demos that show specific
-concepts available with Svelte and TRL. Please stop by the
-[![TyphonJS Discord](https://img.shields.io/discord/737953117999726592?label=TyphonJS)](https://typhonjs.io/discord/)
-Discord server to ask any questions.
+### 🖼️ Portrait Gallery
+- Create visual galleries for characters and items
+- Upload and organize multiple portraits or images
+- Share visual references with other players
+- Perfect for character art, items, locations, and more
 
-## Installation (Requires Foundry VTT version 10):
-1. Create your version of the template in a new repo by clicking on the "template" button above. In this process rename
-the repo to your new module name.
-2. Use WebStorm or VSCode to clone your repo into the Foundry VTT data / modules directory (make sure to keep the name
-of your repo as the folder installed in your module directory).
-3. Modify the module `id` in `module.json` to match your new Foundry package ID.
-4. You may of course also change the title of the module in `module.json` to your new module name.
-5. In `./vite.config.mjs` update `s_PACKAGE_ID` which references `modules/template-svelte-esm` to your new module ID.
-in step #3 above. Also provide a short unique hash ID for `s_SVELTE_HASH_ID`; suggestion: base it off your package ID.
-6. Open in your IDE or via command line and proceed to run `npm install`
-7. Run the NPM script `build` to create the production bundle or `dev` to run in developer mode which uses `esbuild` &
-HMR (hot module replacement) to dynamically update your running module in real time for all Svelte related components.
-8. Restart Foundry VTT. This is necessary for Foundry to load the new module.
-9. You should now have a new module installed `Template Svelte (ESM)` or whatever title you set in step #4 visible in
-your modules list.
-10. Launch a game / world of your choice.
-11. Enable your new module under `Manage Modules`.
-12. On reload the basic application will appear instantly as it is rendered in the `ready` Foundry hook from the entry
-point: [./src/index.js](https://github.com/typhonjs-fvtt-demo/template-svelte-esm/blob/main/src/index.js)
+### ⚙️ Flexible Configuration
+- Toggle music and gallery buttons independently for Actors and Items
+- Granular control through module settings
+- Debug mode for troubleshooting
 
-## What Is Happening Here?
-Not a lot as this is a bare-bones setup allowing you to further modify this module to your own liking. It provides
-the basic build setup and a "dummy" SvelteApplication instance. The best thing to do is to change your repo name to the
-ID of your new module and update `id` in `module.json` to match your new module ID.
+## 📦 Installation
 
-## About the TyphonJS Runtime Library:
-The TyphonJS Runtime Library (TRL) brings an exciting new library resource for all Foundry VTT developers to build
-advanced modules and game systems using Svelte. A Svelte UI component library built for Foundry and extensions to the
-core Foundry UI / Application framework make it easy to create declarative Svelte based UIs in a method familiar to
-Foundry VTT developers. The core UI component framework contains reactive "application shells" that provide an enhanced
-ability to control your UI / window experience including intro and outro transitions along with support key UI elements
-like context menus and a new backward compatible and API compliant Dialog component that features a modal dialog option.
+### Via Manifest URL
+1. In Foundry VTT, go to **Add-on Modules** tab
+2. Click **Install Module**
+3. Paste this manifest URL:
+   ```
+   https://github.com/Anti-Friz/antifriz-roleplay-stuff/releases/latest/download/module.json
+   ```
+4. Click **Install**
 
-TRL is innovative as it delivers a runtime library module for Foundry that packages up the runtime in a way that
-can be shared across any number of modules / game systems utilizing it thereby saving a lot of space in any given
-module or game system. Optionally, it is possible to also bundle TRL directly into your module or game system. The TRL
-is both a Foundry library module and an NPM package providing the development dependency utilized for code
+### Manual Installation
+1. Download the latest release from [GitHub Releases](https://github.com/Anti-Friz/antifriz-roleplay-stuff/releases)
+2. Extract the zip file to your Foundry `Data/modules` directory
+3. Restart Foundry VTT
+4. Enable the module in your world's **Manage Modules** settings
+
+## 🚀 Usage
+
+### For Actors
+1. Open any Actor sheet
+2. Look for the 🎵 **Music** and 🖼️ **Gallery** buttons in the header
+3. Click to open the respective interface
+4. Add tracks or images using the provided controls
+
+### For Items
+1. Open any Item sheet
+2. Music and Gallery buttons work the same as for Actors
+3. Perfect for legendary items with their own themes or visual lore
+
+### Module Settings
+Access module settings via **Configure Settings → Module Settings → AntiFriz Roleplay Stuff**:
+- **Show Music Button (Actors)** - Toggle music button on Actor sheets
+- **Show Gallery Button (Actors)** - Toggle gallery button on Actor sheets
+- **Show Music Button (Items)** - Toggle music button on Item sheets
+- **Show Gallery Button (Items)** - Toggle gallery button on Item sheets
+- **Debug Mode** - Enable console logging for troubleshooting
+
+## 🛠️ Technical Details
+
+Built with modern web technologies for optimal performance:
+- **[TyphonJS Runtime Library (TRL)](https://github.com/typhonjs-fvtt-lib/runtime)** - Advanced Svelte integration for Foundry VTT
+- **[Svelte 4](https://svelte.dev/)** - Reactive UI framework
+- **[Vite](https://vitejs.dev/)** - Lightning-fast build tooling
+- **ES Modules (ESM)** - Modern JavaScript architecture
+- **Socket.io** - Real-time client synchronization
+
+### Project Structure
+```
+src/
+├── apps/                       # SvelteApp application classes
+│   └── characterSheetAddition/ # Music & Gallery apps
+├── config/                     # Module configuration constants
+├── hooks/                      # Foundry hooks & settings
+├── utils/                      # Helper functions & logger
+├── view/                       # Svelte UI components
+└── styles/                     # SCSS stylesheets
+```
+
+## 🔧 Development
+
+### Prerequisites
+- Node.js 18+ and npm
+- Foundry VTT v13+
+- Basic knowledge of JavaScript/Svelte (optional)
+
+### Setup
+```bash
+# Clone the repository
+git clone https://github.com/Anti-Friz/antifriz-roleplay-stuff.git
+cd antifriz-roleplay-stuff
+
+# Install dependencies
+npm install
+
+# Build for production
+npm run build
+
+# Run dev server with hot module replacement (HMR)
+npm run dev
+```
+
+### Development Workflow
+1. Run `npm run dev` to start the Vite dev server (port 30001)
+2. HMR will automatically update your running module in real-time
+3. Make changes to `.mjs`, `.svelte`, or `.scss` files
+4. See changes instantly without reloading Foundry
+
+See [`.github/copilot-instructions.md`](.github/copilot-instructions.md) for detailed coding guidelines.
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to:
+- Report bugs via [GitHub Issues](https://github.com/Anti-Friz/antifriz-roleplay-stuff/issues)
+- Submit feature requests
+- Open pull requests with improvements
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- Built with [TyphonJS Runtime Library](https://github.com/typhonjs-fvtt-lib/runtime)
+- Inspired by the Foundry VTT community's creativity
+- Thanks to all contributors and testers
+
+## 📞 Support
+
+- **Issues**: [GitHub Issues](https://github.com/Anti-Friz/antifriz-roleplay-stuff/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/Anti-Friz/antifriz-roleplay-stuff/discussions)
+- **TyphonJS Discord**: [![TyphonJS Discord](https://img.shields.io/discord/737953117999726592?label=TyphonJS)](https://typhonjs.io/discord/)
+
+---
+
+Made with ❤️ for the Foundry VTT community
