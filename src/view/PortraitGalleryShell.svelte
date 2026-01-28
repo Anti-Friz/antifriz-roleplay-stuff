@@ -1,16 +1,16 @@
 <svelte:options accessors={true}/>
 
 <script>
-   /**
-    * PortraitGalleryShell - Manage images for Actors or Items.
-    * Uses TJSDocument for reactive document updates.
-    * Supports ownership permissions for images.
-    */
-   import { getContext } from 'svelte';
-   import { ApplicationShell } from '#runtime/svelte/component/application';
-   import { MODULE_ID } from '#config';
-   import { canUserSee, normalizePermission, getPermissionLabel, getPermissionIcon, PERMISSION_TYPES, openImagePicker, getFilenameFromPath } from '#utils';
-   import PermissionPicker from './components/PermissionPicker.svelte';
+/**
+ * PortraitGalleryShell - Manage images for Actors or Items.
+ * Uses TJSDocument for reactive document updates.
+ * Supports ownership permissions for images.
+ */
+import { getContext, onMount } from 'svelte';
+import { ApplicationShell } from '#runtime/svelte/component/application';
+import { MODULE_ID } from '#config';
+import { canUserSee, normalizePermission, getPermissionLabel, getPermissionIcon, PERMISSION_TYPES, openImagePicker, getFilenameFromPath, isCustomImage, getImageName } from '#utils';
+import PermissionPicker from './components/PermissionPicker.svelte';
    
    // Required for TRL ApplicationShell
    export let elementRoot = void 0;
@@ -62,6 +62,66 @@
       
       // Ownership filter using centralized permission system
       return canUserSee(item.ownership, game.user, doc);
+   });
+   
+   // ============================================
+   // AUTO-ADD CURRENT IMAGES ON MOUNT
+   // ============================================
+   
+   /**
+    * Automatically add current portrait/token to gallery if they are custom images.
+    * Useful for existing games where actors already have custom images set.
+    */
+   async function autoAddCurrentImages() {
+      if (!doc) return;
+      
+      const data = doc.getFlag(MODULE_ID, 'gallery') ?? { portraits: [], tokens: [] };
+      let hasChanges = false;
+      
+      // Check current portrait/image
+      const imgPath = doc.img;
+      if (isCustomImage(imgPath)) {
+         const portraitExists = (data.portraits ?? []).some(p => p.path === imgPath);
+         if (!portraitExists) {
+            data.portraits = data.portraits ?? [];
+            data.portraits.push({
+               path: imgPath,
+               name: getImageName(imgPath),
+               ownership: 'all',
+               addedAt: Date.now()
+            });
+            hasChanges = true;
+         }
+      }
+      
+      // Check current token (for actors only)
+      if (isActor) {
+         const tokenPath = doc.prototypeToken?.texture?.src;
+         if (isCustomImage(tokenPath)) {
+            const tokenExists = (data.tokens ?? []).some(t => t.path === tokenPath);
+            if (!tokenExists) {
+               data.tokens = data.tokens ?? [];
+               data.tokens.push({
+                  path: tokenPath,
+                  name: getImageName(tokenPath),
+                  ownership: 'all',
+                  addedAt: Date.now()
+               });
+               hasChanges = true;
+            }
+         }
+      }
+      
+      // Save if changes were made
+      if (hasChanges) {
+         await doc.setFlag(MODULE_ID, 'gallery', data);
+      }
+   }
+   
+   // Run auto-add on mount
+   onMount(() => {
+      // Small delay to ensure document is fully loaded
+      setTimeout(() => autoAddCurrentImages(), 100);
    });
    
    // ============================================

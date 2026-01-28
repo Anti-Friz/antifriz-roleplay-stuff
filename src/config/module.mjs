@@ -8,10 +8,42 @@ export const constants = {
 };
 
 /**
+ * Default/placeholder images used by Foundry VTT.
+ * Used to detect if an actor/item has a custom image.
+ * @type {string[]}
+ */
+export const DEFAULT_IMAGES = [
+   // Actor defaults
+   'icons/svg/mystery-man.svg',
+   'icons/svg/cowled.svg',
+   // Item defaults
+   'icons/svg/item-bag.svg',
+   'icons/svg/chest.svg',
+   'icons/svg/book.svg',
+   'icons/svg/combat.svg',
+   'icons/svg/dice-target.svg',
+   'icons/svg/lightning.svg',
+   'icons/svg/sun.svg',
+   'icons/svg/tower.svg',
+   // Common placeholders
+   'icons/svg/hazard.svg',
+   'icons/svg/skull.svg',
+   'icons/svg/statue.svg',
+   'icons/svg/village.svg',
+   'icons/svg/blood.svg',
+   'icons/svg/acid.svg',
+   'icons/svg/eye.svg',
+   // Empty/null cases
+   '',
+   null,
+   undefined
+];
+
+/**
  * Foundry game setting keys.
  * @type {ESSettingConstants}
  */
-const settings = {
+export const settings = {
    showMusicButton: 'showMusicButton',
    showGalleryButton: 'showGalleryButton',
    showItemMusicButton: 'showItemMusicButton',
