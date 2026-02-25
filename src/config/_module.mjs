@@ -6,8 +6,10 @@ import { constants } from './module.mjs';
 export * as moduleConfig from './module.mjs';
 
 export { constants, DEFAULT_IMAGES } from './module.mjs';
+export { WEAPON_FX_PRESETS, getPresetCategories, getPresetsByCategory, getPresetById } from './weaponFxPresets.mjs';
 
 export const MODULE_ID = constants.moduleId;
+export const MODULE_LABEL = constants.moduleLabel;
 
 /**
  * Default music categories

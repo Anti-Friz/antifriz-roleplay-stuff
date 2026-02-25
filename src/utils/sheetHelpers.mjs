@@ -1,5 +1,5 @@
 import { MODULE_ID } from '#config';
-import { CharacterMusicApp, PortraitGalleryApp } from '#applications';
+import { CharacterMusicApp, PortraitGalleryApp, WeaponFxApp, DefensiveFxApp } from '#applications';
 
 // ========================================
 // AppV1 Header Buttons (Legacy / v12 and prior)
@@ -57,6 +57,18 @@ export function injectItemHeaderButtons(sheet, buttons) {
          onclick: function() { CharacterMusicApp.open(doc); }
       });
    }
+
+   // Weapon FX + Defensive FX dropdown (gated by world setting)
+   const showFxButton = game.settings.get(MODULE_ID, 'enableWeaponFx');
+   if (showFxButton) {
+      buttons.unshift({
+         class: 'antifriz-fx-menu-btn',
+         icon: 'fas fa-wand-magic-sparkles',
+         onclick: function(e) {
+            _showFxDropdown(e, doc);
+         }
+      });
+   }
 }
 
 // ========================================
@@ -88,8 +100,8 @@ export function injectDocumentSheetV2Buttons(app, el) {
       ? game.settings.get(MODULE_ID, 'showMusicButton')
       : game.settings.get(MODULE_ID, 'showItemMusicButton');
    
-   if (!showGallery && !showMusic) return;
-   
+   if (!showGallery && !showMusic && !(isItem && game.settings.get(MODULE_ID, 'enableWeaponFx'))) return;
+
    // Get the element
    let html = el;
    if (html instanceof jQuery) html = html[0];
@@ -133,4 +145,75 @@ export function injectDocumentSheetV2Buttons(app, el) {
       });
       refElement.before(galleryBtn);
    }
+
+   // Add FX dropdown button (items only, gated by world setting)
+   const showFx = isItem && game.settings.get(MODULE_ID, 'enableWeaponFx');
+   if (showFx && !header.querySelector('button[data-action="antifriz-fx-menu"]')) {
+      const fxBtn = document.createElement('button');
+      fxBtn.type = 'button';
+      fxBtn.dataset.action = 'antifriz-fx-menu';
+      fxBtn.dataset.tooltip = 'Effects';
+      fxBtn.classList.add('header-control', 'fas', 'fa-wand-magic-sparkles', 'icon');
+      fxBtn.addEventListener('click', (e) => {
+         e.preventDefault();
+         e.stopPropagation();
+         _showFxDropdown(e, doc);
+      });
+      refElement.before(fxBtn);
+   }
+}
+
+// ========================================
+// FX Dropdown Menu
+// ========================================
+
+/**
+ * Show a small dropdown menu with Weapon FX and Defensive FX options.
+ * @param {MouseEvent} event
+ * @param {Item} doc
+ */
+function _showFxDropdown(event, doc) {
+   // Remove any existing dropdown
+   document.querySelector('.ars-fx-dropdown')?.remove();
+
+   const dropdown = document.createElement('div');
+   dropdown.classList.add('ars-fx-dropdown');
+
+   const menuItems = [
+      { icon: 'fa-burst', label: 'Weapon FX', action: () => WeaponFxApp.open(doc) },
+      { icon: 'fa-shield-halved', label: 'Defensive FX', action: () => DefensiveFxApp.open(doc) }
+   ];
+
+   for (const item of menuItems) {
+      const row = document.createElement('button');
+      row.type = 'button';
+      row.classList.add('ars-fx-dropdown-item');
+      row.innerHTML = `<i class="fas ${item.icon}"></i> ${item.label}`;
+      row.addEventListener('click', (e) => {
+         e.preventDefault();
+         e.stopPropagation();
+         dropdown.remove();
+         item.action();
+      });
+      dropdown.appendChild(row);
+   }
+
+   // Position near the button
+   const target = event.currentTarget ?? event.target;
+   const rect = target.getBoundingClientRect();
+   dropdown.style.position = 'fixed';
+   dropdown.style.top = `${rect.bottom + 4}px`;
+   dropdown.style.left = `${rect.left}px`;
+   dropdown.style.zIndex = '9999';
+
+   document.body.appendChild(dropdown);
+
+   // Close on outside click
+   const closeHandler = (e) => {
+      if (!dropdown.contains(e.target)) {
+         dropdown.remove();
+         document.removeEventListener('click', closeHandler, true);
+      }
+   };
+   setTimeout(() => document.addEventListener('click', closeHandler, true), 0);
 }

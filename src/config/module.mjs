@@ -48,6 +48,7 @@ export const settings = {
    showGalleryButton: 'showGalleryButton',
    showItemMusicButton: 'showItemMusicButton',
    showItemGalleryButton: 'showItemGalleryButton',
+   enableWeaponFx: 'enableWeaponFx',
    debugMode: 'debugMode'
 };
 
@@ -57,5 +58,6 @@ export const settings = {
  * @property {string} showGalleryButton - Show gallery button on actor sheets
  * @property {string} showItemMusicButton - Show music button on item sheets
  * @property {string} showItemGalleryButton - Show gallery button on item sheets
+ * @property {string} enableWeaponFx - Enable Weapon FX subsystem (world, GM only)
  * @property {string} debugMode - Enable debug logging
  */

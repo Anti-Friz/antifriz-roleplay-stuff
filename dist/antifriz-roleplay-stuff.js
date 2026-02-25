@@ -191,6 +191,9 @@ function attr(node, attribute, value) {
   if (value == null) node.removeAttribute(attribute);
   else if (node.getAttribute(attribute) !== value) node.setAttribute(attribute, value);
 }
+function to_number(value) {
+  return value === "" ? null : +value;
+}
 function children(element2) {
   return Array.from(element2.childNodes);
 }
@@ -2293,7 +2296,406 @@ const DEFAULT_IMAGES = [
   null,
   void 0
 ];
+const WEAPON_FX_PRESETS = [
+  // ==========================================
+  // Ballistic — conventional firearms
+  // ==========================================
+  {
+    id: "pistol",
+    name: "Pistol",
+    category: "Ballistic",
+    icon: "fa-gun",
+    description: "Single shot handgun",
+    config: {
+      fxType: "ranged",
+      rateOfFire: { mode: "single", delayBetweenShots: 150, randomizeDelay: true },
+      projectile: { enabled: true, travelMode: "projectile", scatter: 0.2 },
+      muzzle: { enabled: true, scale: 0.4 },
+      impact: { enabled: true, scale: 0.4 },
+      casing: { enabled: true, scale: 0.2, ejectDirection: "right", persist: false }
+    }
+  },
+  {
+    id: "revolver",
+    name: "Revolver",
+    category: "Ballistic",
+    icon: "fa-gun",
+    description: "Heavy revolver — no casing ejection",
+    config: {
+      fxType: "ranged",
+      rateOfFire: { mode: "single", delayBetweenShots: 200, randomizeDelay: true },
+      projectile: { enabled: true, travelMode: "projectile", scatter: 0.15 },
+      muzzle: { enabled: true, scale: 0.5 },
+      impact: { enabled: true, scale: 0.5 },
+      casing: { enabled: false }
+    }
+  },
+  {
+    id: "smg",
+    name: "SMG",
+    category: "Ballistic",
+    icon: "fa-gun",
+    description: "Submachine gun — burst fire",
+    config: {
+      fxType: "ranged",
+      rateOfFire: { mode: "burst", burstCount: 3, delayBetweenShots: 80, randomizeDelay: true },
+      projectile: { enabled: true, travelMode: "projectile", scatter: 0.35 },
+      muzzle: { enabled: true, scale: 0.4 },
+      impact: { enabled: true, scale: 0.4 },
+      casing: { enabled: true, scale: 0.2, ejectDirection: "right", persist: false }
+    }
+  },
+  {
+    id: "assault-rifle",
+    name: "Assault Rifle",
+    category: "Ballistic",
+    icon: "fa-gun",
+    description: "Automatic rifle — burst/auto",
+    config: {
+      fxType: "ranged",
+      rateOfFire: { mode: "burst", burstCount: 3, autoCount: 6, delayBetweenShots: 70, randomizeDelay: true },
+      projectile: { enabled: true, travelMode: "projectile", scatter: 0.3 },
+      muzzle: { enabled: true, scale: 0.5 },
+      impact: { enabled: true, scale: 0.5 },
+      casing: { enabled: true, scale: 0.2, ejectDirection: "right", persist: false }
+    }
+  },
+  {
+    id: "shotgun",
+    name: "Shotgun",
+    category: "Ballistic",
+    icon: "fa-gun",
+    description: "Pump-action shotgun — wide spread",
+    config: {
+      fxType: "ranged",
+      rateOfFire: { mode: "single", delayBetweenShots: 300, randomizeDelay: false },
+      projectile: { enabled: true, travelMode: "projectile", scatter: 0.6 },
+      muzzle: { enabled: true, scale: 0.7 },
+      impact: { enabled: true, scale: 0.6 },
+      casing: { enabled: true, scale: 0.3, ejectDirection: "right", persist: false }
+    }
+  },
+  {
+    id: "sniper",
+    name: "Sniper Rifle",
+    category: "Ballistic",
+    icon: "fa-crosshairs",
+    description: "Precision rifle — minimal scatter",
+    config: {
+      fxType: "ranged",
+      rateOfFire: { mode: "single", delayBetweenShots: 500, randomizeDelay: false },
+      projectile: { enabled: true, travelMode: "projectile", scatter: 0.05 },
+      muzzle: { enabled: true, scale: 0.6 },
+      impact: { enabled: true, scale: 0.6 },
+      casing: { enabled: true, scale: 0.25, ejectDirection: "right", persist: false }
+    }
+  },
+  {
+    id: "machinegun",
+    name: "Machine Gun",
+    category: "Ballistic",
+    icon: "fa-gun",
+    description: "Heavy automatic — high volume of fire",
+    config: {
+      fxType: "ranged",
+      rateOfFire: { mode: "auto", autoCount: 8, delayBetweenShots: 60, randomizeDelay: true },
+      projectile: { enabled: true, travelMode: "projectile", scatter: 0.4 },
+      muzzle: { enabled: true, scale: 0.6 },
+      impact: { enabled: true, scale: 0.5 },
+      casing: { enabled: true, scale: 0.2, ejectDirection: "right", persist: false }
+    }
+  },
+  // ==========================================
+  // Energy — lasers, plasma, etc.
+  // ==========================================
+  {
+    id: "laser-pistol",
+    name: "Laser Pistol",
+    category: "Energy",
+    icon: "fa-bolt",
+    description: "Light laser — beam type",
+    config: {
+      fxType: "ranged",
+      rateOfFire: { mode: "single", delayBetweenShots: 100, randomizeDelay: false },
+      projectile: { enabled: true, travelMode: "beam", scatter: 0.1, speed: 1.5 },
+      muzzle: { enabled: true, scale: 0.3 },
+      impact: { enabled: true, scale: 0.4 },
+      casing: { enabled: false }
+    }
+  },
+  {
+    id: "laser-rifle",
+    name: "Laser Rifle",
+    category: "Energy",
+    icon: "fa-bolt",
+    description: "Standard laser rifle — beam",
+    config: {
+      fxType: "ranged",
+      rateOfFire: { mode: "single", delayBetweenShots: 120, randomizeDelay: false },
+      projectile: { enabled: true, travelMode: "beam", scatter: 0.05, speed: 1.5 },
+      muzzle: { enabled: true, scale: 0.4 },
+      impact: { enabled: true, scale: 0.5 },
+      casing: { enabled: false }
+    }
+  },
+  {
+    id: "plasma",
+    name: "Plasma Gun",
+    category: "Energy",
+    icon: "fa-sun",
+    description: "Plasma bolt — slow, powerful pulse",
+    config: {
+      fxType: "ranged",
+      rateOfFire: { mode: "single", delayBetweenShots: 300, randomizeDelay: false },
+      projectile: { enabled: true, travelMode: "pulse", scatter: 0.15, speed: 0.6 },
+      muzzle: { enabled: true, scale: 0.6 },
+      impact: { enabled: true, scale: 0.7 },
+      casing: { enabled: false }
+    }
+  },
+  // ==========================================
+  // Warhammer 40k — iconic weapons
+  // ==========================================
+  {
+    id: "bolter",
+    name: "Bolter",
+    category: "Warhammer 40k",
+    icon: "fa-meteor",
+    description: "Bolt rounds — explosive projectiles",
+    config: {
+      fxType: "ranged",
+      rateOfFire: { mode: "semi", delayBetweenShots: 120, randomizeDelay: true },
+      projectile: { enabled: true, travelMode: "projectile", scatter: 0.2 },
+      muzzle: { enabled: true, scale: 0.5 },
+      impact: { enabled: true, scale: 0.6 },
+      casing: { enabled: true, scale: 0.25, ejectDirection: "right", persist: false }
+    }
+  },
+  {
+    id: "bolt-pistol",
+    name: "Bolt Pistol",
+    category: "Warhammer 40k",
+    icon: "fa-meteor",
+    description: "Compact bolter pistol",
+    config: {
+      fxType: "ranged",
+      rateOfFire: { mode: "single", delayBetweenShots: 150, randomizeDelay: true },
+      projectile: { enabled: true, travelMode: "projectile", scatter: 0.25 },
+      muzzle: { enabled: true, scale: 0.4 },
+      impact: { enabled: true, scale: 0.5 },
+      casing: { enabled: true, scale: 0.2, ejectDirection: "right", persist: false }
+    }
+  },
+  {
+    id: "heavy-bolter",
+    name: "Heavy Bolter",
+    category: "Warhammer 40k",
+    icon: "fa-meteor",
+    description: "Heavy support — sustained fire",
+    config: {
+      fxType: "ranged",
+      rateOfFire: { mode: "auto", autoCount: 6, delayBetweenShots: 80, randomizeDelay: true },
+      projectile: { enabled: true, travelMode: "projectile", scatter: 0.35 },
+      muzzle: { enabled: true, scale: 0.7 },
+      impact: { enabled: true, scale: 0.7 },
+      casing: { enabled: true, scale: 0.3, ejectDirection: "right", persist: false }
+    }
+  },
+  {
+    id: "lasgun",
+    name: "Lasgun",
+    category: "Warhammer 40k",
+    icon: "fa-bolt",
+    description: "Imperial Guard standard — laser beam",
+    config: {
+      fxType: "ranged",
+      rateOfFire: { mode: "single", delayBetweenShots: 100, randomizeDelay: true },
+      projectile: { enabled: true, travelMode: "beam", scatter: 0.1, speed: 2 },
+      muzzle: { enabled: true, scale: 0.3 },
+      impact: { enabled: true, scale: 0.3 },
+      casing: { enabled: false }
+    }
+  },
+  {
+    id: "laspistol",
+    name: "Laspistol",
+    category: "Warhammer 40k",
+    icon: "fa-bolt",
+    description: "Compact laser sidearm",
+    config: {
+      fxType: "ranged",
+      rateOfFire: { mode: "single", delayBetweenShots: 120, randomizeDelay: true },
+      projectile: { enabled: true, travelMode: "beam", scatter: 0.15, speed: 2 },
+      muzzle: { enabled: true, scale: 0.3 },
+      impact: { enabled: true, scale: 0.3 },
+      casing: { enabled: false }
+    }
+  },
+  {
+    id: "autogun",
+    name: "Autogun",
+    category: "Warhammer 40k",
+    icon: "fa-gun",
+    description: "Automatic stubber — cheap and fast",
+    config: {
+      fxType: "ranged",
+      rateOfFire: { mode: "auto", autoCount: 5, delayBetweenShots: 70, randomizeDelay: true },
+      projectile: { enabled: true, travelMode: "projectile", scatter: 0.4 },
+      muzzle: { enabled: true, scale: 0.4 },
+      impact: { enabled: true, scale: 0.4 },
+      casing: { enabled: true, scale: 0.2, ejectDirection: "right", persist: false }
+    }
+  },
+  {
+    id: "stubber",
+    name: "Stub Gun",
+    category: "Warhammer 40k",
+    icon: "fa-gun",
+    description: "Basic solid projectile sidearm",
+    config: {
+      fxType: "ranged",
+      rateOfFire: { mode: "single", delayBetweenShots: 180, randomizeDelay: true },
+      projectile: { enabled: true, travelMode: "projectile", scatter: 0.25 },
+      muzzle: { enabled: true, scale: 0.4 },
+      impact: { enabled: true, scale: 0.4 },
+      casing: { enabled: true, scale: 0.15, ejectDirection: "right", persist: false }
+    }
+  },
+  {
+    id: "melta",
+    name: "Meltagun",
+    category: "Warhammer 40k",
+    icon: "fa-fire",
+    description: "Short range fusion beam — devastating",
+    config: {
+      fxType: "ranged",
+      rateOfFire: { mode: "single", delayBetweenShots: 400, randomizeDelay: false },
+      projectile: { enabled: true, travelMode: "beam", scatter: 0.1, speed: 0.8 },
+      muzzle: { enabled: true, scale: 0.8 },
+      impact: { enabled: true, scale: 0.8 },
+      casing: { enabled: false }
+    }
+  },
+  {
+    id: "flamer",
+    name: "Flamer",
+    category: "Warhammer 40k",
+    icon: "fa-fire-flame-curved",
+    description: "Flame template weapon",
+    config: {
+      fxType: "ranged",
+      rateOfFire: { mode: "single", delayBetweenShots: 200, randomizeDelay: false },
+      projectile: { enabled: true, travelMode: "beam", scatter: 0.5, speed: 0.5 },
+      muzzle: { enabled: true, scale: 0.7 },
+      impact: { enabled: true, scale: 0.6 },
+      casing: { enabled: false }
+    }
+  },
+  // ==========================================
+  // Fantasy — bows, crossbows, magic
+  // ==========================================
+  {
+    id: "bow",
+    name: "Bow",
+    category: "Fantasy",
+    icon: "fa-bow-arrow",
+    description: "Longbow or shortbow — arrow projectile",
+    config: {
+      fxType: "ranged",
+      rateOfFire: { mode: "single", delayBetweenShots: 200, randomizeDelay: false },
+      projectile: { enabled: true, travelMode: "projectile", scatter: 0.15, speed: 0.8 },
+      muzzle: { enabled: false },
+      impact: { enabled: true, scale: 0.4 },
+      casing: { enabled: false }
+    }
+  },
+  {
+    id: "crossbow",
+    name: "Crossbow",
+    category: "Fantasy",
+    icon: "fa-crosshairs",
+    description: "Crossbow bolt — precise",
+    config: {
+      fxType: "ranged",
+      rateOfFire: { mode: "single", delayBetweenShots: 300, randomizeDelay: false },
+      projectile: { enabled: true, travelMode: "projectile", scatter: 0.1, speed: 1 },
+      muzzle: { enabled: false },
+      impact: { enabled: true, scale: 0.4 },
+      casing: { enabled: false }
+    }
+  },
+  {
+    id: "fire-bolt",
+    name: "Fire Bolt",
+    category: "Fantasy",
+    icon: "fa-fire",
+    description: "Magical fire projectile",
+    config: {
+      fxType: "magic",
+      rateOfFire: { mode: "single", delayBetweenShots: 200, randomizeDelay: false },
+      projectile: { enabled: true, travelMode: "pulse", scatter: 0.15, speed: 0.7 },
+      muzzle: { enabled: true, scale: 0.4 },
+      impact: { enabled: true, scale: 0.6 },
+      casing: { enabled: false }
+    }
+  },
+  {
+    id: "magic-missile",
+    name: "Magic Missile",
+    category: "Fantasy",
+    icon: "fa-wand-sparkles",
+    description: "Arcane bolt — auto-hit, multiple projectiles",
+    config: {
+      fxType: "magic",
+      rateOfFire: { mode: "burst", burstCount: 3, delayBetweenShots: 150, randomizeDelay: false },
+      projectile: { enabled: true, travelMode: "pulse", scatter: 0.1, speed: 0.8 },
+      muzzle: { enabled: true, scale: 0.3 },
+      impact: { enabled: true, scale: 0.4 },
+      casing: { enabled: false }
+    }
+  },
+  // ==========================================
+  // Thrown
+  // ==========================================
+  {
+    id: "thrown-knife",
+    name: "Throwing Knife",
+    category: "Thrown",
+    icon: "fa-dagger",
+    description: "Fast thrown weapon",
+    config: {
+      fxType: "thrown",
+      rateOfFire: { mode: "single", delayBetweenShots: 200, randomizeDelay: false },
+      projectile: { enabled: true, travelMode: "projectile", scatter: 0.2, speed: 0.8, randomizeMirrorY: true },
+      muzzle: { enabled: false },
+      impact: { enabled: true, scale: 0.4 },
+      casing: { enabled: false }
+    }
+  },
+  {
+    id: "grenade",
+    name: "Grenade",
+    category: "Thrown",
+    icon: "fa-bomb",
+    description: "Explosive — large impact",
+    config: {
+      fxType: "thrown",
+      rateOfFire: { mode: "single", delayBetweenShots: 300, randomizeDelay: false },
+      projectile: { enabled: true, travelMode: "projectile", scatter: 0.3, speed: 0.5 },
+      muzzle: { enabled: false },
+      impact: { enabled: true, scale: 1 },
+      casing: { enabled: false }
+    }
+  }
+];
+function getPresetCategories() {
+  return [...new Set(WEAPON_FX_PRESETS.map((p) => p.category))];
+}
+function getPresetsByCategory(category) {
+  return WEAPON_FX_PRESETS.filter((p) => p.category === category);
+}
 const MODULE_ID = constants.moduleId;
+const MODULE_LABEL = constants.moduleLabel;
 const DEFAULT_MUSIC_CATEGORIES = [
   { id: "theme", label: "Theme", icon: "fa-music" },
   { id: "combat", label: "Combat", icon: "fa-swords" },
@@ -5188,11 +5590,11 @@ class A11yHelper {
   /**
    * @param {boolean}  debug - Global debug enabled
    */
-  static set debug(debug) {
-    if (typeof debug !== "boolean") {
+  static set debug(debug2) {
+    if (typeof debug2 !== "boolean") {
       throw new TypeError(`'debug' is not a boolean.`);
     }
-    this.#globalDebug = debug;
+    this.#globalDebug = debug2;
   }
   /**
    * Runs a media query to determine if the user / OS configuration is set up for reduced motion / animation.
@@ -5223,9 +5625,9 @@ class A11yHelper {
     }
     const focusOpts = isObject(options?.focusSource) ? options.focusSource : options;
     setTimeout(() => {
-      const debug = typeof focusOpts.debug === "boolean" ? this.debug || focusOpts.debug : this.debug;
+      const debug2 = typeof focusOpts.debug === "boolean" ? this.debug || focusOpts.debug : this.debug;
       if (isIterable(focusOpts.focusEl)) {
-        if (debug) {
+        if (debug2) {
           console.debug(
             `A11yHelper.applyFocusSource debug - Attempting to apply focus target: `,
             focusOpts.focusEl
@@ -5234,7 +5636,7 @@ class A11yHelper {
         for (const target of focusOpts.focusEl) {
           if (target?.nodeType === Node.ELEMENT_NODE && target?.isConnected) {
             target?.focus();
-            if (debug) {
+            if (debug2) {
               console.debug(`A11yHelper.applyFocusSource debug - Applied focus to target: `, target);
             }
             break;
@@ -5242,16 +5644,16 @@ class A11yHelper {
             const element2 = document.querySelector(target);
             if (element2?.nodeType === Node.ELEMENT_NODE && element2?.isConnected) {
               element2?.focus();
-              if (debug) {
+              if (debug2) {
                 console.debug(`A11yHelper.applyFocusSource debug - Applied focus to target: `, element2);
               }
               break;
-            } else if (debug) {
+            } else if (debug2) {
               console.debug(`A11yHelper.applyFocusSource debug - Could not query selector: `, target);
             }
           }
         }
-      } else if (debug) {
+      } else if (debug2) {
         console.debug(`A11yHelper.applyFocusSource debug - No focus targets defined.`);
       }
     }, 0);
@@ -5383,16 +5785,16 @@ class A11yHelper {
    * @privateRemarks
    * TODO: Evaluate / test against touch input devices.
    */
-  static getFocusSource({ event, x, y, focusEl, debug = false }) {
+  static getFocusSource({ event, x, y, focusEl, debug: debug2 = false }) {
     if (focusEl !== void 0 && !this.isFocusSource(focusEl)) {
       throw new TypeError(
         `A11yHelper.getFocusSource error: 'focusEl' is not a HTMLElement, SVGElement, or string.`
       );
     }
-    if (debug !== void 0 && typeof debug !== "boolean") {
+    if (debug2 !== void 0 && typeof debug2 !== "boolean") {
       throw new TypeError(`A11yHelper.getFocusSource error: 'debug' is not a boolean.`);
     }
-    const debugEnabled = typeof debug === "boolean" ? this.debug || debug : this.debug;
+    const debugEnabled = typeof debug2 === "boolean" ? this.debug || debug2 : this.debug;
     if (event === void 0) {
       if (typeof x !== "number") {
         throw new TypeError(`A11yHelper.getFocusSource error: 'event' not defined and 'x' is not a number.`);
@@ -5401,7 +5803,7 @@ class A11yHelper {
         throw new TypeError(`A11yHelper.getFocusSource error: 'event' not defined and 'y' is not a number.`);
       }
       const result2 = {
-        debug,
+        debug: debug2,
         focusEl: focusEl !== void 0 ? [focusEl] : void 0,
         x,
         y
@@ -5449,7 +5851,7 @@ class A11yHelper {
         }
       }
     }
-    const result = { debug };
+    const result = { debug: debug2 };
     if (CrossWindow.isPointerEvent(event)) {
       if (event?.button !== 2 && event.type === "contextmenu") {
         const rectTarget = targetEl ?? event.target;
@@ -15272,21 +15674,21 @@ function popoverTooltip(node, { cssClass, direction, isHTML, locked, tooltip }) 
     }
   };
 }
-function create_if_block$6(ctx) {
+function create_if_block$a(ctx) {
   let if_block_anchor;
   function select_block_type(ctx2, dirty) {
     if (
       /*iconType*/
       ctx2[3] === "font"
-    ) return create_if_block_1$4;
+    ) return create_if_block_1$8;
     if (
       /*iconType*/
       ctx2[3] === "img"
-    ) return create_if_block_2$4;
+    ) return create_if_block_2$8;
     if (
       /*iconType*/
       ctx2[3] === "svg"
-    ) return create_if_block_3$3;
+    ) return create_if_block_3$7;
   }
   let current_block_type = select_block_type(ctx);
   let if_block = current_block_type && current_block_type(ctx);
@@ -15321,7 +15723,7 @@ function create_if_block$6(ctx) {
     }
   };
 }
-function create_if_block_3$3(ctx) {
+function create_if_block_3$7(ctx) {
   let svg;
   let inlineSvg_action;
   let mounted;
@@ -15357,7 +15759,7 @@ function create_if_block_3$3(ctx) {
     }
   };
 }
-function create_if_block_2$4(ctx) {
+function create_if_block_2$8(ctx) {
   let img;
   let img_src_value;
   return {
@@ -15385,7 +15787,7 @@ function create_if_block_2$4(ctx) {
     }
   };
 }
-function create_if_block_1$4(ctx) {
+function create_if_block_1$8(ctx) {
   let i;
   let i_class_value;
   return {
@@ -15415,7 +15817,7 @@ function create_if_block_1$4(ctx) {
     }
   };
 }
-function create_fragment$9(ctx) {
+function create_fragment$d(ctx) {
   let button_1;
   let button_1_class_value;
   let applyStyles_action;
@@ -15424,7 +15826,7 @@ function create_fragment$9(ctx) {
   let dispose;
   let if_block = (
     /*icon*/
-    ctx[2] && create_if_block$6(ctx)
+    ctx[2] && create_if_block$a(ctx)
   );
   return {
     c() {
@@ -15498,7 +15900,7 @@ function create_fragment$9(ctx) {
         if (if_block) {
           if_block.p(ctx2, dirty);
         } else {
-          if_block = create_if_block$6(ctx2);
+          if_block = create_if_block$a(ctx2);
           if_block.c();
           if_block.m(button_1, null);
         }
@@ -15555,7 +15957,7 @@ function create_fragment$9(ctx) {
     }
   };
 }
-function instance$9($$self, $$props, $$invalidate) {
+function instance$d($$self, $$props, $$invalidate) {
   let icon;
   let label;
   let tooltipDirection;
@@ -15657,7 +16059,7 @@ function instance$9($$self, $$props, $$invalidate) {
 class TJSHeaderButton extends SvelteComponent {
   constructor(options) {
     super();
-    init(this, options, instance$9, create_fragment$9, safe_not_equal, { button: 0, storeHeaderButtonNoLabel: 1 });
+    init(this, options, instance$d, create_fragment$d, safe_not_equal, { button: 0, storeHeaderButtonNoLabel: 1 });
   }
   get button() {
     return this.$$.ctx[0];
@@ -15674,17 +16076,17 @@ class TJSHeaderButton extends SvelteComponent {
     flush();
   }
 }
-function get_each_context$4(ctx, list, i) {
+function get_each_context$7(ctx, list, i) {
   const child_ctx = ctx.slice();
   child_ctx[40] = list[i];
   return child_ctx;
 }
-function get_each_context_1$3(ctx, list, i) {
+function get_each_context_1$6(ctx, list, i) {
   const child_ctx = ctx.slice();
   child_ctx[40] = list[i];
   return child_ctx;
 }
-function create_if_block_2$3(ctx) {
+function create_if_block_2$7(ctx) {
   let svg;
   let inlineSvg_action;
   let mounted;
@@ -15720,7 +16122,7 @@ function create_if_block_2$3(ctx) {
     }
   };
 }
-function create_if_block_1$3(ctx) {
+function create_if_block_1$7(ctx) {
   let i;
   let i_class_value;
   return {
@@ -15746,7 +16148,7 @@ function create_if_block_1$3(ctx) {
     }
   };
 }
-function create_if_block$5(ctx) {
+function create_if_block$9(ctx) {
   let img;
   let img_src_value;
   return {
@@ -15778,7 +16180,7 @@ function create_if_block$5(ctx) {
     }
   };
 }
-function create_each_block_1$3(ctx) {
+function create_each_block_1$6(ctx) {
   let switch_instance;
   let switch_instance_anchor;
   let current;
@@ -15863,7 +16265,7 @@ function create_each_block_1$3(ctx) {
     }
   };
 }
-function create_each_block$4(ctx) {
+function create_each_block$7(ctx) {
   let switch_instance;
   let switch_instance_anchor;
   let current;
@@ -15970,15 +16372,15 @@ function create_key_block(ctx) {
     if (
       /*mediaType*/
       ctx2[8] === "img"
-    ) return create_if_block$5;
+    ) return create_if_block$9;
     if (
       /*mediaType*/
       ctx2[8] === "font"
-    ) return create_if_block_1$3;
+    ) return create_if_block_1$7;
     if (
       /*mediaType*/
       ctx2[8] === "svg"
-    ) return create_if_block_2$3;
+    ) return create_if_block_2$7;
   }
   let current_block_type = select_block_type(ctx);
   let if_block = current_block_type && current_block_type(ctx);
@@ -15988,7 +16390,7 @@ function create_key_block(ctx) {
   );
   let each_blocks_1 = [];
   for (let i = 0; i < each_value_1.length; i += 1) {
-    each_blocks_1[i] = create_each_block_1$3(get_each_context_1$3(ctx, each_value_1, i));
+    each_blocks_1[i] = create_each_block_1$6(get_each_context_1$6(ctx, each_value_1, i));
   }
   const out = (i) => transition_out(each_blocks_1[i], 1, 1, () => {
     each_blocks_1[i] = null;
@@ -15999,7 +16401,7 @@ function create_key_block(ctx) {
   );
   let each_blocks = [];
   for (let i = 0; i < each_value.length; i += 1) {
-    each_blocks[i] = create_each_block$4(get_each_context$4(ctx, each_value, i));
+    each_blocks[i] = create_each_block$7(get_each_context$7(ctx, each_value, i));
   }
   const out_1 = (i) => transition_out(each_blocks[i], 1, 1, () => {
     each_blocks[i] = null;
@@ -16114,12 +16516,12 @@ function create_key_block(ctx) {
         );
         let i;
         for (i = 0; i < each_value_1.length; i += 1) {
-          const child_ctx = get_each_context_1$3(ctx2, each_value_1, i);
+          const child_ctx = get_each_context_1$6(ctx2, each_value_1, i);
           if (each_blocks_1[i]) {
             each_blocks_1[i].p(child_ctx, dirty);
             transition_in(each_blocks_1[i], 1);
           } else {
-            each_blocks_1[i] = create_each_block_1$3(child_ctx);
+            each_blocks_1[i] = create_each_block_1$6(child_ctx);
             each_blocks_1[i].c();
             transition_in(each_blocks_1[i], 1);
             each_blocks_1[i].m(header, t3);
@@ -16139,12 +16541,12 @@ function create_key_block(ctx) {
         );
         let i;
         for (i = 0; i < each_value.length; i += 1) {
-          const child_ctx = get_each_context$4(ctx2, each_value, i);
+          const child_ctx = get_each_context$7(ctx2, each_value, i);
           if (each_blocks[i]) {
             each_blocks[i].p(child_ctx, dirty);
             transition_in(each_blocks[i], 1);
           } else {
-            each_blocks[i] = create_each_block$4(child_ctx);
+            each_blocks[i] = create_each_block$7(child_ctx);
             each_blocks[i].c();
             transition_in(each_blocks[i], 1);
             each_blocks[i].m(header, null);
@@ -16210,7 +16612,7 @@ function create_key_block(ctx) {
     }
   };
 }
-function create_fragment$8(ctx) {
+function create_fragment$c(ctx) {
   let previous_key = (
     /*draggable*/
     ctx[0]
@@ -16260,7 +16662,7 @@ function create_fragment$8(ctx) {
     }
   };
 }
-function instance$8($$self, $$props, $$invalidate) {
+function instance$c($$self, $$props, $$invalidate) {
   let $focusKeep;
   let $focusAuto;
   let $elementRoot;
@@ -16465,7 +16867,7 @@ function instance$8($$self, $$props, $$invalidate) {
 class TJSApplicationHeader extends SvelteComponent {
   constructor(options) {
     super();
-    init(this, options, instance$8, create_fragment$8, safe_not_equal, { draggable: 0, draggableOptions: 25 }, null, [-1, -1]);
+    init(this, options, instance$c, create_fragment$c, safe_not_equal, { draggable: 0, draggableOptions: 25 }, null, [-1, -1]);
   }
 }
 class ResizeHandleTransform {
@@ -16522,7 +16924,7 @@ class ResizeHandleTransform {
     return this.#pDeltaLocal;
   }
 }
-function create_fragment$7(ctx) {
+function create_fragment$b(ctx) {
   let div;
   let resizable_action;
   let mounted;
@@ -16586,7 +16988,7 @@ function create_fragment$7(ctx) {
     }
   };
 }
-function instance$7($$self, $$props, $$invalidate) {
+function instance$b($$self, $$props, $$invalidate) {
   let $storeElementRoot;
   let $storeMinimized;
   let $storeResizable;
@@ -16726,10 +17128,10 @@ function instance$7($$self, $$props, $$invalidate) {
 class ResizableHandle extends SvelteComponent {
   constructor(options) {
     super();
-    init(this, options, instance$7, create_fragment$7, safe_not_equal, { isResizable: 10 });
+    init(this, options, instance$b, create_fragment$b, safe_not_equal, { isResizable: 10 });
   }
 }
-function create_fragment$6(ctx) {
+function create_fragment$a(ctx) {
   let div;
   let mounted;
   let dispose;
@@ -16765,7 +17167,7 @@ function create_fragment$6(ctx) {
     }
   };
 }
-function instance$6($$self, $$props, $$invalidate) {
+function instance$a($$self, $$props, $$invalidate) {
   let { elementRoot = void 0 } = $$props;
   let { enabled = true } = $$props;
   let ignoreElements, wrapEl;
@@ -16805,10 +17207,10 @@ function instance$6($$self, $$props, $$invalidate) {
 class TJSFocusWrap extends SvelteComponent {
   constructor(options) {
     super();
-    init(this, options, instance$6, create_fragment$6, safe_not_equal, { elementRoot: 2, enabled: 3 });
+    init(this, options, instance$a, create_fragment$a, safe_not_equal, { elementRoot: 2, enabled: 3 });
   }
 }
-function create_else_block$3(ctx) {
+function create_else_block$5(ctx) {
   let div;
   let tjsapplicationheader;
   let t0;
@@ -17093,7 +17495,7 @@ function create_else_block$3(ctx) {
     }
   };
 }
-function create_if_block$4(ctx) {
+function create_if_block$8(ctx) {
   let div;
   let tjsapplicationheader;
   let t0;
@@ -17393,12 +17795,12 @@ function create_if_block$4(ctx) {
     }
   };
 }
-function create_fragment$5(ctx) {
+function create_fragment$9(ctx) {
   let current_block_type_index;
   let if_block;
   let if_block_anchor;
   let current;
-  const if_block_creators = [create_if_block$4, create_else_block$3];
+  const if_block_creators = [create_if_block$8, create_else_block$5];
   const if_blocks = [];
   function select_block_type(ctx2, dirty) {
     if (
@@ -17459,7 +17861,7 @@ function create_fragment$5(ctx) {
     }
   };
 }
-function instance$5($$self, $$props, $$invalidate) {
+function instance$9($$self, $$props, $$invalidate) {
   let appResizeObserver;
   let appClasses;
   let $focusKeep;
@@ -17806,8 +18208,8 @@ class ApplicationShell extends SvelteComponent {
     init(
       this,
       options,
-      instance$5,
-      create_fragment$5,
+      instance$9,
+      create_fragment$9,
       safe_not_equal,
       {
         elementContent: 0,
@@ -22026,6 +22428,16 @@ function injectItemHeaderButtons(sheet, buttons) {
       }
     });
   }
+  const showFxButton = game.settings.get(MODULE_ID, "enableWeaponFx");
+  if (showFxButton) {
+    buttons.unshift({
+      class: "antifriz-fx-menu-btn",
+      icon: "fas fa-wand-magic-sparkles",
+      onclick: function(e) {
+        _showFxDropdown(e, doc);
+      }
+    });
+  }
 }
 function injectDocumentSheetV2Buttons(app, el) {
   if (!(app instanceof foundry.applications.api.ApplicationV2)) return;
@@ -22036,7 +22448,7 @@ function injectDocumentSheetV2Buttons(app, el) {
   if (!isActor && !isItem) return;
   const showGallery = isActor ? game.settings.get(MODULE_ID, "showGalleryButton") : game.settings.get(MODULE_ID, "showItemGalleryButton");
   const showMusic = isActor ? game.settings.get(MODULE_ID, "showMusicButton") : game.settings.get(MODULE_ID, "showItemMusicButton");
-  if (!showGallery && !showMusic) return;
+  if (!showGallery && !showMusic && !(isItem && game.settings.get(MODULE_ID, "enableWeaponFx"))) return;
   let html = el;
   if (html instanceof jQuery) html = html[0];
   const header = html.querySelector("header.window-header");
@@ -22068,6 +22480,69 @@ function injectDocumentSheetV2Buttons(app, el) {
       PortraitGalleryApp.open(doc);
     });
     refElement.before(galleryBtn);
+  }
+  const showFx = isItem && game.settings.get(MODULE_ID, "enableWeaponFx");
+  if (showFx && !header.querySelector('button[data-action="antifriz-fx-menu"]')) {
+    const fxBtn = document.createElement("button");
+    fxBtn.type = "button";
+    fxBtn.dataset.action = "antifriz-fx-menu";
+    fxBtn.dataset.tooltip = "Effects";
+    fxBtn.classList.add("header-control", "fas", "fa-wand-magic-sparkles", "icon");
+    fxBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      _showFxDropdown(e, doc);
+    });
+    refElement.before(fxBtn);
+  }
+}
+function _showFxDropdown(event, doc) {
+  document.querySelector(".ars-fx-dropdown")?.remove();
+  const dropdown = document.createElement("div");
+  dropdown.classList.add("ars-fx-dropdown");
+  const menuItems = [
+    { icon: "fa-burst", label: "Weapon FX", action: () => WeaponFxApp.open(doc) },
+    { icon: "fa-shield-halved", label: "Defensive FX", action: () => DefensiveFxApp.open(doc) }
+  ];
+  for (const item of menuItems) {
+    const row = document.createElement("button");
+    row.type = "button";
+    row.classList.add("ars-fx-dropdown-item");
+    row.innerHTML = `<i class="fas ${item.icon}"></i> ${item.label}`;
+    row.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropdown.remove();
+      item.action();
+    });
+    dropdown.appendChild(row);
+  }
+  const target = event.currentTarget ?? event.target;
+  const rect = target.getBoundingClientRect();
+  dropdown.style.position = "fixed";
+  dropdown.style.top = `${rect.bottom + 4}px`;
+  dropdown.style.left = `${rect.left}px`;
+  dropdown.style.zIndex = "9999";
+  document.body.appendChild(dropdown);
+  const closeHandler = (e) => {
+    if (!dropdown.contains(e.target)) {
+      dropdown.remove();
+      document.removeEventListener("click", closeHandler, true);
+    }
+  };
+  setTimeout(() => document.addEventListener("click", closeHandler, true), 0);
+}
+const LOG_PREFIX$1 = constants.moduleLabel;
+function isDebugEnabled() {
+  try {
+    return game.settings.get(MODULE_ID, "debugMode") ?? false;
+  } catch {
+    return false;
+  }
+}
+function debug(...args) {
+  if (isDebugEnabled()) {
+    console.log(`${LOG_PREFIX$1} |`, ...args);
   }
 }
 const PERMISSION_TYPES = {
@@ -22208,6 +22683,13 @@ function openImagePicker(callback, currentPath = "") {
 function getFilenameFromPath(path) {
   return path.split("/").pop().replace(/\.[^/.]+$/, "");
 }
+function emitSocket(type, data) {
+  game.socket.emit(`module.${MODULE_ID}`, {
+    type,
+    senderId: game.user.id,
+    data
+  });
+}
 function isDefaultImage(imagePath) {
   if (!imagePath) return true;
   if (DEFAULT_IMAGES.includes(imagePath)) return true;
@@ -22221,17 +22703,1491 @@ function getImageName(path) {
   if (!path) return "";
   return path.split("/").pop()?.replace(/\.[^/.]+$/, "") ?? "";
 }
-function get_each_context_1$2(ctx, list, i) {
+function resolveTargets(context) {
+  const { sourceToken, item, explicitTargets, providerGetTargets, systemContext } = context;
+  if (explicitTargets?.length) {
+    debug("TargetResolver | Using explicit targets:", explicitTargets.length);
+    return explicitTargets;
+  }
+  if (providerGetTargets) {
+    try {
+      const providerTargets = providerGetTargets(item, systemContext);
+      if (providerTargets?.length) {
+        debug("TargetResolver | Using provider targets:", providerTargets.length);
+        return providerTargets;
+      }
+    } catch (err) {
+      console.warn("[ARS] WeaponFX: Provider getTargets() failed:", err);
+    }
+  }
+  const standardTargets = Array.from(game.user.targets).filter((t) => t.id !== sourceToken?.id);
+  if (standardTargets.length) {
+    debug("TargetResolver | Using game.user.targets:", standardTargets.length);
+    return standardTargets;
+  }
+  debug("TargetResolver | No targets found");
+  return [];
+}
+function resolveSourceToken(item, explicitSource) {
+  if (explicitSource) return explicitSource;
+  const controlled = canvas.tokens?.controlled;
+  if (controlled?.length === 1) return controlled[0];
+  const actor = item?.parent;
+  if (actor) {
+    const actorTokens = actor.getActiveTokens?.(true) ?? [];
+    if (actorTokens.length === 1) return actorTokens[0];
+  }
+  debug("TargetResolver | Could not resolve source token");
+  return null;
+}
+function isSequencerAvailable() {
+  return typeof Sequencer !== "undefined" && game.modules.get("sequencer")?.active === true;
+}
+function resolveEffectFile(effectConfig) {
+  switch (effectConfig.source) {
+    case "sequencer":
+      return effectConfig.sequencerPath || null;
+    case "custom":
+      return effectConfig.customFile || null;
+    default:
+      return null;
+  }
+}
+function _muzzleEdgePosition(sourceToken, target) {
+  const sw = sourceToken.w ?? sourceToken.hitArea?.width ?? canvas.grid?.size ?? 100;
+  const sh = sourceToken.h ?? sourceToken.hitArea?.height ?? canvas.grid?.size ?? 100;
+  const sx = sourceToken.x + sw / 2;
+  const sy = sourceToken.y + sh / 2;
+  const { tx, ty } = _targetCenter(target);
+  if (tx === null) return { x: sx, y: sy };
+  const angle = Math.atan2(ty - sy, tx - sx);
+  const edgeRadius = Math.min(sw, sh) / 2;
+  return {
+    x: sx + Math.cos(angle) * edgeRadius,
+    y: sy + Math.sin(angle) * edgeRadius
+  };
+}
+function _targetCenter(target) {
+  if (!target) return { tx: null, ty: null };
+  if (target.x !== void 0 && target.y !== void 0 && target.w === void 0) {
+    return { tx: target.x, ty: target.y };
+  }
+  const tw = target.w ?? target.hitArea?.width ?? canvas.grid?.size ?? 100;
+  const th = target.h ?? target.hitArea?.height ?? canvas.grid?.size ?? 100;
+  return { tx: target.x + tw / 2, ty: target.y + th / 2 };
+}
+function _firingAngle(sourceToken, target) {
+  const sw = sourceToken.w ?? sourceToken.hitArea?.width ?? canvas.grid?.size ?? 100;
+  const sh = sourceToken.h ?? sourceToken.hitArea?.height ?? canvas.grid?.size ?? 100;
+  const sx = sourceToken.x + sw / 2;
+  const sy = sourceToken.y + sh / 2;
+  const { tx, ty } = _targetCenter(target);
+  if (tx !== null) {
+    return Math.atan2(ty - sy, tx - sx);
+  }
+  const rotDeg = sourceToken.document?.rotation ?? sourceToken.rotation ?? 0;
+  return (rotDeg - 90) * (Math.PI / 180);
+}
+async function playWithSequencer(config, sourceToken, shotEvents) {
+  if (!isSequencerAvailable()) {
+    console.warn("[ARS] WeaponFX: Sequencer not available, cannot play");
+    return;
+  }
+  const seq = new Sequence({ moduleName: MODULE_LABEL });
+  const delay = config.rateOfFire.delayBetweenShots;
+  let playableShotIndex = 0;
+  for (let i = 0; i < shotEvents.length; i++) {
+    const event = shotEvents[i];
+    if (event.type === "jam") {
+      const isCatastrophic = event.catastrophic === true;
+      const jamSnd = isCatastrophic ? config.jam?.catastrophicSound ?? config.jam?.sound : config.jam?.sound;
+      if (jamSnd?.path) {
+        const jamSection = seq.sound().file(jamSnd.path).volume(jamSnd.volume ?? 0.8);
+        if (sourceToken) jamSection.atLocation(sourceToken);
+      }
+      if (isCatastrophic && config.jam?.catastrophicEffect?.enabled && sourceToken) {
+        const effectFile = resolveEffectFile(config.jam.catastrophicEffect);
+        if (effectFile) {
+          seq.effect().file(effectFile).atLocation(sourceToken).scaleToObject(config.jam.catastrophicEffect.scale ?? 1).fadeIn(100).fadeOut(500).zIndex(20);
+        }
+      }
+      continue;
+    }
+    if (playableShotIndex > 0) {
+      const shotDelay = event.delay ?? delay;
+      const finalDelay = config.rateOfFire.randomizeDelay ? shotDelay * (0.7 + Math.random() * 0.6) : shotDelay;
+      seq.wait(finalDelay);
+    }
+    playableShotIndex++;
+    if (config.soundMode === "all") {
+      for (const s of config.sounds) {
+        const soundSection = seq.sound().file(s.path).volume(s.volume ?? 0.8);
+        if (sourceToken) soundSection.atLocation(sourceToken);
+      }
+    } else {
+      const { sound } = pickSound(config.sounds, config.soundMode);
+      if (sound) {
+        const soundSection = seq.sound().file(sound.path).volume(sound.volume ?? 0.8);
+        if (sourceToken) soundSection.atLocation(sourceToken);
+      }
+    }
+    const projectileTarget = event.type === "stray" ? event.strayTarget : event.target;
+    if (config.muzzle.enabled && sourceToken) {
+      const muzzleFile = resolveEffectFile(config.muzzle);
+      if (muzzleFile) {
+        const muzzlePos = projectileTarget ? _muzzleEdgePosition(sourceToken, projectileTarget) : null;
+        const muzzleEffect = seq.effect().file(muzzleFile).scaleToObject(config.muzzle.scale ?? 0.5).fadeIn(100).fadeOut(200);
+        if (muzzlePos) {
+          muzzleEffect.atLocation(muzzlePos);
+        } else {
+          muzzleEffect.atLocation(sourceToken);
+        }
+      }
+    }
+    if (config.projectile.enabled && projectileTarget && sourceToken) {
+      const projectileFile = resolveEffectFile(config.projectile);
+      if (projectileFile) {
+        const travelMode = config.projectile.travelMode ?? "beam";
+        const baseSpeed = config.projectile.speed ?? 1;
+        const speed = travelMode === "pulse" ? baseSpeed * 3 : baseSpeed;
+        const scatter = config.projectile.scatter ?? 0.3;
+        const effect = seq.effect().file(projectileFile).atLocation(sourceToken).stretchTo(projectileTarget, { randomOffset: scatter }).playbackRate(speed).zIndex(10);
+        if (config.projectile.randomizeMirrorY) {
+          effect.randomizeMirrorY();
+        }
+        if (event.type === "miss") {
+          effect.missed();
+        }
+      }
+    }
+    if (config.casing?.enabled && sourceToken) {
+      const casingFile = resolveEffectFile(config.casing);
+      if (casingFile) {
+        const scatter = config.casing.scatter ?? 0.5;
+        const dir = config.casing.ejectDirection ?? "right";
+        const fireAngle = _firingAngle(sourceToken, projectileTarget);
+        let ejectAngle;
+        if (dir === "random") {
+          ejectAngle = Math.random() * Math.PI * 2;
+        } else if (dir === "left") {
+          ejectAngle = fireAngle - Math.PI / 2;
+        } else if (dir === "up") {
+          ejectAngle = fireAngle + Math.PI;
+        } else {
+          ejectAngle = fireAngle + Math.PI / 2;
+        }
+        const dist = 0.3 + Math.random() * scatter;
+        const perpSpread = (Math.random() - 0.5) * scatter * 0.4;
+        const ox = Math.cos(ejectAngle) * dist + Math.cos(ejectAngle + Math.PI / 2) * perpSpread;
+        const oy = Math.sin(ejectAngle) * dist + Math.sin(ejectAngle + Math.PI / 2) * perpSpread;
+        const casingEffect = seq.effect().file(casingFile).atLocation(sourceToken, { offset: { x: ox, y: oy }, gridUnits: true }).scale(config.casing.scale ?? 0.3).randomRotation().zIndex(1).belowTokens();
+        if (config.casing.persist && !config.casing.duration) {
+          casingEffect.persist();
+        } else if (config.casing.duration > 0) {
+          casingEffect.duration(config.casing.duration * 1e3).fadeOut(Math.min(1e3, config.casing.duration * 500));
+        } else {
+          casingEffect.duration(3e3).fadeOut(1500);
+        }
+      }
+    }
+    if (config.impact.enabled && (event.type === "hit" || event.type === "stray")) {
+      const impactTarget = event.type === "stray" ? event.strayTarget : event.target;
+      if (impactTarget) {
+        const impactFile = resolveEffectFile(config.impact);
+        if (impactFile) {
+          const scatter = config.projectile?.scatter ?? config.impact.randomOffset ?? 0.3;
+          seq.effect().file(impactFile).atLocation(impactTarget, { randomOffset: scatter }).scaleToObject(config.impact.scale ?? 0.5).fadeIn(50).fadeOut(300);
+        }
+      }
+    }
+  }
+  debug("FxRendererSequencer | Playing sequence with", playableShotIndex, "shots");
+  await seq.play();
+}
+async function playWithBuiltin(config, sourceToken, shotEvents, pickedSoundIndices) {
+  const delay = config.rateOfFire.delayBetweenShots;
+  let playableShotIndex = 0;
+  for (let i = 0; i < shotEvents.length; i++) {
+    const event = shotEvents[i];
+    if (event.type === "jam") {
+      const isCatastrophic = event.catastrophic === true;
+      const jamSnd = isCatastrophic ? config.jam?.catastrophicSound ?? config.jam?.sound : config.jam?.sound;
+      if (jamSnd?.path) {
+        const audio = new Audio(jamSnd.path);
+        audio.volume = jamSnd.volume ?? 0.8;
+        audio.play().catch((err) => console.warn("[ARS] WeaponFX jam sound failed:", err));
+      }
+      continue;
+    }
+    if (playableShotIndex > 0) {
+      const shotDelay = event.delay ?? delay;
+      const finalDelay = config.rateOfFire.randomizeDelay ? shotDelay * (0.7 + Math.random() * 0.6) : shotDelay;
+      await _wait$1(finalDelay);
+    }
+    playableShotIndex++;
+    _playShotSound(config, i, pickedSoundIndices);
+    const sourcePos = _getTokenCenter(sourceToken);
+    const projectileTarget = event.type === "stray" ? event.strayTarget : event.target;
+    const targetPos = _getTokenCenter(projectileTarget);
+    if (config.muzzle.enabled && sourcePos) {
+      const muzzlePos = targetPos ? _getTokenEdge(sourceToken, targetPos) : sourcePos;
+      _drawFlash(muzzlePos, _parseColor(config.muzzle.color), 30 * (config.muzzle.scale ?? 0.5), 200);
+    }
+    if (config.projectile.enabled && sourcePos && targetPos) {
+      const startPos = _getTokenEdge(sourceToken, targetPos);
+      let finalTarget = targetPos;
+      if (event.type === "miss") {
+        const gridSize = canvas.grid?.size ?? 100;
+        finalTarget = {
+          x: targetPos.x + (Math.random() - 0.5) * gridSize * 2,
+          y: targetPos.y + (Math.random() - 0.5) * gridSize * 2
+        };
+      } else if (event.type === "hit" || event.type === "stray") {
+        finalTarget = _randomizePosition(targetPos, projectileTarget);
+      }
+      const travelMode = config.projectile.travelMode ?? "beam";
+      _drawProjectile(
+        startPos,
+        finalTarget,
+        _parseColor(config.projectile.color),
+        config.projectile.builtinType ?? "tracer",
+        travelMode
+      );
+    }
+    if (config.impact.enabled && (event.type === "hit" || event.type === "stray")) {
+      const impactTarget = event.type === "stray" ? event.strayTarget : event.target;
+      const impactPos = _getTokenCenter(impactTarget);
+      if (impactPos) {
+        const randomized = _randomizePosition(impactPos, impactTarget, config.impact.randomOffset ?? 0.3);
+        const impactDelay = config.projectile.travelMode === "projectile" ? 300 : 150;
+        setTimeout(() => {
+          _drawFlash(randomized, _parseColor(config.impact.color), 25 * (config.impact.scale ?? 0.5), 250);
+        }, impactDelay);
+      }
+    }
+    if (config.casing?.enabled && sourcePos) {
+      const dir = config.casing.ejectDirection ?? "right";
+      const scatter = config.casing.scatter ?? 0.5;
+      const projectileTarget2 = event.type === "stray" ? event.strayTarget : event.target;
+      const targetPos2 = _getTokenCenter(projectileTarget2);
+      const fireAngle = targetPos2 ? Math.atan2(targetPos2.y - sourcePos.y, targetPos2.x - sourcePos.x) : 0;
+      let ejectAngle;
+      if (dir === "random") ejectAngle = Math.random() * Math.PI * 2;
+      else if (dir === "left") ejectAngle = fireAngle - Math.PI / 2;
+      else if (dir === "up") ejectAngle = fireAngle + Math.PI;
+      else ejectAngle = fireAngle + Math.PI / 2;
+      const dist = 15 + Math.random() * scatter * 30;
+      const casingEnd = {
+        x: sourcePos.x + Math.cos(ejectAngle) * dist,
+        y: sourcePos.y + Math.sin(ejectAngle) * dist
+      };
+      _drawCasingEject(sourcePos, casingEnd, 13412932, config.casing.persist ? 3e3 : 800);
+    }
+  }
+  for (const event of shotEvents) {
+    if (event.type === "jam" && event.catastrophic && config.jam?.catastrophicEffect?.enabled) {
+      const pos = _getTokenCenter(sourceToken);
+      if (pos) {
+        _drawFlash(
+          pos,
+          _parseColor(config.jam?.catastrophicEffect?.color ?? "#ff4400"),
+          40 * (config.jam.catastrophicEffect.scale ?? 1),
+          400
+        );
+      }
+    }
+  }
+  debug("FxRendererBuiltin | Played", playableShotIndex, "shots");
+}
+function _playShotSound(config, shotIndex, pickedSoundIndices) {
+  if (!config.sounds?.length) return;
+  if (config.soundMode === "all") {
+    for (const s of config.sounds) {
+      const audio2 = new Audio(s.path);
+      audio2.volume = s.volume ?? 0.8;
+      audio2.play().catch((err) => console.warn("[ARS] WeaponFX sound failed:", err));
+    }
+    return;
+  }
+  let soundIndex;
+  if (pickedSoundIndices && pickedSoundIndices[shotIndex] >= 0) {
+    soundIndex = pickedSoundIndices[shotIndex];
+  } else {
+    const { sound: sound2 } = pickSound(config.sounds, config.soundMode);
+    if (!sound2) return;
+    soundIndex = config.sounds.indexOf(sound2);
+  }
+  const sound = config.sounds[soundIndex];
+  if (!sound) return;
+  const audio = new Audio(sound.path);
+  audio.volume = sound.volume ?? 0.8;
+  audio.play().catch((err) => console.warn("[ARS] WeaponFX sound failed:", err));
+}
+function _drawProjectile(source, target, color, builtinType, travelMode) {
+  if (travelMode === "projectile") {
+    _drawMovingProjectile(source, target, color, builtinType);
+  } else if (travelMode === "pulse") {
+    _drawPulse(source, target, color, builtinType);
+  } else {
+    _drawTracer(source, target, color, 150, builtinType);
+  }
+}
+function _drawMovingProjectile(source, target, color, builtinType) {
+  if (!canvas.stage) return;
+  const graphics = new PIXI.Graphics();
+  const size = builtinType === "beam" ? 5 : builtinType === "bolt" ? 3 : 4;
+  graphics.beginFill(color, 1);
+  graphics.drawCircle(0, 0, size);
+  graphics.endFill();
+  graphics.beginFill(color, 0.3);
+  graphics.drawCircle(0, 0, size * 2.5);
+  graphics.endFill();
+  graphics.x = source.x;
+  graphics.y = source.y;
+  canvas.stage.addChild(graphics);
+  const dx = target.x - source.x;
+  const dy = target.y - source.y;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  const duration = Math.max(150, Math.min(dist * 0.6, 500));
+  const startTime = performance.now();
+  const animate = (time) => {
+    const elapsed = time - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const t = 1 - (1 - progress) * (1 - progress);
+    graphics.x = source.x + dx * t;
+    graphics.y = source.y + dy * t;
+    graphics.alpha = progress > 0.9 ? 1 - (progress - 0.9) * 10 : 1;
+    if (progress < 1) {
+      requestAnimationFrame(animate);
+    } else {
+      canvas.stage.removeChild(graphics);
+      graphics.destroy();
+    }
+  };
+  requestAnimationFrame(animate);
+}
+function _drawPulse(source, target, color, builtinType) {
+  if (!canvas.stage) return;
+  const dx = target.x - source.x;
+  const dy = target.y - source.y;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  const pulseLength = Math.min(40, dist * 0.15);
+  const duration = Math.max(100, Math.min(dist * 0.5, 400));
+  const lineWidth = builtinType === "beam" ? 3 : 2;
+  const startTime = performance.now();
+  const graphics = new PIXI.Graphics();
+  canvas.stage.addChild(graphics);
+  const animate = (time) => {
+    const elapsed = time - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const t = 1 - (1 - progress) * (1 - progress);
+    graphics.clear();
+    graphics.lineStyle(lineWidth, color, 1);
+    const headT = t;
+    const tailT = Math.max(0, t - pulseLength / dist);
+    const hx = source.x + dx * headT;
+    const hy = source.y + dy * headT;
+    const tx = source.x + dx * tailT;
+    const ty = source.y + dy * tailT;
+    graphics.moveTo(tx, ty);
+    graphics.lineTo(hx, hy);
+    graphics.lineStyle(lineWidth * 3, color, 0.2);
+    graphics.moveTo(tx, ty);
+    graphics.lineTo(hx, hy);
+    graphics.alpha = progress > 0.85 ? 1 - (progress - 0.85) * 6.67 : 1;
+    if (progress < 1) {
+      requestAnimationFrame(animate);
+    } else {
+      canvas.stage.removeChild(graphics);
+      graphics.destroy();
+    }
+  };
+  requestAnimationFrame(animate);
+}
+function _drawTracer(source, target, color, duration, type) {
+  if (!canvas.stage) return;
+  const graphics = new PIXI.Graphics();
+  const lineWidth = type === "beam" ? 4 : type === "bolt" ? 1.5 : 2;
+  graphics.lineStyle(lineWidth, color, 1);
+  graphics.moveTo(source.x, source.y);
+  if (type === "bolt") {
+    const dx = target.x - source.x;
+    const dy = target.y - source.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const segments = Math.max(4, Math.floor(dist / 20));
+    for (let s = 0; s <= segments; s++) {
+      const t = s / segments;
+      const px = source.x + dx * t;
+      const py = source.y + dy * t;
+      if (s % 2 === 0) graphics.moveTo(px, py);
+      else graphics.lineTo(px, py);
+    }
+  } else {
+    graphics.lineTo(target.x, target.y);
+  }
+  if (type === "arrow") {
+    const angle = Math.atan2(target.y - source.y, target.x - source.x);
+    const headLen = 10;
+    graphics.moveTo(target.x, target.y);
+    graphics.lineTo(
+      target.x - headLen * Math.cos(angle - Math.PI / 6),
+      target.y - headLen * Math.sin(angle - Math.PI / 6)
+    );
+    graphics.moveTo(target.x, target.y);
+    graphics.lineTo(
+      target.x - headLen * Math.cos(angle + Math.PI / 6),
+      target.y - headLen * Math.sin(angle + Math.PI / 6)
+    );
+  }
+  if (type === "beam") {
+    graphics.lineStyle(8, color, 0.3);
+    graphics.moveTo(source.x, source.y);
+    graphics.lineTo(target.x, target.y);
+  }
+  canvas.stage.addChild(graphics);
+  const startTime = performance.now();
+  const animate = (time) => {
+    const elapsed = time - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    graphics.alpha = 1 - progress;
+    if (progress < 1) {
+      requestAnimationFrame(animate);
+    } else {
+      canvas.stage.removeChild(graphics);
+      graphics.destroy();
+    }
+  };
+  requestAnimationFrame(animate);
+}
+function _drawFlash(position, color, radius, duration) {
+  if (!canvas.stage) return;
+  const graphics = new PIXI.Graphics();
+  graphics.beginFill(color, 0.8);
+  graphics.drawCircle(position.x, position.y, radius);
+  graphics.endFill();
+  canvas.stage.addChild(graphics);
+  const startTime = performance.now();
+  const animate = (time) => {
+    const elapsed = time - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    graphics.alpha = 1 - progress;
+    graphics.scale.set(1 + progress * 0.5);
+    if (progress < 1) {
+      requestAnimationFrame(animate);
+    } else {
+      canvas.stage.removeChild(graphics);
+      graphics.destroy();
+    }
+  };
+  requestAnimationFrame(animate);
+}
+function _getTokenCenter(token) {
+  if (!token) return null;
+  return {
+    x: token.x + (token.w ?? token.hitArea?.width ?? 0) / 2,
+    y: token.y + (token.h ?? token.hitArea?.height ?? 0) / 2
+  };
+}
+function _getTokenEdge(token, targetPos) {
+  if (!token) return targetPos;
+  const w = token.w ?? token.hitArea?.width ?? canvas.grid?.size ?? 100;
+  const h = token.h ?? token.hitArea?.height ?? canvas.grid?.size ?? 100;
+  const cx = token.x + w / 2;
+  const cy = token.y + h / 2;
+  const angle = Math.atan2(targetPos.y - cy, targetPos.x - cx);
+  const edgeRadius = Math.min(w, h) / 2;
+  return {
+    x: cx + Math.cos(angle) * edgeRadius,
+    y: cy + Math.sin(angle) * edgeRadius
+  };
+}
+function _randomizePosition(pos, token, factor = 0.3) {
+  const size = token ? token.w ?? token.hitArea?.width ?? canvas.grid?.size ?? 100 : canvas.grid?.size ?? 100;
+  return {
+    x: pos.x + (Math.random() - 0.5) * size * factor,
+    y: pos.y + (Math.random() - 0.5) * size * factor
+  };
+}
+function _parseColor(hex) {
+  if (!hex) return 16755200;
+  return parseInt(hex.replace("#", ""), 16);
+}
+function _wait$1(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+function _drawCasingEject(source, target, color, duration) {
+  if (!canvas.stage) return;
+  const graphics = new PIXI.Graphics();
+  graphics.beginFill(color, 0.9);
+  graphics.drawRect(-1.5, -1.5, 3, 3);
+  graphics.endFill();
+  graphics.x = source.x;
+  graphics.y = source.y;
+  canvas.stage.addChild(graphics);
+  const dx = target.x - source.x;
+  const dy = target.y - source.y;
+  const travelTime = 150;
+  const startTime = performance.now();
+  const animate = (time) => {
+    const elapsed = time - startTime;
+    if (elapsed < travelTime) {
+      const t = elapsed / travelTime;
+      const ease = 1 - (1 - t) * (1 - t);
+      graphics.x = source.x + dx * ease;
+      graphics.y = source.y + dy * ease - Math.sin(t * Math.PI) * 8;
+      graphics.alpha = 1;
+    } else {
+      graphics.x = target.x;
+      graphics.y = target.y;
+      const fadeProgress = Math.min((elapsed - travelTime) / (duration - travelTime), 1);
+      graphics.alpha = 1 - fadeProgress;
+    }
+    if (elapsed < duration) {
+      requestAnimationFrame(animate);
+    } else {
+      canvas.stage.removeChild(graphics);
+      graphics.destroy();
+    }
+  };
+  requestAnimationFrame(animate);
+}
+const _activeAuras = /* @__PURE__ */ new Map();
+function playBuiltinReactiveEffect(reactiveConfig, token, attacker) {
+  if (!reactiveConfig?.enabled) return;
+  if (reactiveConfig.sound?.path) {
+    const audio = new Audio(reactiveConfig.sound.path);
+    audio.volume = reactiveConfig.sound.volume ?? 0.8;
+    audio.play().catch((err) => console.warn("[ARS] DefensiveFX sound failed:", err));
+  }
+  const pos = _getTokenCenter(token);
+  if (!pos) return;
+  const scale = reactiveConfig.scale ?? 1;
+  const gridSize = canvas.grid?.size ?? 100;
+  const radius = gridSize * 0.4 * scale;
+  if (attacker) {
+    const attackerPos = _getTokenCenter(attacker);
+    if (attackerPos) {
+      _drawShieldArc(pos, attackerPos, radius, 3381759, 350);
+      return;
+    }
+  }
+  _drawShieldFlash(pos, radius, 3381759, 350);
+}
+function playBuiltinAuraActivate(auraConfig, token, item) {
+  if (!auraConfig?.enabled) return;
+  if (auraConfig.activateSound?.path) {
+    const audio = new Audio(auraConfig.activateSound.path);
+    audio.volume = auraConfig.activateSound.volume ?? 0.8;
+    audio.play().catch((err) => console.warn("[ARS] DefensiveFX sound failed:", err));
+  }
+  const pos = _getTokenCenter(token);
+  if (!pos) return;
+  const scale = auraConfig.scale ?? 1.5;
+  const gridSize = canvas.grid?.size ?? 100;
+  const radius = gridSize * 0.5 * scale;
+  const auraName = `ars-aura-${token.id}-${item.id}`;
+  _drawShieldFlash(pos, radius * 1.2, 4500223, 400);
+  _startAuraLoop(auraName, token, radius, 3381759);
+}
+function playBuiltinAuraDeactivate(auraConfig, token, item) {
+  if (!auraConfig?.enabled) return;
+  if (auraConfig.deactivateSound?.path) {
+    const audio = new Audio(auraConfig.deactivateSound.path);
+    audio.volume = auraConfig.deactivateSound.volume ?? 0.8;
+    audio.play().catch((err) => console.warn("[ARS] DefensiveFX sound failed:", err));
+  }
+  const auraName = `ars-aura-${token.id}-${item.id}`;
+  _stopAuraLoop(auraName);
+  const pos = _getTokenCenter(token);
+  if (pos) {
+    const radius = (canvas.grid?.size ?? 100) * 0.5 * (auraConfig.scale ?? 1.5);
+    _drawShieldFlash(pos, radius, 3381759, 300);
+  }
+}
+function playBuiltinShieldOverload(auraConfig, token, item) {
+  if (!auraConfig?.enabled) return;
+  const overloadSnd = auraConfig.overloadSound?.path ? auraConfig.overloadSound : auraConfig.deactivateSound;
+  if (overloadSnd?.path) {
+    const audio = new Audio(overloadSnd.path);
+    audio.volume = overloadSnd.volume ?? 1;
+    audio.play().catch((err) => console.warn("[ARS] DefensiveFX sound failed:", err));
+  }
+  const auraName = `ars-aura-${token.id}-${item.id}`;
+  _stopAuraLoop(auraName);
+  const pos = _getTokenCenter(token);
+  if (pos) {
+    const scale = (auraConfig.scale ?? 1.5) * 1.3;
+    const radius = (canvas.grid?.size ?? 100) * 0.5 * scale;
+    _drawExplosion(pos, radius, 16729088, 500);
+  }
+}
+function playBuiltinReactiveAuraFlash(auraConfig, token, attacker) {
+  const pos = _getTokenCenter(token);
+  if (!pos) return;
+  const scale = auraConfig.scale ?? 1.5;
+  const radius = (canvas.grid?.size ?? 100) * 0.5 * scale;
+  if (attacker) {
+    const attackerPos = _getTokenCenter(attacker);
+    if (attackerPos) {
+      _drawShieldArc(pos, attackerPos, radius, 4500223, 600);
+      return;
+    }
+  }
+  _drawShieldFlash(pos, radius, 4500223, 600);
+}
+function _drawShieldArc(center, attackerPos, radius, color, duration) {
+  if (!canvas.stage) return;
+  const angle = Math.atan2(attackerPos.y - center.y, attackerPos.x - center.x);
+  const arcSpan = Math.PI * 0.8;
+  const graphics = new PIXI.Graphics();
+  graphics.lineStyle(3, color, 0.9);
+  graphics.arc(center.x, center.y, radius, angle - arcSpan / 2, angle + arcSpan / 2);
+  graphics.lineStyle(8, color, 0.25);
+  graphics.arc(center.x, center.y, radius + 2, angle - arcSpan / 2, angle + arcSpan / 2);
+  canvas.stage.addChild(graphics);
+  _animateFadeOut(graphics, duration);
+}
+function _drawShieldFlash(center, radius, color, duration) {
+  if (!canvas.stage) return;
+  const graphics = new PIXI.Graphics();
+  graphics.lineStyle(2, color, 0.8);
+  graphics.drawCircle(center.x, center.y, radius);
+  graphics.lineStyle(6, color, 0.2);
+  graphics.drawCircle(center.x, center.y, radius);
+  graphics.beginFill(color, 0.1);
+  graphics.drawCircle(center.x, center.y, radius);
+  graphics.endFill();
+  canvas.stage.addChild(graphics);
+  _animateFadeOut(graphics, duration, true);
+}
+function _drawExplosion(center, radius, color, duration) {
+  if (!canvas.stage) return;
+  const graphics = new PIXI.Graphics();
+  graphics.beginFill(16777215, 0.9);
+  graphics.drawCircle(center.x, center.y, radius * 0.3);
+  graphics.endFill();
+  graphics.beginFill(color, 0.6);
+  graphics.drawCircle(center.x, center.y, radius * 0.6);
+  graphics.endFill();
+  graphics.beginFill(color, 0.2);
+  graphics.drawCircle(center.x, center.y, radius);
+  graphics.endFill();
+  canvas.stage.addChild(graphics);
+  const startTime = performance.now();
+  const animate = (time) => {
+    const elapsed = time - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    graphics.alpha = 1 - progress;
+    graphics.scale.set(1 + progress * 0.8);
+    if (progress < 1) {
+      requestAnimationFrame(animate);
+    } else {
+      canvas.stage.removeChild(graphics);
+      graphics.destroy();
+    }
+  };
+  requestAnimationFrame(animate);
+}
+function _startAuraLoop(auraName, token, radius, color) {
+  _stopAuraLoop(auraName);
+  if (!canvas.stage) return;
+  const graphics = new PIXI.Graphics();
+  canvas.stage.addChild(graphics);
+  let cancelled = false;
+  const startTime = performance.now();
+  const animate = (time) => {
+    if (cancelled) {
+      canvas.stage.removeChild(graphics);
+      graphics.destroy();
+      return;
+    }
+    const elapsed = time - startTime;
+    const pulse = 0.7 + 0.3 * Math.sin(elapsed * 3e-3);
+    const pos = _getTokenCenter(token);
+    if (!pos) {
+      canvas.stage.removeChild(graphics);
+      graphics.destroy();
+      _activeAuras.delete(auraName);
+      return;
+    }
+    graphics.clear();
+    graphics.lineStyle(5, color, 0.15 * pulse);
+    graphics.drawCircle(pos.x, pos.y, radius + 3);
+    graphics.lineStyle(2, color, 0.5 * pulse);
+    graphics.drawCircle(pos.x, pos.y, radius);
+    graphics.beginFill(color, 0.04 * pulse);
+    graphics.drawCircle(pos.x, pos.y, radius);
+    graphics.endFill();
+    requestAnimationFrame(animate);
+  };
+  requestAnimationFrame(animate);
+  _activeAuras.set(auraName, {
+    graphics,
+    cancel: () => {
+      cancelled = true;
+    }
+  });
+}
+function _stopAuraLoop(auraName) {
+  const existing = _activeAuras.get(auraName);
+  if (existing) {
+    existing.cancel();
+    _activeAuras.delete(auraName);
+  }
+}
+function _animateFadeOut(graphics, duration, scale = false) {
+  const startTime = performance.now();
+  const animate = (time) => {
+    const elapsed = time - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    graphics.alpha = 1 - progress;
+    if (scale) graphics.scale.set(1 + progress * 0.3);
+    if (progress < 1) {
+      requestAnimationFrame(animate);
+    } else {
+      canvas.stage.removeChild(graphics);
+      graphics.destroy();
+    }
+  };
+  requestAnimationFrame(animate);
+}
+const DEFAULT_WEAPON_FX = {
+  enabled: false,
+  fxType: "ranged",
+  sounds: [],
+  soundMode: "random",
+  jam: {
+    sound: { path: "", volume: 0.8 },
+    catastrophicSound: { path: "", volume: 1 },
+    catastrophicEffect: {
+      enabled: false,
+      source: "sequencer",
+      sequencerPath: "",
+      customFile: "",
+      scale: 1
+    }
+  },
+  rateOfFire: {
+    mode: "single",
+    burstCount: 3,
+    autoCount: 5,
+    delayBetweenShots: 100,
+    randomizeDelay: true
+  },
+  projectile: {
+    enabled: false,
+    source: "sequencer",
+    sequencerPath: "",
+    customFile: "",
+    builtinType: "tracer",
+    travelMode: "beam",
+    color: "#ffaa00",
+    scale: 1,
+    speed: 1,
+    scatter: 0.3,
+    randomizeMirrorY: false
+  },
+  impact: {
+    enabled: false,
+    source: "sequencer",
+    sequencerPath: "",
+    customFile: "",
+    builtinType: "flash",
+    color: "#ff4400",
+    scale: 0.5,
+    randomOffset: 0.3
+  },
+  muzzle: {
+    enabled: false,
+    source: "sequencer",
+    sequencerPath: "",
+    customFile: "",
+    builtinType: "flash",
+    color: "#ffff00",
+    scale: 0.5
+  },
+  casing: {
+    enabled: false,
+    source: "sequencer",
+    sequencerPath: "",
+    customFile: "",
+    scale: 0.3,
+    persist: true,
+    duration: 0,
+    scatter: 0.5,
+    ejectDirection: "right"
+  }
+};
+function getWeaponFxConfig(item) {
+  if (!item) return null;
+  const saved = item.getFlag(MODULE_ID, "weaponFx");
+  if (!saved?.enabled) return null;
+  return {
+    ...DEFAULT_WEAPON_FX,
+    ...saved,
+    rateOfFire: { ...DEFAULT_WEAPON_FX.rateOfFire, ...saved.rateOfFire ?? {} },
+    projectile: { ...DEFAULT_WEAPON_FX.projectile, ...saved.projectile ?? {} },
+    impact: { ...DEFAULT_WEAPON_FX.impact, ...saved.impact ?? {} },
+    muzzle: { ...DEFAULT_WEAPON_FX.muzzle, ...saved.muzzle ?? {} },
+    casing: { ...DEFAULT_WEAPON_FX.casing, ...saved.casing ?? {} },
+    jam: {
+      ...DEFAULT_WEAPON_FX.jam,
+      ...saved.jam ?? {},
+      sound: { ...DEFAULT_WEAPON_FX.jam.sound, ...saved.jam?.sound ?? {} },
+      catastrophicSound: { ...DEFAULT_WEAPON_FX.jam.catastrophicSound, ...saved.jam?.catastrophicSound ?? {} },
+      catastrophicEffect: { ...DEFAULT_WEAPON_FX.jam.catastrophicEffect, ...saved.jam?.catastrophicEffect ?? {} }
+    }
+  };
+}
+function getShotCount(rof) {
+  switch (rof.mode) {
+    case "burst":
+      return rof.burstCount ?? 3;
+    case "auto":
+      return rof.autoCount ?? 5;
+    default:
+      return 1;
+  }
+}
+function generateImplicitShotEvents(count, targets) {
+  const events = [];
+  for (let i = 0; i < count; i++) {
+    const target = targets.length > 0 ? targets[i % targets.length] : void 0;
+    events.push({ type: "hit", target });
+  }
+  return events;
+}
+const _sequenceIndices = /* @__PURE__ */ new Map();
+function pickSound(sounds, mode, sequenceIndex, itemId) {
+  if (!sounds?.length) return { sound: null, nextIndex: 0 };
+  switch (mode) {
+    case "sequential": {
+      const key = "__global__";
+      const current = _sequenceIndices.get(key) ?? 0;
+      const idx = current % sounds.length;
+      _sequenceIndices.set(key, idx + 1);
+      return { sound: sounds[idx], nextIndex: idx + 1 };
+    }
+    case "all":
+      return { sound: sounds[0], nextIndex: 0 };
+    case "random":
+    default: {
+      const totalWeight = sounds.reduce((sum, s) => sum + (s.weight ?? 1), 0);
+      let roll = Math.random() * totalWeight;
+      for (const s of sounds) {
+        roll -= s.weight ?? 1;
+        if (roll <= 0) return { sound: s, nextIndex: 0 };
+      }
+      return { sound: sounds[0], nextIndex: 0 };
+    }
+  }
+}
+async function playWeaponFx(item, options = {}) {
+  const config = getWeaponFxConfig(item);
+  if (!config) {
+    debug("WeaponFxService | FX not configured or disabled for item:", item?.name);
+    return;
+  }
+  const sourceToken = resolveSourceToken(item, options.sourceToken);
+  debug("WeaponFxService | Source token:", sourceToken?.name ?? "none");
+  let shotEvents;
+  if (options.shotEvents?.length) {
+    shotEvents = options.shotEvents;
+    debug("WeaponFxService | Using provider shotEvents:", shotEvents.length);
+  } else {
+    const targets = resolveTargets({
+      sourceToken,
+      item,
+      explicitTargets: options.targets,
+      providerGetTargets: options.providerGetTargets,
+      systemContext: options.systemContext
+    });
+    const count = getShotCount(config.rateOfFire);
+    shotEvents = generateImplicitShotEvents(count, targets);
+    debug("WeaponFxService | Generated implicit shotEvents:", shotEvents.length, "targets:", targets.length);
+  }
+  const hasPlayable = shotEvents.some((e) => e.type !== "jam");
+  if (!hasPlayable) {
+    debug("WeaponFxService | All shots jammed, playing jam sounds only");
+    await _playSoundsOnly(config, shotEvents);
+    return;
+  }
+  if (options.soundOnly) {
+    await _playSoundsOnly(config, shotEvents);
+  } else if (isSequencerAvailable()) {
+    await playWithSequencer(config, sourceToken, shotEvents);
+  } else {
+    await playWithBuiltin(config, sourceToken, shotEvents);
+    _broadcastFx(item, config, sourceToken, shotEvents);
+  }
+}
+async function _playSoundsOnly(config, shotEvents, sourceToken) {
+  const delay = config.rateOfFire.delayBetweenShots;
+  for (let i = 0; i < shotEvents.length; i++) {
+    const event = shotEvents[i];
+    if (event.type === "jam") {
+      const isCatastrophic = event.catastrophic === true;
+      const jamSnd = isCatastrophic ? config.jam?.catastrophicSound ?? config.jam?.sound : config.jam?.sound;
+      if (jamSnd?.path) {
+        const audio = new Audio(jamSnd.path);
+        audio.volume = jamSnd.volume ?? 0.8;
+        audio.play().catch((err) => console.warn("[ARS] WeaponFX jam sound failed:", err));
+      }
+      continue;
+    }
+    if (i > 0) {
+      const shotDelay = event.delay ?? delay;
+      const finalDelay = config.rateOfFire.randomizeDelay ? shotDelay * (0.7 + Math.random() * 0.6) : shotDelay;
+      await _wait(finalDelay);
+    }
+    if (config.soundMode === "all") {
+      for (const s of config.sounds) {
+        const audio = new Audio(s.path);
+        audio.volume = s.volume ?? 0.8;
+        audio.play().catch((err) => console.warn("[ARS] WeaponFX sound failed:", err));
+      }
+    } else {
+      const { sound } = pickSound(config.sounds, config.soundMode);
+      if (sound) {
+        const audio = new Audio(sound.path);
+        audio.volume = sound.volume ?? 0.8;
+        audio.play().catch((err) => console.warn("[ARS] WeaponFX sound failed:", err));
+      }
+    }
+  }
+}
+function _broadcastFx(item, config, sourceToken, shotEvents) {
+  if (!sourceToken) return;
+  const serializedEvents = shotEvents.map((e) => ({
+    type: e.type,
+    targetId: e.target?.id ?? null,
+    strayTargetId: e.strayTarget?.id ?? null,
+    delay: e.delay
+  }));
+  const pickedSoundIndices = shotEvents.map((e) => {
+    if (e.type === "jam") return -1;
+    if (!config.sounds.length) return -1;
+    return Math.floor(Math.random() * config.sounds.length);
+  });
+  emitSocket("playWeaponFx", {
+    itemUuid: item.uuid,
+    fxConfig: config,
+    sourceTokenId: sourceToken.id,
+    sceneId: canvas.scene?.id,
+    shotEvents: serializedEvents,
+    pickedSoundIndices
+  });
+}
+async function handlePlayWeaponFxSocket(data) {
+  const { fxConfig, sourceTokenId, sceneId, shotEvents: serializedEvents, pickedSoundIndices } = data;
+  if (canvas.scene?.id !== sceneId) return;
+  const sourceToken = canvas.tokens?.get(sourceTokenId);
+  if (!sourceToken) return;
+  const shotEvents = serializedEvents.map((e, i) => ({
+    type: e.type,
+    target: e.targetId ? canvas.tokens.get(e.targetId) : void 0,
+    strayTarget: e.strayTargetId ? canvas.tokens.get(e.strayTargetId) : void 0,
+    delay: e.delay,
+    _pickedSoundIndex: pickedSoundIndices?.[i] ?? -1
+  }));
+  await playWithBuiltin(fxConfig, sourceToken, shotEvents, pickedSoundIndices);
+}
+function _wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+const DEFAULT_DEFENSIVE_FX = {
+  enabled: false,
+  onHit: {
+    enabled: false,
+    effect: { source: "sequencer", sequencerPath: "", customFile: "" },
+    sound: { path: "", volume: 0.8 },
+    scale: 1
+  },
+  onDeflect: {
+    enabled: false,
+    effect: { source: "sequencer", sequencerPath: "", customFile: "" },
+    sound: { path: "", volume: 0.8 },
+    scale: 1
+  },
+  onPenetrate: {
+    enabled: false,
+    effect: { source: "sequencer", sequencerPath: "", customFile: "" },
+    sound: { path: "", volume: 0.8 },
+    scale: 1
+  },
+  aura: {
+    enabled: false,
+    mode: "permanent",
+    // 'permanent' | 'rounds' | 'reactive'
+    roundsDuration: 3,
+    // For 'rounds' mode — how many rounds the aura lasts
+    loop: { source: "sequencer", sequencerPath: "", customFile: "" },
+    intro: { source: "sequencer", sequencerPath: "", customFile: "" },
+    outro: { source: "sequencer", sequencerPath: "", customFile: "" },
+    overloadEffect: { source: "sequencer", sequencerPath: "", customFile: "" },
+    activateSound: { path: "", volume: 0.8 },
+    deactivateSound: { path: "", volume: 0.8 },
+    overloadSound: { path: "", volume: 1 },
+    scale: 1.5
+  }
+};
+function getDefensiveFxConfig(item) {
+  if (!item) return null;
+  const saved = item.getFlag(MODULE_ID, "defensiveFx");
+  if (!saved?.enabled) return null;
+  const d = DEFAULT_DEFENSIVE_FX;
+  return {
+    ...d,
+    ...saved,
+    onHit: {
+      ...d.onHit,
+      ...saved.onHit ?? {},
+      effect: { ...d.onHit.effect, ...saved.onHit?.effect ?? {} },
+      sound: { ...d.onHit.sound, ...saved.onHit?.sound ?? {} }
+    },
+    onDeflect: {
+      ...d.onDeflect,
+      ...saved.onDeflect ?? {},
+      effect: { ...d.onDeflect.effect, ...saved.onDeflect?.effect ?? {} },
+      sound: { ...d.onDeflect.sound, ...saved.onDeflect?.sound ?? {} }
+    },
+    onPenetrate: {
+      ...d.onPenetrate,
+      ...saved.onPenetrate ?? {},
+      effect: { ...d.onPenetrate.effect, ...saved.onPenetrate?.effect ?? {} },
+      sound: { ...d.onPenetrate.sound, ...saved.onPenetrate?.sound ?? {} }
+    },
+    aura: {
+      ...d.aura,
+      ...saved.aura ?? {},
+      loop: { ...d.aura.loop, ...saved.aura?.loop ?? {} },
+      intro: { ...d.aura.intro, ...saved.aura?.intro ?? {} },
+      outro: { ...d.aura.outro, ...saved.aura?.outro ?? {} },
+      overloadEffect: { ...d.aura.overloadEffect, ...saved.aura?.overloadEffect ?? {} },
+      activateSound: { ...d.aura.activateSound, ...saved.aura?.activateSound ?? {} },
+      deactivateSound: { ...d.aura.deactivateSound, ...saved.aura?.deactivateSound ?? {} },
+      overloadSound: { ...d.aura.overloadSound, ...saved.aura?.overloadSound ?? {} }
+    }
+  };
+}
+async function playDefensiveFx(item, event) {
+  const config = getDefensiveFxConfig(item);
+  if (!config) {
+    debug("DefensiveFxService | FX not configured or disabled for item:", item?.name);
+    return;
+  }
+  const { type, token } = event;
+  if (!token) {
+    debug("DefensiveFxService | No token provided, cannot play");
+    return;
+  }
+  debug("DefensiveFxService | Playing", type, "on", token.name);
+  if (!isSequencerAvailable()) {
+    await _playDefensiveBuiltin(config, event, item);
+    _broadcastDefensiveFx(item, event);
+    return;
+  }
+  switch (type) {
+    case "shieldHit":
+      await _playReactiveEffect(config.onHit, token, event.attacker);
+      if (config.aura?.enabled && config.aura?.mode === "reactive") {
+        await _playReactiveAuraFlash(config.aura, token, event.attacker);
+      }
+      break;
+    case "armorDeflect":
+      await _playReactiveEffect(config.onDeflect, token, event.attacker);
+      break;
+    case "armorPenetrate":
+      await _playReactiveEffect(config.onPenetrate, token, event.attacker);
+      break;
+    case "auraActivate":
+      await _playAuraActivate(config.aura, token, item);
+      break;
+    case "auraDeactivate":
+      await _playAuraDeactivate(config.aura, token, item);
+      break;
+    case "shieldOverload":
+      await _playShieldOverload(config.aura, token, item);
+      break;
+    default:
+      debug("DefensiveFxService | Unknown event type:", type);
+  }
+}
+async function _playReactiveEffect(reactiveConfig, token, attacker) {
+  if (!reactiveConfig?.enabled) return;
+  const seq = new Sequence({ moduleName: MODULE_LABEL });
+  if (reactiveConfig.sound?.path) {
+    seq.sound().file(reactiveConfig.sound.path).volume(reactiveConfig.sound.volume ?? 0.8).atLocation(token);
+  }
+  const file = _resolveFile(reactiveConfig.effect);
+  if (file) {
+    const effect = seq.effect().file(file).attachTo(token).scaleToObject(reactiveConfig.scale ?? 1).fadeIn(100).fadeOut(300).zIndex(15);
+    if (attacker) {
+      effect.rotateTowards(attacker);
+    }
+  }
+  await seq.play();
+}
+async function _playAuraActivate(auraConfig, token, item) {
+  if (!auraConfig?.enabled) return;
+  const auraName = `ars-aura-${token.id}-${item.id}`;
+  const seq = new Sequence({ moduleName: MODULE_LABEL });
+  if (auraConfig.activateSound?.path) {
+    seq.sound().file(auraConfig.activateSound.path).volume(auraConfig.activateSound.volume ?? 0.8).atLocation(token);
+  }
+  const introFile = _resolveFile(auraConfig.intro);
+  if (introFile) {
+    seq.effect().file(introFile).attachTo(token).scaleToObject(auraConfig.scale ?? 1.5).waitUntilFinished(-500).zIndex(5);
+  }
+  const loopFile = _resolveFile(auraConfig.loop);
+  if (loopFile) {
+    seq.effect().file(loopFile).attachTo(token).scaleToObject(auraConfig.scale ?? 1.5).persist().name(auraName).origin(item.uuid).fadeIn(300).fadeOut(300).extraEndDuration(800).zIndex(5);
+  }
+  await seq.play();
+  debug("DefensiveFxService | Aura activated:", auraName);
+}
+async function _playAuraDeactivate(auraConfig, token, item) {
+  if (!auraConfig?.enabled) return;
+  const auraName = `ars-aura-${token.id}-${item.id}`;
+  try {
+    Sequencer.EffectManager.endEffects({ name: auraName, object: token });
+  } catch (err) {
+    console.warn("[ARS] DefensiveFX: Error ending aura effect:", err);
+  }
+  const seq = new Sequence({ moduleName: MODULE_LABEL });
+  if (auraConfig.deactivateSound?.path) {
+    seq.sound().file(auraConfig.deactivateSound.path).volume(auraConfig.deactivateSound.volume ?? 0.8).atLocation(token);
+  }
+  const outroFile = _resolveFile(auraConfig.outro);
+  if (outroFile) {
+    seq.effect().file(outroFile).attachTo(token).scaleToObject(auraConfig.scale ?? 1.5).zIndex(5);
+  }
+  await seq.play();
+  debug("DefensiveFxService | Aura deactivated:", auraName);
+}
+async function _playReactiveAuraFlash(auraConfig, token, attacker) {
+  const loopFile = _resolveFile(auraConfig.loop);
+  if (!loopFile) return;
+  const seq = new Sequence({ moduleName: MODULE_LABEL });
+  const effect = seq.effect().file(loopFile).attachTo(token).scaleToObject(auraConfig.scale ?? 1.5).duration(1500).fadeIn(100).fadeOut(800).zIndex(5);
+  if (attacker) {
+    effect.rotateTowards(attacker);
+  }
+  await seq.play();
+}
+async function _playShieldOverload(auraConfig, token, item) {
+  if (!auraConfig?.enabled) return;
+  const auraName = `ars-aura-${token.id}-${item.id}`;
+  try {
+    Sequencer.EffectManager.endEffects({ name: auraName, object: token });
+  } catch (err) {
+    console.warn("[ARS] DefensiveFX: Error ending aura on overload:", err);
+  }
+  const seq = new Sequence({ moduleName: MODULE_LABEL });
+  const overloadSnd = auraConfig.overloadSound?.path ? auraConfig.overloadSound : auraConfig.deactivateSound;
+  if (overloadSnd?.path) {
+    seq.sound().file(overloadSnd.path).volume(overloadSnd.volume ?? 1).atLocation(token);
+  }
+  const overloadFile = _resolveFile(auraConfig.overloadEffect) || _resolveFile(auraConfig.outro);
+  if (overloadFile) {
+    seq.effect().file(overloadFile).attachTo(token).scaleToObject((auraConfig.scale ?? 1.5) * 1.3).fadeIn(50).fadeOut(500).zIndex(20);
+  }
+  await seq.play();
+  debug("DefensiveFxService | Shield overloaded:", auraName);
+}
+async function _playDefensiveBuiltin(config, event, item) {
+  const { type, token, attacker } = event;
+  switch (type) {
+    case "shieldHit":
+      playBuiltinReactiveEffect(config.onHit, token, attacker);
+      if (config.aura?.enabled && config.aura?.mode === "reactive") {
+        playBuiltinReactiveAuraFlash(config.aura, token, attacker);
+      }
+      break;
+    case "armorDeflect":
+      playBuiltinReactiveEffect(config.onDeflect, token, attacker);
+      break;
+    case "armorPenetrate":
+      playBuiltinReactiveEffect(config.onPenetrate, token, attacker);
+      break;
+    case "auraActivate":
+      playBuiltinAuraActivate(config.aura, token, item);
+      break;
+    case "auraDeactivate":
+      playBuiltinAuraDeactivate(config.aura, token, item);
+      break;
+    case "shieldOverload":
+      playBuiltinShieldOverload(config.aura, token, item);
+      break;
+  }
+}
+function _resolveFile(effectSource) {
+  if (!effectSource) return null;
+  switch (effectSource.source) {
+    case "sequencer":
+      return effectSource.sequencerPath || null;
+    case "custom":
+      return effectSource.customFile || null;
+    default:
+      return null;
+  }
+}
+function _broadcastDefensiveFx(item, event) {
+  if (!event.token) return;
+  emitSocket("playDefensiveFx", {
+    itemUuid: item.uuid,
+    sceneId: canvas.scene?.id,
+    tokenId: event.token.id,
+    attackerId: event.attacker?.id ?? null,
+    type: event.type
+  });
+}
+async function handlePlayDefensiveFxSocket(data) {
+  const { itemUuid, sceneId, tokenId, attackerId, type } = data;
+  if (canvas.scene?.id !== sceneId) return;
+  const item = await fromUuid(itemUuid);
+  if (!item) return;
+  const token = canvas.tokens?.get(tokenId);
+  if (!token) return;
+  const attacker = attackerId ? canvas.tokens?.get(attackerId) : void 0;
+  const config = getDefensiveFxConfig(item);
+  if (!config) return;
+  await _playDefensiveBuiltin(config, { type, token, attacker }, item);
+}
+const providers = /* @__PURE__ */ new Map();
+let initialized = false;
+function initFxTriggerManager() {
+  if (initialized) return;
+  initialized = true;
+  const moduleData = game.modules.get(MODULE_ID);
+  if (moduleData) {
+    moduleData.api = {
+      ...moduleData.api,
+      // Core methods
+      playWeaponFx: _apiPlayWeaponFx,
+      playDefensiveFx: _apiPlayDefensiveFx,
+      registerFxProvider: _apiRegisterProvider,
+      unregisterFxProvider: _apiUnregisterProvider,
+      isSequencerAvailable,
+      getWeaponFxConfig,
+      getDefensiveFxConfig,
+      // Convenience shorthands for defensive FX
+      shieldHit: (item, token, attacker) => _apiPlayDefensiveFx(item, { type: "shieldHit", token, attacker }),
+      armorDeflect: (item, token, attacker) => _apiPlayDefensiveFx(item, { type: "armorDeflect", token, attacker }),
+      armorPenetrate: (item, token, attacker) => _apiPlayDefensiveFx(item, { type: "armorPenetrate", token, attacker }),
+      auraActivate: (item, token) => _apiPlayDefensiveFx(item, { type: "auraActivate", token }),
+      auraDeactivate: (item, token) => _apiPlayDefensiveFx(item, { type: "auraDeactivate", token }),
+      shieldOverload: (item, token) => _apiPlayDefensiveFx(item, { type: "shieldOverload", token })
+    };
+  }
+  debug("FxTriggerManager | Initialized, firing registerProviders hook");
+  Hooks.callAll(`${MODULE_ID}.registerProviders`, moduleData?.api);
+}
+async function _apiPlayWeaponFx(item, options = {}) {
+  if (!game.settings.get(MODULE_ID, "enableWeaponFx")) {
+    debug("FxTriggerManager | Subsystem disabled, ignoring playWeaponFx call");
+    return;
+  }
+  return playWeaponFx(item, options);
+}
+async function _apiPlayDefensiveFx(item, event = {}) {
+  if (!game.settings.get(MODULE_ID, "enableWeaponFx")) {
+    debug("FxTriggerManager | Subsystem disabled, ignoring playDefensiveFx call");
+    return;
+  }
+  return playDefensiveFx(item, event);
+}
+function _apiRegisterProvider(provider) {
+  if (!provider?.id) {
+    console.error("[ARS] WeaponFX: Cannot register provider without id");
+    return;
+  }
+  if (provider.systemId && provider.systemId !== "*" && provider.systemId !== game.system?.id) {
+    debug(`FxTriggerManager | Skipping provider '${provider.id}' (system '${provider.systemId}' != '${game.system?.id}')`);
+    return;
+  }
+  if (providers.has(provider.id)) {
+    console.warn(`[ARS] WeaponFX: Provider '${provider.id}' already registered, replacing`);
+    try {
+      providers.get(provider.id).destroy?.();
+    } catch (err) {
+      console.warn(`[ARS] WeaponFX: Error destroying old provider '${provider.id}':`, err);
+    }
+  }
+  providers.set(provider.id, provider);
+  debug(`FxTriggerManager | Registered provider '${provider.id}' (${provider.label})`);
+  try {
+    provider.init?.();
+  } catch (err) {
+    console.error(`[ARS] WeaponFX: Provider '${provider.id}' init() failed:`, err);
+  }
+}
+function _apiUnregisterProvider(providerId) {
+  const provider = providers.get(providerId);
+  if (!provider) return;
+  try {
+    provider.destroy?.();
+  } catch (err) {
+    console.warn(`[ARS] WeaponFX: Error destroying provider '${providerId}':`, err);
+  }
+  providers.delete(providerId);
+  debug(`FxTriggerManager | Unregistered provider '${providerId}'`);
+}
+function exportWeaponFx(item) {
+  if (!item) return null;
+  const config = item.getFlag(MODULE_ID, "weaponFx");
+  if (!config) return null;
+  return {
+    _arsExport: "weaponFx",
+    _version: 1,
+    _itemName: item.name,
+    _exportedAt: (/* @__PURE__ */ new Date()).toISOString(),
+    config: _stripEnabled(config)
+  };
+}
+function exportDefensiveFx(item) {
+  if (!item) return null;
+  const config = item.getFlag(MODULE_ID, "defensiveFx");
+  if (!config) return null;
+  return {
+    _arsExport: "defensiveFx",
+    _version: 1,
+    _itemName: item.name,
+    _exportedAt: (/* @__PURE__ */ new Date()).toISOString(),
+    config: _stripEnabled(config)
+  };
+}
+function parseImportedFx(jsonString) {
+  let data;
+  try {
+    data = JSON.parse(jsonString);
+  } catch (err) {
+    return { error: "Invalid JSON format" };
+  }
+  if (!data || typeof data !== "object") {
+    return { error: "Invalid data: not an object" };
+  }
+  if (data._arsExport === "weaponFx" && data.config) {
+    if (!_validateWeaponFxConfig(data.config)) {
+      return { error: "Invalid weapon FX config structure" };
+    }
+    return { type: "weaponFx", config: data.config };
+  }
+  if (data._arsExport === "defensiveFx" && data.config) {
+    if (!_validateDefensiveFxConfig(data.config)) {
+      return { error: "Invalid defensive FX config structure" };
+    }
+    return { type: "defensiveFx", config: data.config };
+  }
+  if (data._arsExport === "allFx") {
+    const result = { type: "allFx" };
+    if (data.weaponFx) {
+      if (!_validateWeaponFxConfig(data.weaponFx)) {
+        return { error: "Invalid weapon FX config in bundle" };
+      }
+      result.weaponFx = data.weaponFx;
+    }
+    if (data.defensiveFx) {
+      if (!_validateDefensiveFxConfig(data.defensiveFx)) {
+        return { error: "Invalid defensive FX config in bundle" };
+      }
+      result.defensiveFx = data.defensiveFx;
+    }
+    return result;
+  }
+  if (data.fxType !== void 0 && (data.sounds !== void 0 || data.projectile !== void 0)) {
+    if (!_validateWeaponFxConfig(data)) {
+      return { error: "Invalid weapon FX config structure" };
+    }
+    return { type: "weaponFx", config: data };
+  }
+  if (data.onHit !== void 0 || data.onDeflect !== void 0 || data.aura !== void 0) {
+    if (!_validateDefensiveFxConfig(data)) {
+      return { error: "Invalid defensive FX config structure" };
+    }
+    return { type: "defensiveFx", config: data };
+  }
+  return { error: "Unrecognized FX format" };
+}
+async function importFxToItem(item, jsonString) {
+  if (!item) return { success: false, error: "No item provided" };
+  const parsed = parseImportedFx(jsonString);
+  if (parsed.error) {
+    return { success: false, error: parsed.error };
+  }
+  try {
+    if (parsed.type === "weaponFx") {
+      await item.setFlag(MODULE_ID, "weaponFx", { ...parsed.config, enabled: true });
+      debug("FxImportExport | Imported weapon FX to", item.name);
+      return { success: true, type: "weaponFx" };
+    }
+    if (parsed.type === "defensiveFx") {
+      await item.setFlag(MODULE_ID, "defensiveFx", { ...parsed.config, enabled: true });
+      debug("FxImportExport | Imported defensive FX to", item.name);
+      return { success: true, type: "defensiveFx" };
+    }
+    if (parsed.type === "allFx") {
+      if (parsed.weaponFx) {
+        await item.setFlag(MODULE_ID, "weaponFx", { ...parsed.weaponFx, enabled: true });
+      }
+      if (parsed.defensiveFx) {
+        await item.setFlag(MODULE_ID, "defensiveFx", { ...parsed.defensiveFx, enabled: true });
+      }
+      debug("FxImportExport | Imported all FX to", item.name);
+      return { success: true, type: "allFx" };
+    }
+    return { success: false, error: "Unknown import type" };
+  } catch (err) {
+    console.error("[ARS] FxImportExport: Import failed:", err);
+    return { success: false, error: err.message };
+  }
+}
+async function copyFxToClipboard(exportData) {
+  if (!exportData) return false;
+  try {
+    const json = JSON.stringify(exportData, null, 2);
+    await navigator.clipboard.writeText(json);
+    return true;
+  } catch (err) {
+    console.warn("[ARS] FxImportExport: Clipboard copy failed:", err);
+    return false;
+  }
+}
+function downloadFxAsFile(exportData, filename) {
+  if (!exportData) return;
+  const json = JSON.stringify(exportData, null, 2);
+  const blob = new Blob([json], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename || `fx-${exportData._arsExport ?? "config"}-${Date.now()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+function _stripEnabled(config) {
+  const copy = { ...config };
+  delete copy.enabled;
+  return copy;
+}
+function _validateWeaponFxConfig(config) {
+  if (typeof config !== "object" || config === null) return false;
+  return config.fxType !== void 0 || config.sounds !== void 0 || config.projectile !== void 0 || config.rateOfFire !== void 0;
+}
+function _validateDefensiveFxConfig(config) {
+  if (typeof config !== "object" || config === null) return false;
+  return config.onHit !== void 0 || config.onDeflect !== void 0 || config.onPenetrate !== void 0 || config.aura !== void 0;
+}
+function get_each_context_1$5(ctx, list, i) {
   const child_ctx = ctx.slice();
   child_ctx[28] = list[i];
   return child_ctx;
 }
-function get_each_context$3(ctx, list, i) {
+function get_each_context$6(ctx, list, i) {
   const child_ctx = ctx.slice();
   child_ctx[25] = list[i];
   return child_ctx;
 }
-function create_if_block_5$2(ctx) {
+function create_if_block_5$5(ctx) {
   let span;
   let t0;
   let t1;
@@ -22271,14 +24227,14 @@ function create_if_block_5$2(ctx) {
     }
   };
 }
-function create_if_block$3(ctx) {
+function create_if_block$7(ctx) {
   let div;
   let mounted;
   let dispose;
   function select_block_type(ctx2, dirty) {
     if (!/*showUserPicker*/
-    ctx2[3]) return create_if_block_1$2;
-    return create_else_block$2;
+    ctx2[3]) return create_if_block_1$6;
+    return create_else_block$4;
   }
   let current_block_type = select_block_type(ctx);
   let if_block = current_block_type(ctx);
@@ -22362,7 +24318,7 @@ function create_if_block$3(ctx) {
     }
   };
 }
-function create_else_block$2(ctx) {
+function create_else_block$4(ctx) {
   let div3;
   let div0;
   let button0;
@@ -22387,8 +24343,8 @@ function create_else_block$2(ctx) {
     if (
       /*players*/
       ctx2[7].length === 0
-    ) return create_if_block_3$2;
-    return create_else_block_1$2;
+    ) return create_if_block_3$6;
+    return create_else_block_1$3;
   }
   let current_block_type = select_block_type_1(ctx);
   let if_block = current_block_type(ctx);
@@ -22481,7 +24437,7 @@ function create_else_block$2(ctx) {
     }
   };
 }
-function create_if_block_1$2(ctx) {
+function create_if_block_1$6(ctx) {
   let div;
   let each_value = ensure_array_like(
     /*options*/
@@ -22489,7 +24445,7 @@ function create_if_block_1$2(ctx) {
   );
   let each_blocks = [];
   for (let i = 0; i < each_value.length; i += 1) {
-    each_blocks[i] = create_each_block$3(get_each_context$3(ctx, each_value, i));
+    each_blocks[i] = create_each_block$6(get_each_context$6(ctx, each_value, i));
   }
   return {
     c() {
@@ -22516,11 +24472,11 @@ function create_if_block_1$2(ctx) {
         );
         let i;
         for (i = 0; i < each_value.length; i += 1) {
-          const child_ctx = get_each_context$3(ctx2, each_value, i);
+          const child_ctx = get_each_context$6(ctx2, each_value, i);
           if (each_blocks[i]) {
             each_blocks[i].p(child_ctx, dirty);
           } else {
-            each_blocks[i] = create_each_block$3(child_ctx);
+            each_blocks[i] = create_each_block$6(child_ctx);
             each_blocks[i].c();
             each_blocks[i].m(div, null);
           }
@@ -22539,7 +24495,7 @@ function create_if_block_1$2(ctx) {
     }
   };
 }
-function create_else_block_1$2(ctx) {
+function create_else_block_1$3(ctx) {
   let each_1_anchor;
   let each_value_1 = ensure_array_like(
     /*players*/
@@ -22547,7 +24503,7 @@ function create_else_block_1$2(ctx) {
   );
   let each_blocks = [];
   for (let i = 0; i < each_value_1.length; i += 1) {
-    each_blocks[i] = create_each_block_1$2(get_each_context_1$2(ctx, each_value_1, i));
+    each_blocks[i] = create_each_block_1$5(get_each_context_1$5(ctx, each_value_1, i));
   }
   return {
     c() {
@@ -22573,11 +24529,11 @@ function create_else_block_1$2(ctx) {
         );
         let i;
         for (i = 0; i < each_value_1.length; i += 1) {
-          const child_ctx = get_each_context_1$2(ctx2, each_value_1, i);
+          const child_ctx = get_each_context_1$5(ctx2, each_value_1, i);
           if (each_blocks[i]) {
             each_blocks[i].p(child_ctx, dirty);
           } else {
-            each_blocks[i] = create_each_block_1$2(child_ctx);
+            each_blocks[i] = create_each_block_1$5(child_ctx);
             each_blocks[i].c();
             each_blocks[i].m(each_1_anchor.parentNode, each_1_anchor);
           }
@@ -22596,7 +24552,7 @@ function create_else_block_1$2(ctx) {
     }
   };
 }
-function create_if_block_3$2(ctx) {
+function create_if_block_3$6(ctx) {
   let div;
   return {
     c() {
@@ -22615,7 +24571,7 @@ function create_if_block_3$2(ctx) {
     }
   };
 }
-function create_if_block_4$2(ctx) {
+function create_if_block_4$6(ctx) {
   let span;
   return {
     c() {
@@ -22633,7 +24589,7 @@ function create_if_block_4$2(ctx) {
     }
   };
 }
-function create_each_block_1$2(ctx) {
+function create_each_block_1$5(ctx) {
   let label;
   let input;
   let input_checked_value;
@@ -22662,7 +24618,7 @@ function create_each_block_1$2(ctx) {
   }
   let if_block = (
     /*player*/
-    ctx[28].active && create_if_block_4$2()
+    ctx[28].active && create_if_block_4$6()
   );
   return {
     c() {
@@ -22744,7 +24700,7 @@ function create_each_block_1$2(ctx) {
       ) {
         if (if_block) ;
         else {
-          if_block = create_if_block_4$2();
+          if_block = create_if_block_4$6();
           if_block.c();
           if_block.m(label, t4);
         }
@@ -22763,7 +24719,7 @@ function create_each_block_1$2(ctx) {
     }
   };
 }
-function create_if_block_2$2(ctx) {
+function create_if_block_2$6(ctx) {
   let i;
   return {
     c() {
@@ -22780,7 +24736,7 @@ function create_if_block_2$2(ctx) {
     }
   };
 }
-function create_each_block$3(ctx) {
+function create_each_block$6(ctx) {
   let button;
   let i;
   let t0;
@@ -22792,7 +24748,7 @@ function create_each_block$3(ctx) {
   let if_block = (
     /*normalized*/
     ctx[1].type === /*option*/
-    ctx[25].value && create_if_block_2$2()
+    ctx[25].value && create_if_block_2$6()
   );
   function click_handler_1() {
     return (
@@ -22848,7 +24804,7 @@ function create_each_block$3(ctx) {
       ) {
         if (if_block) ;
         else {
-          if_block = create_if_block_2$2();
+          if_block = create_if_block_2$6();
           if_block.c();
           if_block.m(button, t3);
         }
@@ -22877,7 +24833,7 @@ function create_each_block$3(ctx) {
     }
   };
 }
-function create_fragment$4(ctx) {
+function create_fragment$8(ctx) {
   let div;
   let button;
   let i;
@@ -22889,10 +24845,10 @@ function create_fragment$4(ctx) {
   let mounted;
   let dispose;
   let if_block0 = !/*compact*/
-  ctx[0] && create_if_block_5$2(ctx);
+  ctx[0] && create_if_block_5$5(ctx);
   let if_block1 = (
     /*isOpen*/
-    ctx[2] && create_if_block$3(ctx)
+    ctx[2] && create_if_block$7(ctx)
   );
   return {
     c() {
@@ -22963,7 +24919,7 @@ function create_fragment$4(ctx) {
         if (if_block0) {
           if_block0.p(ctx2, dirty);
         } else {
-          if_block0 = create_if_block_5$2(ctx2);
+          if_block0 = create_if_block_5$5(ctx2);
           if_block0.c();
           if_block0.m(button, null);
         }
@@ -23001,7 +24957,7 @@ function create_fragment$4(ctx) {
         if (if_block1) {
           if_block1.p(ctx2, dirty);
         } else {
-          if_block1 = create_if_block$3(ctx2);
+          if_block1 = create_if_block$7(ctx2);
           if_block1.c();
           if_block1.m(if_block1_anchor.parentNode, if_block1_anchor);
         }
@@ -23034,7 +24990,7 @@ function portal$1(node) {
     }
   };
 }
-function instance$4($$self, $$props, $$invalidate) {
+function instance$8($$self, $$props, $$invalidate) {
   let normalized;
   let currentLabel;
   let currentIcon;
@@ -23164,15 +25120,15 @@ function instance$4($$self, $$props, $$invalidate) {
 class PermissionPicker extends SvelteComponent {
   constructor(options) {
     super();
-    init(this, options, instance$4, create_fragment$4, safe_not_equal, { value: 16, compact: 0 });
+    init(this, options, instance$8, create_fragment$8, safe_not_equal, { value: 16, compact: 0 });
   }
 }
-function get_each_context$2(ctx, list, i) {
+function get_each_context$5(ctx, list, i) {
   const child_ctx = ctx.slice();
   child_ctx[59] = list[i];
   return child_ctx;
 }
-function get_each_context_1$1(ctx, list, i) {
+function get_each_context_1$4(ctx, list, i) {
   const child_ctx = ctx.slice();
   child_ctx[62] = list[i];
   const constants_0 = (
@@ -23202,17 +25158,17 @@ function get_each_context_1$1(ctx, list, i) {
   child_ctx[66] = constants_3;
   return child_ctx;
 }
-function get_each_context_2(ctx, list, i) {
+function get_each_context_2$2(ctx, list, i) {
   const child_ctx = ctx.slice();
   child_ctx[69] = list[i];
   return child_ctx;
 }
-function get_each_context_3(ctx, list, i) {
+function get_each_context_3$1(ctx, list, i) {
   const child_ctx = ctx.slice();
   child_ctx[72] = list[i];
   return child_ctx;
 }
-function create_if_block_8(ctx) {
+function create_if_block_8$3(ctx) {
   let div0;
   let i0;
   let t0;
@@ -23228,11 +25184,11 @@ function create_if_block_8(ctx) {
   let dispose;
   let if_block0 = (
     /*isBroadcasting*/
-    ctx[16] && create_if_block_11(ctx)
+    ctx[16] && create_if_block_11$2(ctx)
   );
   let if_block1 = (
     /*broadcastMenuOpen*/
-    ctx[14] && create_if_block_9(ctx)
+    ctx[14] && create_if_block_9$2(ctx)
   );
   return {
     c() {
@@ -23320,7 +25276,7 @@ function create_if_block_8(ctx) {
         if (if_block0) {
           if_block0.p(ctx2, dirty);
         } else {
-          if_block0 = create_if_block_11(ctx2);
+          if_block0 = create_if_block_11$2(ctx2);
           if_block0.c();
           if_block0.m(button, null);
         }
@@ -23349,7 +25305,7 @@ function create_if_block_8(ctx) {
         if (if_block1) {
           if_block1.p(ctx2, dirty);
         } else {
-          if_block1 = create_if_block_9(ctx2);
+          if_block1 = create_if_block_9$2(ctx2);
           if_block1.c();
           if_block1.m(div1, null);
         }
@@ -23380,7 +25336,7 @@ function create_if_block_8(ctx) {
     }
   };
 }
-function create_if_block_11(ctx) {
+function create_if_block_11$2(ctx) {
   let span;
   let t;
   return {
@@ -23411,7 +25367,7 @@ function create_if_block_11(ctx) {
     }
   };
 }
-function create_if_block_9(ctx) {
+function create_if_block_9$2(ctx) {
   let div1;
   let button0;
   let t1;
@@ -23426,9 +25382,9 @@ function create_if_block_9(ctx) {
   let each_value_3 = ensure_array_like(getOnlinePlayers());
   let each_blocks = [];
   for (let i = 0; i < each_value_3.length; i += 1) {
-    each_blocks[i] = create_each_block_3(get_each_context_3(ctx, each_value_3, i));
+    each_blocks[i] = create_each_block_3$1(get_each_context_3$1(ctx, each_value_3, i));
   }
-  let if_block = show_if && create_if_block_10();
+  let if_block = show_if && create_if_block_10$2();
   return {
     c() {
       div1 = element("div");
@@ -23519,11 +25475,11 @@ function create_if_block_9(ctx) {
         each_value_3 = ensure_array_like(getOnlinePlayers());
         let i;
         for (i = 0; i < each_value_3.length; i += 1) {
-          const child_ctx = get_each_context_3(ctx2, each_value_3, i);
+          const child_ctx = get_each_context_3$1(ctx2, each_value_3, i);
           if (each_blocks[i]) {
             each_blocks[i].p(child_ctx, dirty);
           } else {
-            each_blocks[i] = create_each_block_3(child_ctx);
+            each_blocks[i] = create_each_block_3$1(child_ctx);
             each_blocks[i].c();
             each_blocks[i].m(div1, t5);
           }
@@ -23545,7 +25501,7 @@ function create_if_block_9(ctx) {
     }
   };
 }
-function create_each_block_3(ctx) {
+function create_each_block_3$1(ctx) {
   let button;
   let i;
   let t0;
@@ -23613,7 +25569,7 @@ function create_each_block_3(ctx) {
     }
   };
 }
-function create_if_block_10(ctx) {
+function create_if_block_10$2(ctx) {
   let span;
   return {
     c() {
@@ -23631,7 +25587,7 @@ function create_if_block_10(ctx) {
     }
   };
 }
-function create_if_block_6$1(ctx) {
+function create_if_block_6$4(ctx) {
   let div;
   let span0;
   let t0_value = (
@@ -23655,7 +25611,7 @@ function create_if_block_6$1(ctx) {
   let t5;
   let if_block = (
     /*isBroadcasting*/
-    ctx[16] && create_if_block_7$1(ctx)
+    ctx[16] && create_if_block_7$4(ctx)
   );
   return {
     c() {
@@ -23706,7 +25662,7 @@ function create_if_block_6$1(ctx) {
         if (if_block) {
           if_block.p(ctx2, dirty);
         } else {
-          if_block = create_if_block_7$1(ctx2);
+          if_block = create_if_block_7$4(ctx2);
           if_block.c();
           if_block.m(div, null);
         }
@@ -23723,7 +25679,7 @@ function create_if_block_6$1(ctx) {
     }
   };
 }
-function create_if_block_7$1(ctx) {
+function create_if_block_7$4(ctx) {
   let span;
   let i;
   let t0;
@@ -23761,7 +25717,7 @@ function create_if_block_7$1(ctx) {
     }
   };
 }
-function create_else_block_1$1(ctx) {
+function create_else_block_1$2(ctx) {
   let each_1_anchor;
   let current;
   let each_value = ensure_array_like(
@@ -23770,7 +25726,7 @@ function create_else_block_1$1(ctx) {
   );
   let each_blocks = [];
   for (let i = 0; i < each_value.length; i += 1) {
-    each_blocks[i] = create_each_block$2(get_each_context$2(ctx, each_value, i));
+    each_blocks[i] = create_each_block$5(get_each_context$5(ctx, each_value, i));
   }
   const out = (i) => transition_out(each_blocks[i], 1, 1, () => {
     each_blocks[i] = null;
@@ -23800,12 +25756,12 @@ function create_else_block_1$1(ctx) {
         );
         let i;
         for (i = 0; i < each_value.length; i += 1) {
-          const child_ctx = get_each_context$2(ctx2, each_value, i);
+          const child_ctx = get_each_context$5(ctx2, each_value, i);
           if (each_blocks[i]) {
             each_blocks[i].p(child_ctx, dirty);
             transition_in(each_blocks[i], 1);
           } else {
-            each_blocks[i] = create_each_block$2(child_ctx);
+            each_blocks[i] = create_each_block$5(child_ctx);
             each_blocks[i].c();
             transition_in(each_blocks[i], 1);
             each_blocks[i].m(each_1_anchor.parentNode, each_1_anchor);
@@ -23840,7 +25796,7 @@ function create_else_block_1$1(ctx) {
     }
   };
 }
-function create_if_block$2(ctx) {
+function create_if_block$6(ctx) {
   let div;
   let i;
   let t;
@@ -23848,8 +25804,8 @@ function create_if_block$2(ctx) {
     if (
       /*tracks*/
       ctx2[2].length === 0
-    ) return create_if_block_1$1;
-    return create_else_block$1;
+    ) return create_if_block_1$5;
+    return create_else_block$3;
   }
   let current_block_type = select_block_type_1(ctx);
   let if_block = current_block_type(ctx);
@@ -23888,7 +25844,7 @@ function create_if_block$2(ctx) {
     }
   };
 }
-function create_if_block_5$1(ctx) {
+function create_if_block_5$4(ctx) {
   let button;
   let mounted;
   let dispose;
@@ -23922,7 +25878,7 @@ function create_if_block_5$1(ctx) {
     }
   };
 }
-function create_if_block_4$1(ctx) {
+function create_if_block_4$5(ctx) {
   let div1;
   let div0;
   let mounted;
@@ -24001,7 +25957,7 @@ function create_if_block_4$1(ctx) {
     }
   };
 }
-function create_if_block_3$1(ctx) {
+function create_if_block_3$5(ctx) {
   let option;
   let t0;
   let t1_value = (
@@ -24046,7 +26002,7 @@ function create_if_block_3$1(ctx) {
     }
   };
 }
-function create_each_block_2(ctx) {
+function create_each_block_2$2(ctx) {
   let option;
   let t_value = (
     /*cat*/
@@ -24084,7 +26040,7 @@ function create_each_block_2(ctx) {
     }
   };
 }
-function create_if_block_2$1(ctx) {
+function create_if_block_2$5(ctx) {
   let permissionpicker;
   let current;
   function change_handler_1(...args) {
@@ -24137,7 +26093,7 @@ function create_if_block_2$1(ctx) {
     }
   };
 }
-function create_each_block_1$1(key_1, ctx) {
+function create_each_block_1$4(key_1, ctx) {
   let div2;
   let button0;
   let i0;
@@ -24175,7 +26131,7 @@ function create_each_block_1$1(key_1, ctx) {
   }
   let if_block0 = (
     /*isCurrentTrack*/
-    ctx[63] && create_if_block_5$1(ctx)
+    ctx[63] && create_if_block_5$4(ctx)
   );
   function dblclick_handler() {
     return (
@@ -24189,17 +26145,17 @@ function create_each_block_1$1(key_1, ctx) {
   let if_block1 = (
     /*isCurrentTrack*/
     ctx[63] && /*duration*/
-    ctx[13] > 0 && create_if_block_4$1(ctx)
+    ctx[13] > 0 && create_if_block_4$5(ctx)
   );
   let if_block2 = !/*isValidCategory*/
-  ctx[66] && create_if_block_3$1(ctx);
+  ctx[66] && create_if_block_3$5(ctx);
   let each_value_2 = ensure_array_like(
     /*categories*/
     ctx[8]
   );
   let each_blocks = [];
   for (let i = 0; i < each_value_2.length; i += 1) {
-    each_blocks[i] = create_each_block_2(get_each_context_2(ctx, each_value_2, i));
+    each_blocks[i] = create_each_block_2$2(get_each_context_2$2(ctx, each_value_2, i));
   }
   function change_handler(...args) {
     return (
@@ -24213,7 +26169,7 @@ function create_each_block_1$1(key_1, ctx) {
   }
   let if_block3 = (
     /*isGM*/
-    ctx[19] && create_if_block_2$1(ctx)
+    ctx[19] && create_if_block_2$5(ctx)
   );
   function click_handler_6() {
     return (
@@ -24339,7 +26295,7 @@ function create_each_block_1$1(key_1, ctx) {
         if (if_block0) {
           if_block0.p(ctx, dirty);
         } else {
-          if_block0 = create_if_block_5$1(ctx);
+          if_block0 = create_if_block_5$4(ctx);
           if_block0.c();
           if_block0.m(div2, t1);
         }
@@ -24358,7 +26314,7 @@ function create_each_block_1$1(key_1, ctx) {
         if (if_block1) {
           if_block1.p(ctx, dirty);
         } else {
-          if_block1 = create_if_block_4$1(ctx);
+          if_block1 = create_if_block_4$5(ctx);
           if_block1.c();
           if_block1.m(div0, null);
         }
@@ -24371,7 +26327,7 @@ function create_each_block_1$1(key_1, ctx) {
         if (if_block2) {
           if_block2.p(ctx, dirty);
         } else {
-          if_block2 = create_if_block_3$1(ctx);
+          if_block2 = create_if_block_3$5(ctx);
           if_block2.c();
           if_block2.m(select, if_block2_anchor);
         }
@@ -24387,11 +26343,11 @@ function create_each_block_1$1(key_1, ctx) {
         );
         let i;
         for (i = 0; i < each_value_2.length; i += 1) {
-          const child_ctx = get_each_context_2(ctx, each_value_2, i);
+          const child_ctx = get_each_context_2$2(ctx, each_value_2, i);
           if (each_blocks[i]) {
             each_blocks[i].p(child_ctx, dirty);
           } else {
-            each_blocks[i] = create_each_block_2(child_ctx);
+            each_blocks[i] = create_each_block_2$2(child_ctx);
             each_blocks[i].c();
             each_blocks[i].m(select, null);
           }
@@ -24431,7 +26387,7 @@ function create_each_block_1$1(key_1, ctx) {
             transition_in(if_block3, 1);
           }
         } else {
-          if_block3 = create_if_block_2$1(ctx);
+          if_block3 = create_if_block_2$5(ctx);
           if_block3.c();
           transition_in(if_block3, 1);
           if_block3.m(div1, t6);
@@ -24485,7 +26441,7 @@ function create_each_block_1$1(key_1, ctx) {
     }
   };
 }
-function create_each_block$2(ctx) {
+function create_each_block$5(ctx) {
   let div;
   let h3;
   let i;
@@ -24510,9 +26466,9 @@ function create_each_block$2(ctx) {
     ctx2[62].id
   );
   for (let i2 = 0; i2 < each_value_1.length; i2 += 1) {
-    let child_ctx = get_each_context_1$1(ctx, each_value_1, i2);
+    let child_ctx = get_each_context_1$4(ctx, each_value_1, i2);
     let key = get_key(child_ctx);
-    each_1_lookup.set(key, each_blocks[i2] = create_each_block_1$1(key, child_ctx));
+    each_1_lookup.set(key, each_blocks[i2] = create_each_block_1$4(key, child_ctx));
   }
   return {
     c() {
@@ -24562,7 +26518,7 @@ function create_each_block$2(ctx) {
           ctx2[59].tracks
         );
         group_outros();
-        each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx2, each_value_1, each_1_lookup, div, outro_and_destroy_block, create_each_block_1$1, t3, get_each_context_1$1);
+        each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx2, each_value_1, each_1_lookup, div, outro_and_destroy_block, create_each_block_1$4, t3, get_each_context_1$4);
         check_outros();
       }
     },
@@ -24589,7 +26545,7 @@ function create_each_block$2(ctx) {
     }
   };
 }
-function create_else_block$1(ctx) {
+function create_else_block$3(ctx) {
   let p0;
   let t1;
   let p1;
@@ -24616,7 +26572,7 @@ function create_else_block$1(ctx) {
     }
   };
 }
-function create_if_block_1$1(ctx) {
+function create_if_block_1$5(ctx) {
   let p0;
   let t1;
   let p1;
@@ -24643,7 +26599,7 @@ function create_if_block_1$1(ctx) {
     }
   };
 }
-function create_default_slot$3(ctx) {
+function create_default_slot$5(ctx) {
   let main;
   let header;
   let h2;
@@ -24674,14 +26630,14 @@ function create_default_slot$3(ctx) {
   let dispose;
   let if_block0 = (
     /*isGM*/
-    ctx[19] && create_if_block_8(ctx)
+    ctx[19] && create_if_block_8$3(ctx)
   );
   let if_block1 = (
     /*currentTrack*/
     ctx[15] && /*isPlaying*/
-    ctx[9] && create_if_block_6$1(ctx)
+    ctx[9] && create_if_block_6$4(ctx)
   );
-  const if_block_creators = [create_if_block$2, create_else_block_1$1];
+  const if_block_creators = [create_if_block$6, create_else_block_1$2];
   const if_blocks = [];
   function select_block_type(ctx2, dirty) {
     if (
@@ -24793,7 +26749,7 @@ function create_default_slot$3(ctx) {
         if (if_block0) {
           if_block0.p(ctx2, dirty);
         } else {
-          if_block0 = create_if_block_8(ctx2);
+          if_block0 = create_if_block_8$3(ctx2);
           if_block0.c();
           if_block0.m(div1, t6);
         }
@@ -24809,7 +26765,7 @@ function create_default_slot$3(ctx) {
         if (if_block1) {
           if_block1.p(ctx2, dirty);
         } else {
-          if_block1 = create_if_block_6$1(ctx2);
+          if_block1 = create_if_block_6$4(ctx2);
           if_block1.c();
           if_block1.m(main, t8);
         }
@@ -24859,7 +26815,7 @@ function create_default_slot$3(ctx) {
     }
   };
 }
-function create_fragment$3(ctx) {
+function create_fragment$7(ctx) {
   let applicationshell;
   let updating_elementRoot;
   let current;
@@ -24869,7 +26825,7 @@ function create_fragment$3(ctx) {
     ctx[45](value);
   }
   let applicationshell_props = {
-    $$slots: { default: [create_default_slot$3] },
+    $$slots: { default: [create_default_slot$5] },
     $$scope: { ctx }
   };
   if (
@@ -24938,7 +26894,7 @@ function formatTime(seconds) {
 }
 const keydown_handler = () => {
 };
-function instance$3($$self, $$props, $$invalidate) {
+function instance$7($$self, $$props, $$invalidate) {
   let doc;
   let currentTrack;
   let visibleTracks;
@@ -24987,7 +26943,7 @@ function instance$3($$self, $$props, $$invalidate) {
       audioElement.src = "";
     }
     if (isBroadcasting) {
-      emitSocket("stopMusic", { actorName: doc?.name });
+      emitSocket2("stopMusic", { actorName: doc?.name });
     }
   });
   function handlePlay() {
@@ -25096,13 +27052,13 @@ function instance$3($$self, $$props, $$invalidate) {
       broadcastToTargets("seekMusic", { currentTime: audioElement.currentTime });
     }
   }
-  function emitSocket(type, data) {
+  function emitSocket2(type, data) {
     game.socket.emit(`module.${MODULE_ID}`, { type, senderId: game.user.id, data });
   }
   function broadcastToTargets(type, data) {
     if (broadcastTarget === "none") return;
     const targetUsers = broadcastTarget === "all" ? void 0 : broadcastTarget;
-    emitSocket(type, { ...data, targetUsers });
+    emitSocket2(type, { ...data, targetUsers });
   }
   function startSyncInterval() {
     if (syncInterval) return;
@@ -25293,7 +27249,7 @@ function instance$3($$self, $$props, $$invalidate) {
 class CharacterMusicShell extends SvelteComponent {
   constructor(options) {
     super();
-    init(this, options, instance$3, create_fragment$3, safe_not_equal, { elementRoot: 0, tjsDoc: 1 }, null, [-1, -1, -1]);
+    init(this, options, instance$7, create_fragment$7, safe_not_equal, { elementRoot: 0, tjsDoc: 1 }, null, [-1, -1, -1]);
   }
   get elementRoot() {
     return this.$$.ctx[0];
@@ -25310,7 +27266,7 @@ class CharacterMusicShell extends SvelteComponent {
     flush();
   }
 }
-function get_each_context$1(ctx, list, i) {
+function get_each_context$4(ctx, list, i) {
   const child_ctx = ctx.slice();
   child_ctx[40] = list[i];
   const constants_0 = (
@@ -25340,7 +27296,7 @@ function get_each_context$1(ctx, list, i) {
   child_ctx[44] = constants_3;
   return child_ctx;
 }
-function create_if_block_7(ctx) {
+function create_if_block_7$3(ctx) {
   let button;
   let img;
   let img_src_value;
@@ -25410,7 +27366,7 @@ function create_if_block_7(ctx) {
     }
   };
 }
-function create_else_block_1(ctx) {
+function create_else_block_1$1(ctx) {
   let t_value = (
     /*activeTab*/
     ctx[2] === "portraits" ? "Add Portrait" : "Add Token"
@@ -25435,7 +27391,7 @@ function create_else_block_1(ctx) {
     }
   };
 }
-function create_if_block_6(ctx) {
+function create_if_block_6$3(ctx) {
   let t;
   return {
     c() {
@@ -25452,7 +27408,7 @@ function create_if_block_6(ctx) {
     }
   };
 }
-function create_if_block_5(ctx) {
+function create_if_block_5$3(ctx) {
   let nav;
   let button0;
   let i0;
@@ -25573,7 +27529,7 @@ function create_if_block_5(ctx) {
     }
   };
 }
-function create_else_block(ctx) {
+function create_else_block$2(ctx) {
   let each_blocks = [];
   let each_1_lookup = /* @__PURE__ */ new Map();
   let each_1_anchor;
@@ -25587,9 +27543,9 @@ function create_else_block(ctx) {
     ctx2[40].path
   );
   for (let i = 0; i < each_value.length; i += 1) {
-    let child_ctx = get_each_context$1(ctx, each_value, i);
+    let child_ctx = get_each_context$4(ctx, each_value, i);
     let key = get_key(child_ctx);
-    each_1_lookup.set(key, each_blocks[i] = create_each_block$1(key, child_ctx));
+    each_1_lookup.set(key, each_blocks[i] = create_each_block$4(key, child_ctx));
   }
   return {
     c() {
@@ -25615,7 +27571,7 @@ function create_else_block(ctx) {
           ctx2[10]
         );
         group_outros();
-        each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx2, each_value, each_1_lookup, each_1_anchor.parentNode, outro_and_destroy_block, create_each_block$1, each_1_anchor, get_each_context$1);
+        each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx2, each_value, each_1_lookup, each_1_anchor.parentNode, outro_and_destroy_block, create_each_block$4, each_1_anchor, get_each_context$4);
         check_outros();
       }
     },
@@ -25642,7 +27598,7 @@ function create_else_block(ctx) {
     }
   };
 }
-function create_if_block$1(ctx) {
+function create_if_block$5(ctx) {
   let div;
   let i;
   let t0;
@@ -25724,7 +27680,7 @@ function create_if_block$1(ctx) {
     }
   };
 }
-function create_if_block_4(ctx) {
+function create_if_block_4$4(ctx) {
   let div;
   return {
     c() {
@@ -25742,7 +27698,7 @@ function create_if_block_4(ctx) {
     }
   };
 }
-function create_if_block_3(ctx) {
+function create_if_block_3$4(ctx) {
   let div;
   let i;
   let i_class_value;
@@ -25788,7 +27744,7 @@ function create_if_block_3(ctx) {
     }
   };
 }
-function create_if_block_2(ctx) {
+function create_if_block_2$4(ctx) {
   let button;
   let i;
   let button_title_value;
@@ -25837,7 +27793,7 @@ function create_if_block_2(ctx) {
     }
   };
 }
-function create_if_block_1(ctx) {
+function create_if_block_1$4(ctx) {
   let div;
   let permissionpicker;
   let current;
@@ -25914,7 +27870,7 @@ function create_if_block_1(ctx) {
     }
   };
 }
-function create_each_block$1(key_1, ctx) {
+function create_each_block$4(key_1, ctx) {
   let div2;
   let img;
   let img_src_value;
@@ -25945,12 +27901,12 @@ function create_each_block$1(key_1, ctx) {
   let dispose;
   let if_block0 = (
     /*isCurrent*/
-    ctx[43] && create_if_block_4()
+    ctx[43] && create_if_block_4$4()
   );
   let if_block1 = (
     /*isGM*/
     ctx[11] && /*itemPermission*/
-    ctx[44].type !== PERMISSION_TYPES.ALL && create_if_block_3(ctx)
+    ctx[44].type !== PERMISSION_TYPES.ALL && create_if_block_3$4(ctx)
   );
   function click_handler_5() {
     return (
@@ -25963,11 +27919,11 @@ function create_each_block$1(key_1, ctx) {
   }
   let if_block2 = (
     /*isActor*/
-    ctx[4] && create_if_block_2(ctx)
+    ctx[4] && create_if_block_2$4(ctx)
   );
   let if_block3 = (
     /*isGM*/
-    ctx[11] && create_if_block_1(ctx)
+    ctx[11] && create_if_block_1$4(ctx)
   );
   function click_handler_7() {
     return (
@@ -26115,7 +28071,7 @@ function create_each_block$1(key_1, ctx) {
       ) {
         if (if_block0) ;
         else {
-          if_block0 = create_if_block_4();
+          if_block0 = create_if_block_4$4();
           if_block0.c();
           if_block0.m(div2, t1);
         }
@@ -26131,7 +28087,7 @@ function create_each_block$1(key_1, ctx) {
         if (if_block1) {
           if_block1.p(ctx, dirty);
         } else {
-          if_block1 = create_if_block_3(ctx);
+          if_block1 = create_if_block_3$4(ctx);
           if_block1.c();
           if_block1.m(div2, t2);
         }
@@ -26174,7 +28130,7 @@ function create_each_block$1(key_1, ctx) {
         if (if_block2) {
           if_block2.p(ctx, dirty);
         } else {
-          if_block2 = create_if_block_2(ctx);
+          if_block2 = create_if_block_2$4(ctx);
           if_block2.c();
           if_block2.m(div0, t6);
         }
@@ -26193,7 +28149,7 @@ function create_each_block$1(key_1, ctx) {
             transition_in(if_block3, 1);
           }
         } else {
-          if_block3 = create_if_block_1(ctx);
+          if_block3 = create_if_block_1$4(ctx);
           if_block3.c();
           transition_in(if_block3, 1);
           if_block3.m(div0, t7);
@@ -26237,7 +28193,7 @@ function create_each_block$1(key_1, ctx) {
     }
   };
 }
-function create_default_slot$2(ctx) {
+function create_default_slot$4(ctx) {
   let main;
   let header;
   let div0;
@@ -26272,22 +28228,22 @@ function create_default_slot$2(ctx) {
   let dispose;
   let if_block0 = (
     /*isActor*/
-    ctx[4] && create_if_block_7(ctx)
+    ctx[4] && create_if_block_7$3(ctx)
   );
   function select_block_type(ctx2, dirty) {
     if (
       /*isItem*/
       ctx2[8]
-    ) return create_if_block_6;
-    return create_else_block_1;
+    ) return create_if_block_6$3;
+    return create_else_block_1$1;
   }
   let current_block_type = select_block_type(ctx);
   let if_block1 = current_block_type(ctx);
   let if_block2 = (
     /*isActor*/
-    ctx[4] && create_if_block_5(ctx)
+    ctx[4] && create_if_block_5$3(ctx)
   );
-  const if_block_creators = [create_if_block$1, create_else_block];
+  const if_block_creators = [create_if_block$5, create_else_block$2];
   const if_blocks = [];
   function select_block_type_1(ctx2, dirty) {
     if (
@@ -26435,7 +28391,7 @@ function create_default_slot$2(ctx) {
         if (if_block0) {
           if_block0.p(ctx2, dirty);
         } else {
-          if_block0 = create_if_block_7(ctx2);
+          if_block0 = create_if_block_7$3(ctx2);
           if_block0.c();
           if_block0.m(div0, null);
         }
@@ -26469,7 +28425,7 @@ function create_default_slot$2(ctx) {
         if (if_block2) {
           if_block2.p(ctx2, dirty);
         } else {
-          if_block2 = create_if_block_5(ctx2);
+          if_block2 = create_if_block_5$3(ctx2);
           if_block2.c();
           if_block2.m(main, t8);
         }
@@ -26520,7 +28476,7 @@ function create_default_slot$2(ctx) {
     }
   };
 }
-function create_fragment$2(ctx) {
+function create_fragment$6(ctx) {
   let applicationshell;
   let updating_elementRoot;
   let current;
@@ -26528,7 +28484,7 @@ function create_fragment$2(ctx) {
     ctx[35](value);
   }
   let applicationshell_props = {
-    $$slots: { default: [create_default_slot$2] },
+    $$slots: { default: [create_default_slot$4] },
     $$scope: { ctx }
   };
   if (
@@ -26585,7 +28541,7 @@ function showImagePopout(imagePath, title = "Image") {
 function handleImageClick(event, item) {
   showImagePopout(item.path, item.name);
 }
-function instance$2($$self, $$props, $$invalidate) {
+function instance$6($$self, $$props, $$invalidate) {
   let doc;
   let isActor;
   let isItem;
@@ -26836,7 +28792,9652 @@ function instance$2($$self, $$props, $$invalidate) {
 class PortraitGalleryShell extends SvelteComponent {
   constructor(options) {
     super();
-    init(this, options, instance$2, create_fragment$2, safe_not_equal, { elementRoot: 0, tjsDoc: 1 }, null, [-1, -1]);
+    init(this, options, instance$6, create_fragment$6, safe_not_equal, { elementRoot: 0, tjsDoc: 1 }, null, [-1, -1]);
+  }
+  get elementRoot() {
+    return this.$$.ctx[0];
+  }
+  set elementRoot(elementRoot) {
+    this.$$set({ elementRoot });
+    flush();
+  }
+  get tjsDoc() {
+    return this.$$.ctx[1];
+  }
+  set tjsDoc(tjsDoc) {
+    this.$$set({ tjsDoc });
+    flush();
+  }
+}
+function get_each_context$3(ctx, list, i) {
+  const child_ctx = ctx.slice();
+  child_ctx[22] = list[i];
+  return child_ctx;
+}
+function get_each_context_1$3(ctx, list, i) {
+  const child_ctx = ctx.slice();
+  child_ctx[25] = list[i];
+  return child_ctx;
+}
+function create_else_block_1(ctx) {
+  let each_blocks = [];
+  let each_1_lookup = /* @__PURE__ */ new Map();
+  let each_1_anchor;
+  let each_value_1 = ensure_array_like(
+    /*sounds*/
+    ctx[0]
+  );
+  const get_key = (ctx2) => (
+    /*sound*/
+    ctx2[25].id
+  );
+  for (let i = 0; i < each_value_1.length; i += 1) {
+    let child_ctx = get_each_context_1$3(ctx, each_value_1, i);
+    let key = get_key(child_ctx);
+    each_1_lookup.set(key, each_blocks[i] = create_each_block_1$3(key, child_ctx));
+  }
+  return {
+    c() {
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        each_blocks[i].c();
+      }
+      each_1_anchor = empty();
+    },
+    m(target, anchor) {
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        if (each_blocks[i]) {
+          each_blocks[i].m(target, anchor);
+        }
+      }
+      insert(target, each_1_anchor, anchor);
+    },
+    p(ctx2, dirty) {
+      if (dirty & /*removeSound, sounds, editingVolumeValue, commitEditVolume, cancelEditVolume, editingVolumeId, startEditVolume, Math, updateSound, previewSound*/
+      7565) {
+        each_value_1 = ensure_array_like(
+          /*sounds*/
+          ctx2[0]
+        );
+        each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx2, each_value_1, each_1_lookup, each_1_anchor.parentNode, destroy_block, create_each_block_1$3, each_1_anchor, get_each_context_1$3);
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(each_1_anchor);
+      }
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        each_blocks[i].d(detaching);
+      }
+    }
+  };
+}
+function create_if_block_3$3(ctx) {
+  let p;
+  return {
+    c() {
+      p = element("p");
+      p.innerHTML = `No sounds added. Click <strong>+ Add</strong> to pick an audio file.`;
+      attr(p, "class", "fx-empty-hint");
+    },
+    m(target, anchor) {
+      insert(target, p, anchor);
+    },
+    p: noop,
+    d(detaching) {
+      if (detaching) {
+        detach(p);
+      }
+    }
+  };
+}
+function create_else_block_2(ctx) {
+  let span;
+  let t0_value = Math.round(
+    /*sound*/
+    (ctx[25].volume ?? 0.8) * 100
+  ) + "";
+  let t0;
+  let t1;
+  let mounted;
+  let dispose;
+  function dblclick_handler() {
+    return (
+      /*dblclick_handler*/
+      ctx[18](
+        /*sound*/
+        ctx[25]
+      )
+    );
+  }
+  return {
+    c() {
+      span = element("span");
+      t0 = text(t0_value);
+      t1 = text("%");
+      attr(span, "class", "fx-sound-volume-label");
+      attr(span, "title", "Double-click to type");
+    },
+    m(target, anchor) {
+      insert(target, span, anchor);
+      append(span, t0);
+      append(span, t1);
+      if (!mounted) {
+        dispose = listen(span, "dblclick", dblclick_handler);
+        mounted = true;
+      }
+    },
+    p(new_ctx, dirty) {
+      ctx = new_ctx;
+      if (dirty & /*sounds*/
+      1 && t0_value !== (t0_value = Math.round(
+        /*sound*/
+        (ctx[25].volume ?? 0.8) * 100
+      ) + "")) set_data(t0, t0_value);
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(span);
+      }
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_if_block_4$3(ctx) {
+  let input;
+  let mounted;
+  let dispose;
+  function blur_handler() {
+    return (
+      /*blur_handler*/
+      ctx[16](
+        /*sound*/
+        ctx[25]
+      )
+    );
+  }
+  function keydown_handler2(...args) {
+    return (
+      /*keydown_handler*/
+      ctx[17](
+        /*sound*/
+        ctx[25],
+        ...args
+      )
+    );
+  }
+  return {
+    c() {
+      input = element("input");
+      attr(input, "type", "number");
+      attr(input, "class", "fx-sound-volume-input");
+      attr(input, "min", "0");
+      attr(input, "max", "100");
+      attr(input, "step", "1");
+      input.autofocus = true;
+    },
+    m(target, anchor) {
+      insert(target, input, anchor);
+      set_input_value(
+        input,
+        /*editingVolumeValue*/
+        ctx[3]
+      );
+      input.focus();
+      if (!mounted) {
+        dispose = [
+          listen(
+            input,
+            "input",
+            /*input_input_handler*/
+            ctx[15]
+          ),
+          listen(input, "blur", blur_handler),
+          listen(input, "keydown", keydown_handler2)
+        ];
+        mounted = true;
+      }
+    },
+    p(new_ctx, dirty) {
+      ctx = new_ctx;
+      if (dirty & /*editingVolumeValue*/
+      8 && to_number(input.value) !== /*editingVolumeValue*/
+      ctx[3]) {
+        set_input_value(
+          input,
+          /*editingVolumeValue*/
+          ctx[3]
+        );
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(input);
+      }
+      mounted = false;
+      run_all(dispose);
+    }
+  };
+}
+function create_each_block_1$3(key_1, ctx) {
+  let div;
+  let button0;
+  let t0;
+  let span;
+  let t1_value = (
+    /*sound*/
+    ctx[25].name + ""
+  );
+  let t1;
+  let span_title_value;
+  let t2;
+  let input;
+  let input_value_value;
+  let t3;
+  let t4;
+  let button1;
+  let t5;
+  let mounted;
+  let dispose;
+  function click_handler() {
+    return (
+      /*click_handler*/
+      ctx[13](
+        /*sound*/
+        ctx[25]
+      )
+    );
+  }
+  function input_handler(...args) {
+    return (
+      /*input_handler*/
+      ctx[14](
+        /*sound*/
+        ctx[25],
+        ...args
+      )
+    );
+  }
+  function select_block_type_1(ctx2, dirty) {
+    if (
+      /*editingVolumeId*/
+      ctx2[2] === /*sound*/
+      ctx2[25].id
+    ) return create_if_block_4$3;
+    return create_else_block_2;
+  }
+  let current_block_type = select_block_type_1(ctx);
+  let if_block = current_block_type(ctx);
+  function click_handler_1() {
+    return (
+      /*click_handler_1*/
+      ctx[19](
+        /*sound*/
+        ctx[25]
+      )
+    );
+  }
+  return {
+    key: key_1,
+    first: null,
+    c() {
+      div = element("div");
+      button0 = element("button");
+      button0.innerHTML = `<i class="fas fa-volume-up"></i>`;
+      t0 = space();
+      span = element("span");
+      t1 = text(t1_value);
+      t2 = space();
+      input = element("input");
+      t3 = space();
+      if_block.c();
+      t4 = space();
+      button1 = element("button");
+      button1.innerHTML = `<i class="fas fa-times"></i>`;
+      t5 = space();
+      attr(button0, "class", "fx-sound-preview");
+      attr(button0, "title", "Preview");
+      attr(span, "class", "fx-sound-name");
+      attr(span, "title", span_title_value = /*sound*/
+      ctx[25].path);
+      attr(input, "type", "range");
+      attr(input, "class", "fx-sound-volume");
+      attr(input, "min", "0");
+      attr(input, "max", "1");
+      attr(input, "step", "0.05");
+      input.value = input_value_value = /*sound*/
+      ctx[25].volume;
+      attr(button1, "class", "fx-sound-remove");
+      attr(button1, "title", "Remove");
+      attr(div, "class", "fx-sound-entry");
+      this.first = div;
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      append(div, button0);
+      append(div, t0);
+      append(div, span);
+      append(span, t1);
+      append(div, t2);
+      append(div, input);
+      append(div, t3);
+      if_block.m(div, null);
+      append(div, t4);
+      append(div, button1);
+      append(div, t5);
+      if (!mounted) {
+        dispose = [
+          listen(button0, "click", click_handler),
+          listen(input, "input", input_handler),
+          listen(button1, "click", click_handler_1)
+        ];
+        mounted = true;
+      }
+    },
+    p(new_ctx, dirty) {
+      ctx = new_ctx;
+      if (dirty & /*sounds*/
+      1 && t1_value !== (t1_value = /*sound*/
+      ctx[25].name + "")) set_data(t1, t1_value);
+      if (dirty & /*sounds*/
+      1 && span_title_value !== (span_title_value = /*sound*/
+      ctx[25].path)) {
+        attr(span, "title", span_title_value);
+      }
+      if (dirty & /*sounds*/
+      1 && input_value_value !== (input_value_value = /*sound*/
+      ctx[25].volume)) {
+        input.value = input_value_value;
+      }
+      if (current_block_type === (current_block_type = select_block_type_1(ctx)) && if_block) {
+        if_block.p(ctx, dirty);
+      } else {
+        if_block.d(1);
+        if_block = current_block_type(ctx);
+        if (if_block) {
+          if_block.c();
+          if_block.m(div, t4);
+        }
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+      }
+      if_block.d();
+      mounted = false;
+      run_all(dispose);
+    }
+  };
+}
+function create_if_block$4(ctx) {
+  let div;
+  let span;
+  let t1;
+  let select;
+  let t2;
+  let p;
+  let i;
+  let t3;
+  let mounted;
+  let dispose;
+  let each_value = ensure_array_like(
+    /*SOUND_MODES*/
+    ctx[4]
+  );
+  let each_blocks = [];
+  for (let i2 = 0; i2 < each_value.length; i2 += 1) {
+    each_blocks[i2] = create_each_block$3(get_each_context$3(ctx, each_value, i2));
+  }
+  function select_block_type_2(ctx2, dirty) {
+    if (
+      /*soundMode*/
+      ctx2[1] === "random"
+    ) return create_if_block_1$3;
+    if (
+      /*soundMode*/
+      ctx2[1] === "sequential"
+    ) return create_if_block_2$3;
+    return create_else_block$1;
+  }
+  let current_block_type = select_block_type_2(ctx);
+  let if_block = current_block_type(ctx);
+  return {
+    c() {
+      div = element("div");
+      span = element("span");
+      span.textContent = "Mode:";
+      t1 = space();
+      select = element("select");
+      for (let i2 = 0; i2 < each_blocks.length; i2 += 1) {
+        each_blocks[i2].c();
+      }
+      t2 = space();
+      p = element("p");
+      i = element("i");
+      t3 = space();
+      if_block.c();
+      attr(span, "class", "fx-sound-mode-label");
+      attr(i, "class", "fas fa-info-circle");
+      attr(p, "class", "fx-hint");
+      attr(div, "class", "fx-sound-mode");
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      append(div, span);
+      append(div, t1);
+      append(div, select);
+      for (let i2 = 0; i2 < each_blocks.length; i2 += 1) {
+        if (each_blocks[i2]) {
+          each_blocks[i2].m(select, null);
+        }
+      }
+      select_option(
+        select,
+        /*soundMode*/
+        ctx[1]
+      );
+      append(div, t2);
+      append(div, p);
+      append(p, i);
+      append(p, t3);
+      if_block.m(p, null);
+      if (!mounted) {
+        dispose = listen(
+          select,
+          "change",
+          /*change_handler*/
+          ctx[20]
+        );
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty & /*SOUND_MODES*/
+      16) {
+        each_value = ensure_array_like(
+          /*SOUND_MODES*/
+          ctx2[4]
+        );
+        let i2;
+        for (i2 = 0; i2 < each_value.length; i2 += 1) {
+          const child_ctx = get_each_context$3(ctx2, each_value, i2);
+          if (each_blocks[i2]) {
+            each_blocks[i2].p(child_ctx, dirty);
+          } else {
+            each_blocks[i2] = create_each_block$3(child_ctx);
+            each_blocks[i2].c();
+            each_blocks[i2].m(select, null);
+          }
+        }
+        for (; i2 < each_blocks.length; i2 += 1) {
+          each_blocks[i2].d(1);
+        }
+        each_blocks.length = each_value.length;
+      }
+      if (dirty & /*soundMode, SOUND_MODES*/
+      18) {
+        select_option(
+          select,
+          /*soundMode*/
+          ctx2[1]
+        );
+      }
+      if (current_block_type !== (current_block_type = select_block_type_2(ctx2))) {
+        if_block.d(1);
+        if_block = current_block_type(ctx2);
+        if (if_block) {
+          if_block.c();
+          if_block.m(p, null);
+        }
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+      }
+      destroy_each(each_blocks, detaching);
+      if_block.d();
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_each_block$3(ctx) {
+  let option;
+  let t_value = (
+    /*sm*/
+    ctx[22].label + ""
+  );
+  let t;
+  return {
+    c() {
+      option = element("option");
+      t = text(t_value);
+      option.__value = /*sm*/
+      ctx[22].value;
+      set_input_value(option, option.__value);
+    },
+    m(target, anchor) {
+      insert(target, option, anchor);
+      append(option, t);
+    },
+    p: noop,
+    d(detaching) {
+      if (detaching) {
+        detach(option);
+      }
+    }
+  };
+}
+function create_else_block$1(ctx) {
+  let t;
+  return {
+    c() {
+      t = text("All sounds play simultaneously");
+    },
+    m(target, anchor) {
+      insert(target, t, anchor);
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(t);
+      }
+    }
+  };
+}
+function create_if_block_2$3(ctx) {
+  let t;
+  return {
+    c() {
+      t = text("Sounds play in order, cycling through the list");
+    },
+    m(target, anchor) {
+      insert(target, t, anchor);
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(t);
+      }
+    }
+  };
+}
+function create_if_block_1$3(ctx) {
+  let t;
+  return {
+    c() {
+      t = text("Sound is picked randomly on each use");
+    },
+    m(target, anchor) {
+      insert(target, t, anchor);
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(t);
+      }
+    }
+  };
+}
+function create_fragment$5(ctx) {
+  let div1;
+  let t0;
+  let div0;
+  let button0;
+  let t2;
+  let button1;
+  let t4;
+  let mounted;
+  let dispose;
+  function select_block_type(ctx2, dirty) {
+    if (
+      /*sounds*/
+      ctx2[0].length === 0
+    ) return create_if_block_3$3;
+    return create_else_block_1;
+  }
+  let current_block_type = select_block_type(ctx);
+  let if_block0 = current_block_type(ctx);
+  let if_block1 = (
+    /*sounds*/
+    ctx[0].length > 1 && create_if_block$4(ctx)
+  );
+  return {
+    c() {
+      div1 = element("div");
+      if_block0.c();
+      t0 = space();
+      div0 = element("div");
+      button0 = element("button");
+      button0.innerHTML = `<i class="fas fa-plus"></i> Add`;
+      t2 = space();
+      button1 = element("button");
+      button1.innerHTML = `<i class="fas fa-folder-open"></i> Folder`;
+      t4 = space();
+      if (if_block1) if_block1.c();
+      attr(button0, "class", "fx-btn fx-btn-add");
+      attr(button1, "class", "fx-btn fx-btn-add");
+      attr(button1, "title", "Pick any file — all audio from that folder will be added");
+      attr(div0, "class", "fx-sound-add-row");
+      attr(div1, "class", "fx-sound-list");
+    },
+    m(target, anchor) {
+      insert(target, div1, anchor);
+      if_block0.m(div1, null);
+      append(div1, t0);
+      append(div1, div0);
+      append(div0, button0);
+      append(div0, t2);
+      append(div0, button1);
+      append(div1, t4);
+      if (if_block1) if_block1.m(div1, null);
+      if (!mounted) {
+        dispose = [
+          listen(
+            button0,
+            "click",
+            /*addSound*/
+            ctx[5]
+          ),
+          listen(
+            button1,
+            "click",
+            /*addSoundsFromFolder*/
+            ctx[6]
+          )
+        ];
+        mounted = true;
+      }
+    },
+    p(ctx2, [dirty]) {
+      if (current_block_type === (current_block_type = select_block_type(ctx2)) && if_block0) {
+        if_block0.p(ctx2, dirty);
+      } else {
+        if_block0.d(1);
+        if_block0 = current_block_type(ctx2);
+        if (if_block0) {
+          if_block0.c();
+          if_block0.m(div1, t0);
+        }
+      }
+      if (
+        /*sounds*/
+        ctx2[0].length > 1
+      ) {
+        if (if_block1) {
+          if_block1.p(ctx2, dirty);
+        } else {
+          if_block1 = create_if_block$4(ctx2);
+          if_block1.c();
+          if_block1.m(div1, null);
+        }
+      } else if (if_block1) {
+        if_block1.d(1);
+        if_block1 = null;
+      }
+    },
+    i: noop,
+    o: noop,
+    d(detaching) {
+      if (detaching) {
+        detach(div1);
+      }
+      if_block0.d();
+      if (if_block1) if_block1.d();
+      mounted = false;
+      run_all(dispose);
+    }
+  };
+}
+function previewSound(sound) {
+  const audio = new Audio(sound.path);
+  audio.volume = sound.volume ?? 0.8;
+  audio.play().catch((err) => console.warn("[ARS] Sound preview failed:", err));
+}
+function instance$5($$self, $$props, $$invalidate) {
+  let { sounds = [] } = $$props;
+  let { soundMode = "random" } = $$props;
+  const dispatch2 = createEventDispatcher();
+  const SOUND_MODES = [
+    { value: "random", label: "Random" },
+    { value: "sequential", label: "Sequential" },
+    { value: "all", label: "All at once" }
+  ];
+  let editingVolumeId = null;
+  let editingVolumeValue = "";
+  function addSound() {
+    openAudioPicker((path) => {
+      if (!path) return;
+      const newSound = {
+        id: foundry.utils.randomID(),
+        path,
+        name: getFilenameFromPath(path),
+        volume: 0.8,
+        weight: 1
+      };
+      dispatch2("soundsChanged", { sounds: [...sounds, newSound] });
+    });
+  }
+  function addSoundsFromFolder() {
+    const picker = new FilePicker({
+      type: "audio",
+      callback: async (path) => {
+        if (!path) return;
+        const dir = path.substring(0, path.lastIndexOf("/"));
+        if (!dir) return;
+        try {
+          const result = await FilePicker.browse("data", dir);
+          const audioFiles = (result.files ?? []).filter((f) => /\.(ogg|mp3|wav|flac|webm|m4a)$/i.test(f));
+          if (audioFiles.length === 0) {
+            ui.notifications.warn("No audio files found in that folder.");
+            return;
+          }
+          const existingPaths = new Set(sounds.map((s) => s.path));
+          const newSounds = audioFiles.filter((f) => !existingPaths.has(f)).map((f) => ({
+            id: foundry.utils.randomID(),
+            path: f,
+            name: getFilenameFromPath(f),
+            volume: 0.8,
+            weight: 1
+          }));
+          if (newSounds.length > 0) {
+            dispatch2("soundsChanged", { sounds: [...sounds, ...newSounds] });
+            ui.notifications.info(`Added ${newSounds.length} sound(s) from folder`);
+          } else {
+            ui.notifications.info("All files from that folder are already added.");
+          }
+        } catch (err) {
+          console.warn("[ARS] Failed to browse folder for sounds:", err);
+          ui.notifications.error("Failed to read folder contents.");
+        }
+      }
+    });
+    picker.render(true);
+  }
+  function removeSound(id) {
+    dispatch2("soundsChanged", { sounds: sounds.filter((s) => s.id !== id) });
+  }
+  function updateSound(id, field, value) {
+    const updated = sounds.map((s) => {
+      if (s.id !== id) return s;
+      return {
+        ...s,
+        [field]: field === "volume" || field === "weight" ? Number(value) : value
+      };
+    });
+    dispatch2("soundsChanged", { sounds: updated });
+  }
+  function setMode(mode) {
+    dispatch2("soundModeChanged", { mode });
+  }
+  function startEditVolume(sound) {
+    $$invalidate(2, editingVolumeId = sound.id);
+    $$invalidate(3, editingVolumeValue = String(Math.round((sound.volume ?? 0.8) * 100)));
+  }
+  function commitEditVolume(id) {
+    const num = parseInt(editingVolumeValue, 10);
+    if (!isNaN(num)) {
+      const clamped = Math.max(0, Math.min(100, num)) / 100;
+      updateSound(id, "volume", clamped);
+    }
+    $$invalidate(2, editingVolumeId = null);
+  }
+  function cancelEditVolume() {
+    $$invalidate(2, editingVolumeId = null);
+  }
+  const click_handler = (sound) => previewSound(sound);
+  const input_handler = (sound, e) => updateSound(sound.id, "volume", e.target.value);
+  function input_input_handler() {
+    editingVolumeValue = to_number(this.value);
+    $$invalidate(3, editingVolumeValue);
+  }
+  const blur_handler = (sound) => commitEditVolume(sound.id);
+  const keydown_handler2 = (sound, e) => {
+    if (e.key === "Enter") commitEditVolume(sound.id);
+    if (e.key === "Escape") cancelEditVolume();
+  };
+  const dblclick_handler = (sound) => startEditVolume(sound);
+  const click_handler_1 = (sound) => removeSound(sound.id);
+  const change_handler = (e) => setMode(e.target.value);
+  $$self.$$set = ($$props2) => {
+    if ("sounds" in $$props2) $$invalidate(0, sounds = $$props2.sounds);
+    if ("soundMode" in $$props2) $$invalidate(1, soundMode = $$props2.soundMode);
+  };
+  return [
+    sounds,
+    soundMode,
+    editingVolumeId,
+    editingVolumeValue,
+    SOUND_MODES,
+    addSound,
+    addSoundsFromFolder,
+    removeSound,
+    updateSound,
+    setMode,
+    startEditVolume,
+    commitEditVolume,
+    cancelEditVolume,
+    click_handler,
+    input_handler,
+    input_input_handler,
+    blur_handler,
+    keydown_handler2,
+    dblclick_handler,
+    click_handler_1,
+    change_handler
+  ];
+}
+class FxSoundList extends SvelteComponent {
+  constructor(options) {
+    super();
+    init(this, options, instance$5, create_fragment$5, safe_not_equal, { sounds: 0, soundMode: 1 });
+  }
+}
+function get_each_context$2(ctx, list, i) {
+  const child_ctx = ctx.slice();
+  child_ctx[27] = list[i];
+  return child_ctx;
+}
+function get_each_context_1$2(ctx, list, i) {
+  const child_ctx = ctx.slice();
+  child_ctx[30] = list[i];
+  return child_ctx;
+}
+function get_each_context_2$1(ctx, list, i) {
+  const child_ctx = ctx.slice();
+  child_ctx[33] = list[i];
+  return child_ctx;
+}
+function create_if_block$3(ctx) {
+  let div0;
+  let label0;
+  let t1;
+  let select;
+  let select_value_value;
+  let t2;
+  let t3;
+  let t4;
+  let t5;
+  let div1;
+  let label1;
+  let t7;
+  let input;
+  let input_value_value;
+  let t8;
+  let t9;
+  let t10;
+  let t11;
+  let if_block6_anchor;
+  let mounted;
+  let dispose;
+  let each_value_2 = ensure_array_like(
+    /*SOURCES*/
+    ctx[8]
+  );
+  let each_blocks = [];
+  for (let i = 0; i < each_value_2.length; i += 1) {
+    each_blocks[i] = create_each_block_2$1(get_each_context_2$1(ctx, each_value_2, i));
+  }
+  let if_block0 = (
+    /*config*/
+    ctx[1].source === "sequencer" && create_if_block_7$2(ctx)
+  );
+  let if_block1 = (
+    /*config*/
+    ctx[1].source === "custom" && create_if_block_6$2(ctx)
+  );
+  let if_block2 = (
+    /*config*/
+    ctx[1].source === "builtin" && create_if_block_5$2(ctx)
+  );
+  let if_block3 = (
+    /*showSpeed*/
+    ctx[3] && create_if_block_4$2(ctx)
+  );
+  let if_block4 = (
+    /*showMirror*/
+    ctx[4] && create_if_block_3$2(ctx)
+  );
+  let if_block5 = (
+    /*showTravelMode*/
+    ctx[5] && create_if_block_2$2(ctx)
+  );
+  let if_block6 = (
+    /*showScatter*/
+    ctx[6] && create_if_block_1$2(ctx)
+  );
+  return {
+    c() {
+      div0 = element("div");
+      label0 = element("label");
+      label0.textContent = "Source";
+      t1 = space();
+      select = element("select");
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        each_blocks[i].c();
+      }
+      t2 = space();
+      if (if_block0) if_block0.c();
+      t3 = space();
+      if (if_block1) if_block1.c();
+      t4 = space();
+      if (if_block2) if_block2.c();
+      t5 = space();
+      div1 = element("div");
+      label1 = element("label");
+      label1.textContent = "Scale";
+      t7 = space();
+      input = element("input");
+      t8 = space();
+      if (if_block3) if_block3.c();
+      t9 = space();
+      if (if_block4) if_block4.c();
+      t10 = space();
+      if (if_block5) if_block5.c();
+      t11 = space();
+      if (if_block6) if_block6.c();
+      if_block6_anchor = empty();
+      attr(label0, "class", "fx-field-label");
+      attr(div0, "class", "fx-field-row");
+      attr(label1, "class", "fx-field-label");
+      attr(input, "type", "number");
+      attr(input, "min", "0.1");
+      attr(input, "max", "5");
+      attr(input, "step", "0.1");
+      input.value = input_value_value = /*config*/
+      ctx[1].scale;
+      attr(div1, "class", "fx-field-row");
+    },
+    m(target, anchor) {
+      insert(target, div0, anchor);
+      append(div0, label0);
+      append(div0, t1);
+      append(div0, select);
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        if (each_blocks[i]) {
+          each_blocks[i].m(select, null);
+        }
+      }
+      select_option(
+        select,
+        /*config*/
+        ctx[1].source
+      );
+      insert(target, t2, anchor);
+      if (if_block0) if_block0.m(target, anchor);
+      insert(target, t3, anchor);
+      if (if_block1) if_block1.m(target, anchor);
+      insert(target, t4, anchor);
+      if (if_block2) if_block2.m(target, anchor);
+      insert(target, t5, anchor);
+      insert(target, div1, anchor);
+      append(div1, label1);
+      append(div1, t7);
+      append(div1, input);
+      insert(target, t8, anchor);
+      if (if_block3) if_block3.m(target, anchor);
+      insert(target, t9, anchor);
+      if (if_block4) if_block4.m(target, anchor);
+      insert(target, t10, anchor);
+      if (if_block5) if_block5.m(target, anchor);
+      insert(target, t11, anchor);
+      if (if_block6) if_block6.m(target, anchor);
+      insert(target, if_block6_anchor, anchor);
+      if (!mounted) {
+        dispose = [
+          listen(
+            select,
+            "change",
+            /*change_handler*/
+            ctx[15]
+          ),
+          listen(
+            input,
+            "change",
+            /*change_handler_4*/
+            ctx[19]
+          )
+        ];
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*SOURCES, sequencerAvailable*/
+      260) {
+        each_value_2 = ensure_array_like(
+          /*SOURCES*/
+          ctx2[8]
+        );
+        let i;
+        for (i = 0; i < each_value_2.length; i += 1) {
+          const child_ctx = get_each_context_2$1(ctx2, each_value_2, i);
+          if (each_blocks[i]) {
+            each_blocks[i].p(child_ctx, dirty);
+          } else {
+            each_blocks[i] = create_each_block_2$1(child_ctx);
+            each_blocks[i].c();
+            each_blocks[i].m(select, null);
+          }
+        }
+        for (; i < each_blocks.length; i += 1) {
+          each_blocks[i].d(1);
+        }
+        each_blocks.length = each_value_2.length;
+      }
+      if (dirty[0] & /*config, SOURCES*/
+      258 && select_value_value !== (select_value_value = /*config*/
+      ctx2[1].source)) {
+        select_option(
+          select,
+          /*config*/
+          ctx2[1].source
+        );
+      }
+      if (
+        /*config*/
+        ctx2[1].source === "sequencer"
+      ) {
+        if (if_block0) {
+          if_block0.p(ctx2, dirty);
+        } else {
+          if_block0 = create_if_block_7$2(ctx2);
+          if_block0.c();
+          if_block0.m(t3.parentNode, t3);
+        }
+      } else if (if_block0) {
+        if_block0.d(1);
+        if_block0 = null;
+      }
+      if (
+        /*config*/
+        ctx2[1].source === "custom"
+      ) {
+        if (if_block1) {
+          if_block1.p(ctx2, dirty);
+        } else {
+          if_block1 = create_if_block_6$2(ctx2);
+          if_block1.c();
+          if_block1.m(t4.parentNode, t4);
+        }
+      } else if (if_block1) {
+        if_block1.d(1);
+        if_block1 = null;
+      }
+      if (
+        /*config*/
+        ctx2[1].source === "builtin"
+      ) {
+        if (if_block2) {
+          if_block2.p(ctx2, dirty);
+        } else {
+          if_block2 = create_if_block_5$2(ctx2);
+          if_block2.c();
+          if_block2.m(t5.parentNode, t5);
+        }
+      } else if (if_block2) {
+        if_block2.d(1);
+        if_block2 = null;
+      }
+      if (dirty[0] & /*config, SOURCES*/
+      258 && input_value_value !== (input_value_value = /*config*/
+      ctx2[1].scale) && input.value !== input_value_value) {
+        input.value = input_value_value;
+      }
+      if (
+        /*showSpeed*/
+        ctx2[3]
+      ) {
+        if (if_block3) {
+          if_block3.p(ctx2, dirty);
+        } else {
+          if_block3 = create_if_block_4$2(ctx2);
+          if_block3.c();
+          if_block3.m(t9.parentNode, t9);
+        }
+      } else if (if_block3) {
+        if_block3.d(1);
+        if_block3 = null;
+      }
+      if (
+        /*showMirror*/
+        ctx2[4]
+      ) {
+        if (if_block4) {
+          if_block4.p(ctx2, dirty);
+        } else {
+          if_block4 = create_if_block_3$2(ctx2);
+          if_block4.c();
+          if_block4.m(t10.parentNode, t10);
+        }
+      } else if (if_block4) {
+        if_block4.d(1);
+        if_block4 = null;
+      }
+      if (
+        /*showTravelMode*/
+        ctx2[5]
+      ) {
+        if (if_block5) {
+          if_block5.p(ctx2, dirty);
+        } else {
+          if_block5 = create_if_block_2$2(ctx2);
+          if_block5.c();
+          if_block5.m(t11.parentNode, t11);
+        }
+      } else if (if_block5) {
+        if_block5.d(1);
+        if_block5 = null;
+      }
+      if (
+        /*showScatter*/
+        ctx2[6]
+      ) {
+        if (if_block6) {
+          if_block6.p(ctx2, dirty);
+        } else {
+          if_block6 = create_if_block_1$2(ctx2);
+          if_block6.c();
+          if_block6.m(if_block6_anchor.parentNode, if_block6_anchor);
+        }
+      } else if (if_block6) {
+        if_block6.d(1);
+        if_block6 = null;
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div0);
+        detach(t2);
+        detach(t3);
+        detach(t4);
+        detach(t5);
+        detach(div1);
+        detach(t8);
+        detach(t9);
+        detach(t10);
+        detach(t11);
+        detach(if_block6_anchor);
+      }
+      destroy_each(each_blocks, detaching);
+      if (if_block0) if_block0.d(detaching);
+      if (if_block1) if_block1.d(detaching);
+      if (if_block2) if_block2.d(detaching);
+      if (if_block3) if_block3.d(detaching);
+      if (if_block4) if_block4.d(detaching);
+      if (if_block5) if_block5.d(detaching);
+      if (if_block6) if_block6.d(detaching);
+      mounted = false;
+      run_all(dispose);
+    }
+  };
+}
+function create_each_block_2$1(ctx) {
+  let option;
+  let t0_value = (
+    /*src*/
+    ctx[33].label + ""
+  );
+  let t0;
+  let t1_value = (
+    /*src*/
+    ctx[33].value === "sequencer" && !/*sequencerAvailable*/
+    ctx[2] ? " (not installed)" : ""
+  );
+  let t1;
+  let t2;
+  let option_disabled_value;
+  return {
+    c() {
+      option = element("option");
+      t0 = text(t0_value);
+      t1 = text(t1_value);
+      t2 = space();
+      option.__value = /*src*/
+      ctx[33].value;
+      set_input_value(option, option.__value);
+      option.disabled = option_disabled_value = /*src*/
+      ctx[33].value === "sequencer" && !/*sequencerAvailable*/
+      ctx[2];
+    },
+    m(target, anchor) {
+      insert(target, option, anchor);
+      append(option, t0);
+      append(option, t1);
+      append(option, t2);
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*sequencerAvailable*/
+      4 && t1_value !== (t1_value = /*src*/
+      ctx2[33].value === "sequencer" && !/*sequencerAvailable*/
+      ctx2[2] ? " (not installed)" : "")) set_data(t1, t1_value);
+      if (dirty[0] & /*sequencerAvailable*/
+      4 && option_disabled_value !== (option_disabled_value = /*src*/
+      ctx2[33].value === "sequencer" && !/*sequencerAvailable*/
+      ctx2[2])) {
+        option.disabled = option_disabled_value;
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(option);
+      }
+    }
+  };
+}
+function create_if_block_7$2(ctx) {
+  let div;
+  let label;
+  let t1;
+  let input;
+  let input_value_value;
+  let t2;
+  let if_block_anchor;
+  let mounted;
+  let dispose;
+  let if_block = !/*sequencerAvailable*/
+  ctx[2] && create_if_block_8$2();
+  return {
+    c() {
+      div = element("div");
+      label = element("label");
+      label.textContent = "Path";
+      t1 = space();
+      input = element("input");
+      t2 = space();
+      if (if_block) if_block.c();
+      if_block_anchor = empty();
+      attr(label, "class", "fx-field-label");
+      attr(input, "type", "text");
+      input.value = input_value_value = /*config*/
+      ctx[1].sequencerPath;
+      attr(input, "placeholder", "e.g. jb2a.bullet.snipe.blue");
+      attr(div, "class", "fx-field-row");
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      append(div, label);
+      append(div, t1);
+      append(div, input);
+      insert(target, t2, anchor);
+      if (if_block) if_block.m(target, anchor);
+      insert(target, if_block_anchor, anchor);
+      if (!mounted) {
+        dispose = listen(
+          input,
+          "change",
+          /*change_handler_1*/
+          ctx[16]
+        );
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*config, SOURCES*/
+      258 && input_value_value !== (input_value_value = /*config*/
+      ctx2[1].sequencerPath) && input.value !== input_value_value) {
+        input.value = input_value_value;
+      }
+      if (!/*sequencerAvailable*/
+      ctx2[2]) {
+        if (if_block) ;
+        else {
+          if_block = create_if_block_8$2();
+          if_block.c();
+          if_block.m(if_block_anchor.parentNode, if_block_anchor);
+        }
+      } else if (if_block) {
+        if_block.d(1);
+        if_block = null;
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+        detach(t2);
+        detach(if_block_anchor);
+      }
+      if (if_block) if_block.d(detaching);
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_if_block_8$2(ctx) {
+  let p;
+  return {
+    c() {
+      p = element("p");
+      p.innerHTML = `<i class="fas fa-exclamation-triangle"></i>
+               Sequencer not installed — builtin fallback will be used.`;
+      attr(p, "class", "fx-warning");
+    },
+    m(target, anchor) {
+      insert(target, p, anchor);
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(p);
+      }
+    }
+  };
+}
+function create_if_block_6$2(ctx) {
+  let div1;
+  let label;
+  let t1;
+  let div0;
+  let input;
+  let input_value_value;
+  let t2;
+  let button;
+  let mounted;
+  let dispose;
+  return {
+    c() {
+      div1 = element("div");
+      label = element("label");
+      label.textContent = "File";
+      t1 = space();
+      div0 = element("div");
+      input = element("input");
+      t2 = space();
+      button = element("button");
+      button.innerHTML = `<i class="fas fa-file"></i>`;
+      attr(label, "class", "fx-field-label");
+      attr(input, "type", "text");
+      input.value = input_value_value = /*config*/
+      ctx[1].customFile;
+      input.readOnly = true;
+      attr(input, "placeholder", "Select a .webm file");
+      attr(button, "class", "fx-btn-small");
+      attr(div0, "class", "fx-file-picker-row");
+      attr(div1, "class", "fx-field-row");
+    },
+    m(target, anchor) {
+      insert(target, div1, anchor);
+      append(div1, label);
+      append(div1, t1);
+      append(div1, div0);
+      append(div0, input);
+      append(div0, t2);
+      append(div0, button);
+      if (!mounted) {
+        dispose = listen(
+          button,
+          "click",
+          /*pickCustomFile*/
+          ctx[14]
+        );
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*config, SOURCES*/
+      258 && input_value_value !== (input_value_value = /*config*/
+      ctx2[1].customFile) && input.value !== input_value_value) {
+        input.value = input_value_value;
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div1);
+      }
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_if_block_5$2(ctx) {
+  let div0;
+  let label0;
+  let t1;
+  let select;
+  let select_value_value;
+  let t2;
+  let div1;
+  let label1;
+  let t4;
+  let input;
+  let input_value_value;
+  let mounted;
+  let dispose;
+  let each_value_1 = ensure_array_like(
+    /*builtinTypes*/
+    ctx[7]
+  );
+  let each_blocks = [];
+  for (let i = 0; i < each_value_1.length; i += 1) {
+    each_blocks[i] = create_each_block_1$2(get_each_context_1$2(ctx, each_value_1, i));
+  }
+  return {
+    c() {
+      div0 = element("div");
+      label0 = element("label");
+      label0.textContent = "Type";
+      t1 = space();
+      select = element("select");
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        each_blocks[i].c();
+      }
+      t2 = space();
+      div1 = element("div");
+      label1 = element("label");
+      label1.textContent = "Color";
+      t4 = space();
+      input = element("input");
+      attr(label0, "class", "fx-field-label");
+      attr(div0, "class", "fx-field-row");
+      attr(label1, "class", "fx-field-label");
+      attr(input, "type", "color");
+      input.value = input_value_value = /*config*/
+      ctx[1].color;
+      attr(div1, "class", "fx-field-row");
+    },
+    m(target, anchor) {
+      insert(target, div0, anchor);
+      append(div0, label0);
+      append(div0, t1);
+      append(div0, select);
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        if (each_blocks[i]) {
+          each_blocks[i].m(select, null);
+        }
+      }
+      select_option(
+        select,
+        /*config*/
+        ctx[1].builtinType
+      );
+      insert(target, t2, anchor);
+      insert(target, div1, anchor);
+      append(div1, label1);
+      append(div1, t4);
+      append(div1, input);
+      if (!mounted) {
+        dispose = [
+          listen(
+            select,
+            "change",
+            /*change_handler_2*/
+            ctx[17]
+          ),
+          listen(
+            input,
+            "change",
+            /*change_handler_3*/
+            ctx[18]
+          )
+        ];
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*builtinTypes*/
+      128) {
+        each_value_1 = ensure_array_like(
+          /*builtinTypes*/
+          ctx2[7]
+        );
+        let i;
+        for (i = 0; i < each_value_1.length; i += 1) {
+          const child_ctx = get_each_context_1$2(ctx2, each_value_1, i);
+          if (each_blocks[i]) {
+            each_blocks[i].p(child_ctx, dirty);
+          } else {
+            each_blocks[i] = create_each_block_1$2(child_ctx);
+            each_blocks[i].c();
+            each_blocks[i].m(select, null);
+          }
+        }
+        for (; i < each_blocks.length; i += 1) {
+          each_blocks[i].d(1);
+        }
+        each_blocks.length = each_value_1.length;
+      }
+      if (dirty[0] & /*config, SOURCES*/
+      258 && select_value_value !== (select_value_value = /*config*/
+      ctx2[1].builtinType)) {
+        select_option(
+          select,
+          /*config*/
+          ctx2[1].builtinType
+        );
+      }
+      if (dirty[0] & /*config, SOURCES*/
+      258 && input_value_value !== (input_value_value = /*config*/
+      ctx2[1].color)) {
+        input.value = input_value_value;
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div0);
+        detach(t2);
+        detach(div1);
+      }
+      destroy_each(each_blocks, detaching);
+      mounted = false;
+      run_all(dispose);
+    }
+  };
+}
+function create_each_block_1$2(ctx) {
+  let option;
+  let t_value = (
+    /*bt*/
+    ctx[30].label + ""
+  );
+  let t;
+  let option_value_value;
+  return {
+    c() {
+      option = element("option");
+      t = text(t_value);
+      option.__value = option_value_value = /*bt*/
+      ctx[30].value;
+      set_input_value(option, option.__value);
+    },
+    m(target, anchor) {
+      insert(target, option, anchor);
+      append(option, t);
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*builtinTypes*/
+      128 && t_value !== (t_value = /*bt*/
+      ctx2[30].label + "")) set_data(t, t_value);
+      if (dirty[0] & /*builtinTypes*/
+      128 && option_value_value !== (option_value_value = /*bt*/
+      ctx2[30].value)) {
+        option.__value = option_value_value;
+        set_input_value(option, option.__value);
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(option);
+      }
+    }
+  };
+}
+function create_if_block_4$2(ctx) {
+  let div;
+  let label;
+  let t1;
+  let input;
+  let input_value_value;
+  let mounted;
+  let dispose;
+  return {
+    c() {
+      div = element("div");
+      label = element("label");
+      label.textContent = "Speed";
+      t1 = space();
+      input = element("input");
+      attr(label, "class", "fx-field-label");
+      attr(input, "type", "number");
+      attr(input, "min", "0.1");
+      attr(input, "max", "5");
+      attr(input, "step", "0.1");
+      input.value = input_value_value = /*config*/
+      ctx[1].speed;
+      attr(div, "class", "fx-field-row");
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      append(div, label);
+      append(div, t1);
+      append(div, input);
+      if (!mounted) {
+        dispose = listen(
+          input,
+          "change",
+          /*change_handler_5*/
+          ctx[20]
+        );
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*config, SOURCES*/
+      258 && input_value_value !== (input_value_value = /*config*/
+      ctx2[1].speed) && input.value !== input_value_value) {
+        input.value = input_value_value;
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+      }
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_if_block_3$2(ctx) {
+  let label;
+  let input;
+  let input_checked_value;
+  let t0;
+  let span;
+  let mounted;
+  let dispose;
+  return {
+    c() {
+      label = element("label");
+      input = element("input");
+      t0 = space();
+      span = element("span");
+      span.textContent = "Randomize mirror Y";
+      attr(input, "type", "checkbox");
+      input.checked = input_checked_value = /*config*/
+      ctx[1].randomizeMirrorY;
+      attr(label, "class", "fx-checkbox-field");
+    },
+    m(target, anchor) {
+      insert(target, label, anchor);
+      append(label, input);
+      append(label, t0);
+      append(label, span);
+      if (!mounted) {
+        dispose = listen(
+          input,
+          "change",
+          /*toggleMirror*/
+          ctx[13]
+        );
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*config, SOURCES*/
+      258 && input_checked_value !== (input_checked_value = /*config*/
+      ctx2[1].randomizeMirrorY)) {
+        input.checked = input_checked_value;
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(label);
+      }
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_if_block_2$2(ctx) {
+  let div;
+  let label;
+  let t1;
+  let select;
+  let select_value_value;
+  let t2;
+  let p;
+  let i;
+  let t3;
+  let t4_value = (
+    /*TRAVEL_MODES*/
+    (ctx[9].find(
+      /*func*/
+      ctx[22]
+    )?.hint ?? "") + ""
+  );
+  let t4;
+  let mounted;
+  let dispose;
+  let each_value = ensure_array_like(
+    /*TRAVEL_MODES*/
+    ctx[9]
+  );
+  let each_blocks = [];
+  for (let i2 = 0; i2 < each_value.length; i2 += 1) {
+    each_blocks[i2] = create_each_block$2(get_each_context$2(ctx, each_value, i2));
+  }
+  return {
+    c() {
+      div = element("div");
+      label = element("label");
+      label.textContent = "Travel";
+      t1 = space();
+      select = element("select");
+      for (let i2 = 0; i2 < each_blocks.length; i2 += 1) {
+        each_blocks[i2].c();
+      }
+      t2 = space();
+      p = element("p");
+      i = element("i");
+      t3 = space();
+      t4 = text(t4_value);
+      attr(label, "class", "fx-field-label");
+      attr(div, "class", "fx-field-row");
+      attr(i, "class", "fas fa-info-circle");
+      attr(p, "class", "fx-hint");
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      append(div, label);
+      append(div, t1);
+      append(div, select);
+      for (let i2 = 0; i2 < each_blocks.length; i2 += 1) {
+        if (each_blocks[i2]) {
+          each_blocks[i2].m(select, null);
+        }
+      }
+      select_option(
+        select,
+        /*config*/
+        ctx[1].travelMode ?? "beam"
+      );
+      insert(target, t2, anchor);
+      insert(target, p, anchor);
+      append(p, i);
+      append(p, t3);
+      append(p, t4);
+      if (!mounted) {
+        dispose = listen(
+          select,
+          "change",
+          /*change_handler_6*/
+          ctx[21]
+        );
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*TRAVEL_MODES*/
+      512) {
+        each_value = ensure_array_like(
+          /*TRAVEL_MODES*/
+          ctx2[9]
+        );
+        let i2;
+        for (i2 = 0; i2 < each_value.length; i2 += 1) {
+          const child_ctx = get_each_context$2(ctx2, each_value, i2);
+          if (each_blocks[i2]) {
+            each_blocks[i2].p(child_ctx, dirty);
+          } else {
+            each_blocks[i2] = create_each_block$2(child_ctx);
+            each_blocks[i2].c();
+            each_blocks[i2].m(select, null);
+          }
+        }
+        for (; i2 < each_blocks.length; i2 += 1) {
+          each_blocks[i2].d(1);
+        }
+        each_blocks.length = each_value.length;
+      }
+      if (dirty[0] & /*config, SOURCES*/
+      258 && select_value_value !== (select_value_value = /*config*/
+      ctx2[1].travelMode ?? "beam")) {
+        select_option(
+          select,
+          /*config*/
+          ctx2[1].travelMode ?? "beam"
+        );
+      }
+      if (dirty[0] & /*config*/
+      2 && t4_value !== (t4_value = /*TRAVEL_MODES*/
+      (ctx2[9].find(
+        /*func*/
+        ctx2[22]
+      )?.hint ?? "") + "")) set_data(t4, t4_value);
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+        detach(t2);
+        detach(p);
+      }
+      destroy_each(each_blocks, detaching);
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_each_block$2(ctx) {
+  let option;
+  let t_value = (
+    /*tm*/
+    ctx[27].label + ""
+  );
+  let t;
+  return {
+    c() {
+      option = element("option");
+      t = text(t_value);
+      option.__value = /*tm*/
+      ctx[27].value;
+      set_input_value(option, option.__value);
+    },
+    m(target, anchor) {
+      insert(target, option, anchor);
+      append(option, t);
+    },
+    p: noop,
+    d(detaching) {
+      if (detaching) {
+        detach(option);
+      }
+    }
+  };
+}
+function create_if_block_1$2(ctx) {
+  let div;
+  let label;
+  let t1;
+  let input;
+  let input_value_value;
+  let t2;
+  let span;
+  let t3_value = Math.round(
+    /*config*/
+    (ctx[1].scatter ?? 0.3) * 100
+  ) + "";
+  let t3;
+  let t4;
+  let mounted;
+  let dispose;
+  return {
+    c() {
+      div = element("div");
+      label = element("label");
+      label.textContent = "Scatter";
+      t1 = space();
+      input = element("input");
+      t2 = space();
+      span = element("span");
+      t3 = text(t3_value);
+      t4 = text("%");
+      attr(label, "class", "fx-field-label");
+      attr(input, "type", "range");
+      attr(input, "min", "0");
+      attr(input, "max", "1");
+      attr(input, "step", "0.05");
+      input.value = input_value_value = /*config*/
+      ctx[1].scatter ?? 0.3;
+      attr(span, "class", "fx-sound-volume-label");
+      attr(div, "class", "fx-field-row");
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      append(div, label);
+      append(div, t1);
+      append(div, input);
+      append(div, t2);
+      append(div, span);
+      append(span, t3);
+      append(span, t4);
+      if (!mounted) {
+        dispose = listen(
+          input,
+          "input",
+          /*input_handler*/
+          ctx[23]
+        );
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*config, SOURCES*/
+      258 && input_value_value !== (input_value_value = /*config*/
+      ctx2[1].scatter ?? 0.3)) {
+        input.value = input_value_value;
+      }
+      if (dirty[0] & /*config*/
+      2 && t3_value !== (t3_value = Math.round(
+        /*config*/
+        (ctx2[1].scatter ?? 0.3) * 100
+      ) + "")) set_data(t3, t3_value);
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+      }
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_fragment$4(ctx) {
+  let div1;
+  let div0;
+  let h4;
+  let t0;
+  let t1;
+  let button;
+  let i;
+  let button_title_value;
+  let t2;
+  let mounted;
+  let dispose;
+  let if_block = (
+    /*config*/
+    ctx[1].enabled && create_if_block$3(ctx)
+  );
+  return {
+    c() {
+      div1 = element("div");
+      div0 = element("div");
+      h4 = element("h4");
+      t0 = text(
+        /*title*/
+        ctx[0]
+      );
+      t1 = space();
+      button = element("button");
+      i = element("i");
+      t2 = space();
+      if (if_block) if_block.c();
+      attr(h4, "class", "fx-section-title");
+      attr(i, "class", "fas");
+      toggle_class(
+        i,
+        "fa-toggle-on",
+        /*config*/
+        ctx[1].enabled
+      );
+      toggle_class(i, "fa-toggle-off", !/*config*/
+      ctx[1].enabled);
+      attr(button, "class", "fx-toggle-btn");
+      attr(button, "title", button_title_value = /*config*/
+      ctx[1].enabled ? `Disable ${/*title*/
+      ctx[0]}` : `Enable ${/*title*/
+      ctx[0]}`);
+      toggle_class(
+        button,
+        "active",
+        /*config*/
+        ctx[1].enabled
+      );
+      attr(div0, "class", "fx-effect-header");
+      attr(div1, "class", "fx-effect-config");
+    },
+    m(target, anchor) {
+      insert(target, div1, anchor);
+      append(div1, div0);
+      append(div0, h4);
+      append(h4, t0);
+      append(div0, t1);
+      append(div0, button);
+      append(button, i);
+      append(div1, t2);
+      if (if_block) if_block.m(div1, null);
+      if (!mounted) {
+        dispose = listen(
+          button,
+          "click",
+          /*toggleEnabled*/
+          ctx[12]
+        );
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*title*/
+      1) set_data(
+        t0,
+        /*title*/
+        ctx2[0]
+      );
+      if (dirty[0] & /*config*/
+      2) {
+        toggle_class(
+          i,
+          "fa-toggle-on",
+          /*config*/
+          ctx2[1].enabled
+        );
+      }
+      if (dirty[0] & /*config*/
+      2) {
+        toggle_class(i, "fa-toggle-off", !/*config*/
+        ctx2[1].enabled);
+      }
+      if (dirty[0] & /*config, title, SOURCES*/
+      259 && button_title_value !== (button_title_value = /*config*/
+      ctx2[1].enabled ? `Disable ${/*title*/
+      ctx2[0]}` : `Enable ${/*title*/
+      ctx2[0]}`)) {
+        attr(button, "title", button_title_value);
+      }
+      if (dirty[0] & /*config*/
+      2) {
+        toggle_class(
+          button,
+          "active",
+          /*config*/
+          ctx2[1].enabled
+        );
+      }
+      if (
+        /*config*/
+        ctx2[1].enabled
+      ) {
+        if (if_block) {
+          if_block.p(ctx2, dirty);
+        } else {
+          if_block = create_if_block$3(ctx2);
+          if_block.c();
+          if_block.m(div1, null);
+        }
+      } else if (if_block) {
+        if_block.d(1);
+        if_block = null;
+      }
+    },
+    i: noop,
+    o: noop,
+    d(detaching) {
+      if (detaching) {
+        detach(div1);
+      }
+      if (if_block) if_block.d();
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function instance$4($$self, $$props, $$invalidate) {
+  let builtinTypes;
+  let { title = "Effect" } = $$props;
+  let { config = {} } = $$props;
+  let { sequencerAvailable = false } = $$props;
+  let { showSpeed = false } = $$props;
+  let { showMirror = false } = $$props;
+  let { showTravelMode = false } = $$props;
+  let { showScatter = false } = $$props;
+  const dispatch2 = createEventDispatcher();
+  const SOURCES = [
+    {
+      value: "sequencer",
+      label: "Sequencer DB"
+    },
+    { value: "custom", label: "Custom File" },
+    { value: "builtin", label: "Builtin" }
+  ];
+  const TRAVEL_MODES = [
+    {
+      value: "beam",
+      label: "Beam / Laser",
+      hint: "Stretches from source to target"
+    },
+    {
+      value: "projectile",
+      label: "Projectile",
+      hint: "Small object travels A → B"
+    },
+    {
+      value: "pulse",
+      label: "Pulse",
+      hint: "Short segment travels A → B"
+    }
+  ];
+  const BUILTIN_PROJECTILE_TYPES = [
+    { value: "tracer", label: "Tracer" },
+    { value: "beam", label: "Beam" },
+    { value: "bolt", label: "Bolt" },
+    { value: "arrow", label: "Arrow" }
+  ];
+  const BUILTIN_EFFECT_TYPES = [
+    { value: "flash", label: "Flash" },
+    { value: "spark", label: "Spark" },
+    { value: "ripple", label: "Ripple" },
+    { value: "slash", label: "Slash" }
+  ];
+  function update2(field, value) {
+    const updated = { ...config, [field]: value };
+    dispatch2("changed", updated);
+  }
+  function updateNumber(field, value) {
+    const num = Number(value);
+    if (!isNaN(num)) update2(field, num);
+  }
+  function toggleEnabled() {
+    update2("enabled", !config.enabled);
+  }
+  function toggleMirror() {
+    update2("randomizeMirrorY", !config.randomizeMirrorY);
+  }
+  function pickCustomFile() {
+    const picker = new FilePicker({
+      type: "imagevideo",
+      current: config.customFile || "",
+      callback: (path) => {
+        if (path) {
+          update2("customFile", path);
+        }
+      }
+    });
+    picker.render(true);
+  }
+  const change_handler = (e) => update2("source", e.target.value);
+  const change_handler_1 = (e) => update2("sequencerPath", e.target.value);
+  const change_handler_2 = (e) => update2("builtinType", e.target.value);
+  const change_handler_3 = (e) => update2("color", e.target.value);
+  const change_handler_4 = (e) => updateNumber("scale", e.target.value);
+  const change_handler_5 = (e) => updateNumber("speed", e.target.value);
+  const change_handler_6 = (e) => update2("travelMode", e.target.value);
+  const func = (t) => t.value === (config.travelMode ?? "beam");
+  const input_handler = (e) => updateNumber("scatter", e.target.value);
+  $$self.$$set = ($$props2) => {
+    if ("title" in $$props2) $$invalidate(0, title = $$props2.title);
+    if ("config" in $$props2) $$invalidate(1, config = $$props2.config);
+    if ("sequencerAvailable" in $$props2) $$invalidate(2, sequencerAvailable = $$props2.sequencerAvailable);
+    if ("showSpeed" in $$props2) $$invalidate(3, showSpeed = $$props2.showSpeed);
+    if ("showMirror" in $$props2) $$invalidate(4, showMirror = $$props2.showMirror);
+    if ("showTravelMode" in $$props2) $$invalidate(5, showTravelMode = $$props2.showTravelMode);
+    if ("showScatter" in $$props2) $$invalidate(6, showScatter = $$props2.showScatter);
+  };
+  $$self.$$.update = () => {
+    if ($$self.$$.dirty[0] & /*showSpeed*/
+    8) {
+      $$invalidate(7, builtinTypes = showSpeed ? BUILTIN_PROJECTILE_TYPES : BUILTIN_EFFECT_TYPES);
+    }
+  };
+  return [
+    title,
+    config,
+    sequencerAvailable,
+    showSpeed,
+    showMirror,
+    showTravelMode,
+    showScatter,
+    builtinTypes,
+    SOURCES,
+    TRAVEL_MODES,
+    update2,
+    updateNumber,
+    toggleEnabled,
+    toggleMirror,
+    pickCustomFile,
+    change_handler,
+    change_handler_1,
+    change_handler_2,
+    change_handler_3,
+    change_handler_4,
+    change_handler_5,
+    change_handler_6,
+    func,
+    input_handler
+  ];
+}
+class FxEffectConfig extends SvelteComponent {
+  constructor(options) {
+    super();
+    init(
+      this,
+      options,
+      instance$4,
+      create_fragment$4,
+      safe_not_equal,
+      {
+        title: 0,
+        config: 1,
+        sequencerAvailable: 2,
+        showSpeed: 3,
+        showMirror: 4,
+        showTravelMode: 5,
+        showScatter: 6
+      },
+      null,
+      [-1, -1]
+    );
+  }
+}
+function get_each_context$1(ctx, list, i) {
+  const child_ctx = ctx.slice();
+  child_ctx[62] = list[i];
+  return child_ctx;
+}
+function get_each_context_1$1(ctx, list, i) {
+  const child_ctx = ctx.slice();
+  child_ctx[65] = list[i];
+  return child_ctx;
+}
+function get_each_context_2(ctx, list, i) {
+  const child_ctx = ctx.slice();
+  child_ctx[68] = list[i];
+  return child_ctx;
+}
+function get_each_context_3(ctx, list, i) {
+  const child_ctx = ctx.slice();
+  child_ctx[71] = list[i];
+  return child_ctx;
+}
+function create_if_block$2(ctx) {
+  let section0;
+  let h40;
+  let t1;
+  let div0;
+  let t2;
+  let section1;
+  let h41;
+  let t4;
+  let div1;
+  let t5;
+  let t6;
+  let section2;
+  let h42;
+  let t8;
+  let fxsoundlist;
+  let t9;
+  let section3;
+  let div2;
+  let t11;
+  let p;
+  let t13;
+  let div5;
+  let span0;
+  let t15;
+  let div4;
+  let label0;
+  let t17;
+  let div3;
+  let input0;
+  let input0_value_value;
+  let t18;
+  let button0;
+  let t19;
+  let t20;
+  let t21;
+  let div9;
+  let span1;
+  let t23;
+  let div7;
+  let label1;
+  let t25;
+  let div6;
+  let input1;
+  let input1_value_value;
+  let t26;
+  let button1;
+  let t27;
+  let t28;
+  let t29;
+  let div8;
+  let label2;
+  let t31;
+  let label3;
+  let input2;
+  let input2_checked_value;
+  let t32;
+  let span2;
+  let t34;
+  let t35;
+  let section4;
+  let fxeffectconfig0;
+  let t36;
+  let section5;
+  let fxeffectconfig1;
+  let t37;
+  let section6;
+  let fxeffectconfig2;
+  let t38;
+  let t39;
+  let section7;
+  let div10;
+  let h44;
+  let t41;
+  let button2;
+  let i5;
+  let button2_title_value;
+  let t42;
+  let t43;
+  let section8;
+  let button3;
+  let t45;
+  let button4;
+  let t47;
+  let section9;
+  let button5;
+  let t49;
+  let button6;
+  let t51;
+  let button7;
+  let t53;
+  let button8;
+  let t55;
+  let button9;
+  let t57;
+  let if_block8_anchor;
+  let current;
+  let mounted;
+  let dispose;
+  let each_value_3 = ensure_array_like(
+    /*FX_TYPES*/
+    ctx[7]
+  );
+  let each_blocks_1 = [];
+  for (let i = 0; i < each_value_3.length; i += 1) {
+    each_blocks_1[i] = create_each_block_3(get_each_context_3(ctx, each_value_3, i));
+  }
+  let each_value_2 = ensure_array_like(
+    /*ROF_MODES*/
+    ctx[9]
+  );
+  let each_blocks = [];
+  for (let i = 0; i < each_value_2.length; i += 1) {
+    each_blocks[i] = create_each_block_2(get_each_context_2(ctx, each_value_2, i));
+  }
+  let if_block0 = (
+    /*fxConfig*/
+    (ctx[2].rateOfFire.mode === "burst" || /*fxConfig*/
+    ctx[2].rateOfFire.mode === "auto") && create_if_block_14$1(ctx)
+  );
+  fxsoundlist = new FxSoundList({
+    props: {
+      sounds: (
+        /*fxConfig*/
+        ctx[2].sounds
+      ),
+      soundMode: (
+        /*fxConfig*/
+        ctx[2].soundMode
+      )
+    }
+  });
+  fxsoundlist.$on(
+    "soundsChanged",
+    /*handleSoundsChanged*/
+    ctx[13]
+  );
+  fxsoundlist.$on(
+    "soundModeChanged",
+    /*handleSoundModeChanged*/
+    ctx[14]
+  );
+  let if_block1 = (
+    /*fxConfig*/
+    ctx[2].jam?.sound?.path && create_if_block_13$1(ctx)
+  );
+  let if_block2 = (
+    /*fxConfig*/
+    ctx[2].jam?.sound?.path && create_if_block_12$1(ctx)
+  );
+  let if_block3 = (
+    /*fxConfig*/
+    ctx[2].jam?.catastrophicSound?.path && create_if_block_11$1(ctx)
+  );
+  let if_block4 = (
+    /*fxConfig*/
+    ctx[2].jam?.catastrophicSound?.path && create_if_block_10$1(ctx)
+  );
+  let if_block5 = (
+    /*fxConfig*/
+    ctx[2].jam?.catastrophicEffect?.enabled && create_if_block_7$1(ctx)
+  );
+  fxeffectconfig0 = new FxEffectConfig({
+    props: {
+      title: "Projectile",
+      config: (
+        /*fxConfig*/
+        ctx[2].projectile
+      ),
+      showSpeed: true,
+      showMirror: true,
+      showTravelMode: true,
+      showScatter: true,
+      sequencerAvailable: (
+        /*sequencerAvailable*/
+        ctx[4]
+      )
+    }
+  });
+  fxeffectconfig0.$on(
+    "changed",
+    /*changed_handler*/
+    ctx[44]
+  );
+  fxeffectconfig1 = new FxEffectConfig({
+    props: {
+      title: "Muzzle Flash",
+      config: (
+        /*fxConfig*/
+        ctx[2].muzzle
+      ),
+      sequencerAvailable: (
+        /*sequencerAvailable*/
+        ctx[4]
+      )
+    }
+  });
+  fxeffectconfig1.$on(
+    "changed",
+    /*changed_handler_1*/
+    ctx[45]
+  );
+  fxeffectconfig2 = new FxEffectConfig({
+    props: {
+      title: "Impact Effect",
+      config: (
+        /*fxConfig*/
+        ctx[2].impact
+      ),
+      sequencerAvailable: (
+        /*sequencerAvailable*/
+        ctx[4]
+      )
+    }
+  });
+  fxeffectconfig2.$on(
+    "changed",
+    /*changed_handler_2*/
+    ctx[46]
+  );
+  let if_block6 = (
+    /*fxConfig*/
+    ctx[2].impact?.enabled && /*fxConfig*/
+    ctx[2].projectile?.enabled && create_if_block_6$1()
+  );
+  let if_block7 = (
+    /*fxConfig*/
+    ctx[2].casing?.enabled && create_if_block_2$1(ctx)
+  );
+  let if_block8 = (
+    /*showPresets*/
+    ctx[3] && create_if_block_1$1(ctx)
+  );
+  return {
+    c() {
+      section0 = element("section");
+      h40 = element("h4");
+      h40.textContent = "Effect Type";
+      t1 = space();
+      div0 = element("div");
+      for (let i = 0; i < each_blocks_1.length; i += 1) {
+        each_blocks_1[i].c();
+      }
+      t2 = space();
+      section1 = element("section");
+      h41 = element("h4");
+      h41.textContent = "Rate of Fire";
+      t4 = space();
+      div1 = element("div");
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        each_blocks[i].c();
+      }
+      t5 = space();
+      if (if_block0) if_block0.c();
+      t6 = space();
+      section2 = element("section");
+      h42 = element("h4");
+      h42.textContent = "Sounds";
+      t8 = space();
+      create_component(fxsoundlist.$$.fragment);
+      t9 = space();
+      section3 = element("section");
+      div2 = element("div");
+      div2.innerHTML = `<h4 class="fx-section-title">Jam / Misfire</h4>`;
+      t11 = space();
+      p = element("p");
+      p.innerHTML = `<i class="fas fa-info-circle"></i> Triggered by provider jam events`;
+      t13 = space();
+      div5 = element("div");
+      span0 = element("span");
+      span0.innerHTML = `<i class="fas fa-hand"></i> Regular Jam`;
+      t15 = space();
+      div4 = element("div");
+      label0 = element("label");
+      label0.textContent = "Sound";
+      t17 = space();
+      div3 = element("div");
+      input0 = element("input");
+      t18 = space();
+      button0 = element("button");
+      button0.innerHTML = `<i class="fas fa-file"></i>`;
+      t19 = space();
+      if (if_block1) if_block1.c();
+      t20 = space();
+      if (if_block2) if_block2.c();
+      t21 = space();
+      div9 = element("div");
+      span1 = element("span");
+      span1.innerHTML = `<i class="fas fa-explosion"></i> Catastrophic`;
+      t23 = space();
+      div7 = element("div");
+      label1 = element("label");
+      label1.textContent = "Sound";
+      t25 = space();
+      div6 = element("div");
+      input1 = element("input");
+      t26 = space();
+      button1 = element("button");
+      button1.innerHTML = `<i class="fas fa-file"></i>`;
+      t27 = space();
+      if (if_block3) if_block3.c();
+      t28 = space();
+      if (if_block4) if_block4.c();
+      t29 = space();
+      div8 = element("div");
+      label2 = element("label");
+      label2.textContent = "Effect";
+      t31 = space();
+      label3 = element("label");
+      input2 = element("input");
+      t32 = space();
+      span2 = element("span");
+      span2.textContent = "Explosion visual";
+      t34 = space();
+      if (if_block5) if_block5.c();
+      t35 = space();
+      section4 = element("section");
+      create_component(fxeffectconfig0.$$.fragment);
+      t36 = space();
+      section5 = element("section");
+      create_component(fxeffectconfig1.$$.fragment);
+      t37 = space();
+      section6 = element("section");
+      create_component(fxeffectconfig2.$$.fragment);
+      t38 = space();
+      if (if_block6) if_block6.c();
+      t39 = space();
+      section7 = element("section");
+      div10 = element("div");
+      h44 = element("h4");
+      h44.textContent = "Casing Ejection";
+      t41 = space();
+      button2 = element("button");
+      i5 = element("i");
+      t42 = space();
+      if (if_block7) if_block7.c();
+      t43 = space();
+      section8 = element("section");
+      button3 = element("button");
+      button3.innerHTML = `<i class="fas fa-play"></i> Test Effect`;
+      t45 = space();
+      button4 = element("button");
+      button4.innerHTML = `<i class="fas fa-play"></i> Test Sound Only`;
+      t47 = space();
+      section9 = element("section");
+      button5 = element("button");
+      button5.innerHTML = `<i class="fas fa-copy"></i> Copy`;
+      t49 = space();
+      button6 = element("button");
+      button6.innerHTML = `<i class="fas fa-paste"></i> Paste`;
+      t51 = space();
+      button7 = element("button");
+      button7.innerHTML = `<i class="fas fa-file-export"></i> Export`;
+      t53 = space();
+      button8 = element("button");
+      button8.innerHTML = `<i class="fas fa-file-import"></i> Import`;
+      t55 = space();
+      button9 = element("button");
+      button9.innerHTML = `<i class="fas fa-wand-magic-sparkles"></i> Presets`;
+      t57 = space();
+      if (if_block8) if_block8.c();
+      if_block8_anchor = empty();
+      attr(h40, "class", "fx-section-title");
+      attr(div0, "class", "fx-type-group");
+      attr(section0, "class", "fx-section");
+      attr(h41, "class", "fx-section-title");
+      attr(div1, "class", "fx-rof-group");
+      attr(section1, "class", "fx-section");
+      attr(h42, "class", "fx-section-title");
+      attr(section2, "class", "fx-section");
+      attr(div2, "class", "fx-effect-header");
+      attr(p, "class", "fx-hint");
+      attr(span0, "class", "fx-jam-label");
+      attr(label0, "class", "fx-field-label");
+      attr(input0, "type", "text");
+      input0.value = input0_value_value = /*fxConfig*/
+      ctx[2].jam?.sound?.path ?? "";
+      input0.readOnly = true;
+      attr(input0, "placeholder", "No jam sound (silent)");
+      attr(button0, "class", "fx-btn-small");
+      attr(div3, "class", "fx-file-picker-row");
+      attr(div4, "class", "fx-field-row");
+      attr(div5, "class", "fx-jam-subsection");
+      attr(span1, "class", "fx-jam-label");
+      attr(label1, "class", "fx-field-label");
+      attr(input1, "type", "text");
+      input1.value = input1_value_value = /*fxConfig*/
+      ctx[2].jam?.catastrophicSound?.path ?? "";
+      input1.readOnly = true;
+      attr(input1, "placeholder", "No catastrophic sound");
+      attr(button1, "class", "fx-btn-small");
+      attr(div6, "class", "fx-file-picker-row");
+      attr(div7, "class", "fx-field-row");
+      attr(label2, "class", "fx-field-label");
+      attr(input2, "type", "checkbox");
+      input2.checked = input2_checked_value = /*fxConfig*/
+      ctx[2].jam?.catastrophicEffect?.enabled ?? false;
+      attr(label3, "class", "fx-checkbox-field");
+      attr(div8, "class", "fx-field-row");
+      set_style(div8, "margin-top", "0.3rem");
+      attr(div9, "class", "fx-jam-subsection");
+      attr(section3, "class", "fx-section");
+      attr(section4, "class", "fx-section");
+      attr(section5, "class", "fx-section");
+      attr(section6, "class", "fx-section");
+      attr(h44, "class", "fx-section-title");
+      attr(i5, "class", "fas");
+      toggle_class(
+        i5,
+        "fa-toggle-on",
+        /*fxConfig*/
+        ctx[2].casing?.enabled
+      );
+      toggle_class(i5, "fa-toggle-off", !/*fxConfig*/
+      ctx[2].casing?.enabled);
+      attr(button2, "class", "fx-toggle-btn");
+      attr(button2, "title", button2_title_value = /*fxConfig*/
+      ctx[2].casing?.enabled ? "Disable Casing" : "Enable Casing");
+      toggle_class(
+        button2,
+        "active",
+        /*fxConfig*/
+        ctx[2].casing?.enabled
+      );
+      attr(div10, "class", "fx-effect-header");
+      attr(section7, "class", "fx-section");
+      attr(button3, "class", "fx-btn");
+      attr(button3, "title", "Test visual effect (requires target)");
+      attr(button4, "class", "fx-btn");
+      attr(button4, "title", "Play a random sound");
+      attr(section8, "class", "fx-section fx-test-buttons");
+      attr(button5, "class", "fx-btn fx-btn-small");
+      attr(button5, "title", "Copy FX config to clipboard");
+      attr(button6, "class", "fx-btn fx-btn-small");
+      attr(button6, "title", "Paste FX config from clipboard");
+      attr(button7, "class", "fx-btn fx-btn-small");
+      attr(button7, "title", "Export FX as portable JSON (includes Sequencer DB paths)");
+      attr(button8, "class", "fx-btn fx-btn-small");
+      attr(button8, "title", "Import FX from clipboard JSON");
+      attr(button9, "class", "fx-btn fx-btn-small");
+      attr(button9, "title", "Apply a weapon preset");
+      toggle_class(
+        button9,
+        "active",
+        /*showPresets*/
+        ctx[3]
+      );
+      attr(section9, "class", "fx-section fx-actions-row");
+    },
+    m(target, anchor) {
+      insert(target, section0, anchor);
+      append(section0, h40);
+      append(section0, t1);
+      append(section0, div0);
+      for (let i = 0; i < each_blocks_1.length; i += 1) {
+        if (each_blocks_1[i]) {
+          each_blocks_1[i].m(div0, null);
+        }
+      }
+      insert(target, t2, anchor);
+      insert(target, section1, anchor);
+      append(section1, h41);
+      append(section1, t4);
+      append(section1, div1);
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        if (each_blocks[i]) {
+          each_blocks[i].m(div1, null);
+        }
+      }
+      append(section1, t5);
+      if (if_block0) if_block0.m(section1, null);
+      insert(target, t6, anchor);
+      insert(target, section2, anchor);
+      append(section2, h42);
+      append(section2, t8);
+      mount_component(fxsoundlist, section2, null);
+      insert(target, t9, anchor);
+      insert(target, section3, anchor);
+      append(section3, div2);
+      append(section3, t11);
+      append(section3, p);
+      append(section3, t13);
+      append(section3, div5);
+      append(div5, span0);
+      append(div5, t15);
+      append(div5, div4);
+      append(div4, label0);
+      append(div4, t17);
+      append(div4, div3);
+      append(div3, input0);
+      append(div3, t18);
+      append(div3, button0);
+      append(div3, t19);
+      if (if_block1) if_block1.m(div3, null);
+      append(div5, t20);
+      if (if_block2) if_block2.m(div5, null);
+      append(section3, t21);
+      append(section3, div9);
+      append(div9, span1);
+      append(div9, t23);
+      append(div9, div7);
+      append(div7, label1);
+      append(div7, t25);
+      append(div7, div6);
+      append(div6, input1);
+      append(div6, t26);
+      append(div6, button1);
+      append(div6, t27);
+      if (if_block3) if_block3.m(div6, null);
+      append(div9, t28);
+      if (if_block4) if_block4.m(div9, null);
+      append(div9, t29);
+      append(div9, div8);
+      append(div8, label2);
+      append(div8, t31);
+      append(div8, label3);
+      append(label3, input2);
+      append(label3, t32);
+      append(label3, span2);
+      append(div9, t34);
+      if (if_block5) if_block5.m(div9, null);
+      insert(target, t35, anchor);
+      insert(target, section4, anchor);
+      mount_component(fxeffectconfig0, section4, null);
+      insert(target, t36, anchor);
+      insert(target, section5, anchor);
+      mount_component(fxeffectconfig1, section5, null);
+      insert(target, t37, anchor);
+      insert(target, section6, anchor);
+      mount_component(fxeffectconfig2, section6, null);
+      append(section6, t38);
+      if (if_block6) if_block6.m(section6, null);
+      insert(target, t39, anchor);
+      insert(target, section7, anchor);
+      append(section7, div10);
+      append(div10, h44);
+      append(div10, t41);
+      append(div10, button2);
+      append(button2, i5);
+      append(section7, t42);
+      if (if_block7) if_block7.m(section7, null);
+      insert(target, t43, anchor);
+      insert(target, section8, anchor);
+      append(section8, button3);
+      append(section8, t45);
+      append(section8, button4);
+      insert(target, t47, anchor);
+      insert(target, section9, anchor);
+      append(section9, button5);
+      append(section9, t49);
+      append(section9, button6);
+      append(section9, t51);
+      append(section9, button7);
+      append(section9, t53);
+      append(section9, button8);
+      append(section9, t55);
+      append(section9, button9);
+      insert(target, t57, anchor);
+      if (if_block8) if_block8.m(target, anchor);
+      insert(target, if_block8_anchor, anchor);
+      current = true;
+      if (!mounted) {
+        dispose = [
+          listen(
+            button0,
+            "click",
+            /*click_handler_2*/
+            ctx[31]
+          ),
+          listen(
+            button1,
+            "click",
+            /*click_handler_5*/
+            ctx[35]
+          ),
+          listen(
+            input2,
+            "change",
+            /*change_handler_3*/
+            ctx[39]
+          ),
+          listen(
+            button2,
+            "click",
+            /*click_handler_9*/
+            ctx[47]
+          ),
+          listen(
+            button3,
+            "click",
+            /*testEffect*/
+            ctx[17]
+          ),
+          listen(
+            button4,
+            "click",
+            /*testSound*/
+            ctx[16]
+          ),
+          listen(
+            button5,
+            "click",
+            /*copyFxConfig*/
+            ctx[18]
+          ),
+          listen(
+            button6,
+            "click",
+            /*pasteFxConfig*/
+            ctx[19]
+          ),
+          listen(
+            button7,
+            "click",
+            /*exportFx*/
+            ctx[20]
+          ),
+          listen(
+            button8,
+            "click",
+            /*importFx*/
+            ctx[21]
+          ),
+          listen(
+            button9,
+            "click",
+            /*click_handler_11*/
+            ctx[56]
+          )
+        ];
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*FX_TYPES, fxConfig, setFxType*/
+      388) {
+        each_value_3 = ensure_array_like(
+          /*FX_TYPES*/
+          ctx2[7]
+        );
+        let i;
+        for (i = 0; i < each_value_3.length; i += 1) {
+          const child_ctx = get_each_context_3(ctx2, each_value_3, i);
+          if (each_blocks_1[i]) {
+            each_blocks_1[i].p(child_ctx, dirty);
+          } else {
+            each_blocks_1[i] = create_each_block_3(child_ctx);
+            each_blocks_1[i].c();
+            each_blocks_1[i].m(div0, null);
+          }
+        }
+        for (; i < each_blocks_1.length; i += 1) {
+          each_blocks_1[i].d(1);
+        }
+        each_blocks_1.length = each_value_3.length;
+      }
+      if (dirty[0] & /*ROF_MODES, fxConfig, setRofMode*/
+      1540) {
+        each_value_2 = ensure_array_like(
+          /*ROF_MODES*/
+          ctx2[9]
+        );
+        let i;
+        for (i = 0; i < each_value_2.length; i += 1) {
+          const child_ctx = get_each_context_2(ctx2, each_value_2, i);
+          if (each_blocks[i]) {
+            each_blocks[i].p(child_ctx, dirty);
+          } else {
+            each_blocks[i] = create_each_block_2(child_ctx);
+            each_blocks[i].c();
+            each_blocks[i].m(div1, null);
+          }
+        }
+        for (; i < each_blocks.length; i += 1) {
+          each_blocks[i].d(1);
+        }
+        each_blocks.length = each_value_2.length;
+      }
+      if (
+        /*fxConfig*/
+        ctx2[2].rateOfFire.mode === "burst" || /*fxConfig*/
+        ctx2[2].rateOfFire.mode === "auto"
+      ) {
+        if (if_block0) {
+          if_block0.p(ctx2, dirty);
+        } else {
+          if_block0 = create_if_block_14$1(ctx2);
+          if_block0.c();
+          if_block0.m(section1, null);
+        }
+      } else if (if_block0) {
+        if_block0.d(1);
+        if_block0 = null;
+      }
+      const fxsoundlist_changes = {};
+      if (dirty[0] & /*fxConfig*/
+      4) fxsoundlist_changes.sounds = /*fxConfig*/
+      ctx2[2].sounds;
+      if (dirty[0] & /*fxConfig*/
+      4) fxsoundlist_changes.soundMode = /*fxConfig*/
+      ctx2[2].soundMode;
+      fxsoundlist.$set(fxsoundlist_changes);
+      if (!current || dirty[0] & /*fxConfig*/
+      4 && input0_value_value !== (input0_value_value = /*fxConfig*/
+      ctx2[2].jam?.sound?.path ?? "") && input0.value !== input0_value_value) {
+        input0.value = input0_value_value;
+      }
+      if (
+        /*fxConfig*/
+        ctx2[2].jam?.sound?.path
+      ) {
+        if (if_block1) {
+          if_block1.p(ctx2, dirty);
+        } else {
+          if_block1 = create_if_block_13$1(ctx2);
+          if_block1.c();
+          if_block1.m(div3, null);
+        }
+      } else if (if_block1) {
+        if_block1.d(1);
+        if_block1 = null;
+      }
+      if (
+        /*fxConfig*/
+        ctx2[2].jam?.sound?.path
+      ) {
+        if (if_block2) {
+          if_block2.p(ctx2, dirty);
+        } else {
+          if_block2 = create_if_block_12$1(ctx2);
+          if_block2.c();
+          if_block2.m(div5, null);
+        }
+      } else if (if_block2) {
+        if_block2.d(1);
+        if_block2 = null;
+      }
+      if (!current || dirty[0] & /*fxConfig*/
+      4 && input1_value_value !== (input1_value_value = /*fxConfig*/
+      ctx2[2].jam?.catastrophicSound?.path ?? "") && input1.value !== input1_value_value) {
+        input1.value = input1_value_value;
+      }
+      if (
+        /*fxConfig*/
+        ctx2[2].jam?.catastrophicSound?.path
+      ) {
+        if (if_block3) {
+          if_block3.p(ctx2, dirty);
+        } else {
+          if_block3 = create_if_block_11$1(ctx2);
+          if_block3.c();
+          if_block3.m(div6, null);
+        }
+      } else if (if_block3) {
+        if_block3.d(1);
+        if_block3 = null;
+      }
+      if (
+        /*fxConfig*/
+        ctx2[2].jam?.catastrophicSound?.path
+      ) {
+        if (if_block4) {
+          if_block4.p(ctx2, dirty);
+        } else {
+          if_block4 = create_if_block_10$1(ctx2);
+          if_block4.c();
+          if_block4.m(div9, t29);
+        }
+      } else if (if_block4) {
+        if_block4.d(1);
+        if_block4 = null;
+      }
+      if (!current || dirty[0] & /*fxConfig*/
+      4 && input2_checked_value !== (input2_checked_value = /*fxConfig*/
+      ctx2[2].jam?.catastrophicEffect?.enabled ?? false)) {
+        input2.checked = input2_checked_value;
+      }
+      if (
+        /*fxConfig*/
+        ctx2[2].jam?.catastrophicEffect?.enabled
+      ) {
+        if (if_block5) {
+          if_block5.p(ctx2, dirty);
+        } else {
+          if_block5 = create_if_block_7$1(ctx2);
+          if_block5.c();
+          if_block5.m(div9, null);
+        }
+      } else if (if_block5) {
+        if_block5.d(1);
+        if_block5 = null;
+      }
+      const fxeffectconfig0_changes = {};
+      if (dirty[0] & /*fxConfig*/
+      4) fxeffectconfig0_changes.config = /*fxConfig*/
+      ctx2[2].projectile;
+      if (dirty[0] & /*sequencerAvailable*/
+      16) fxeffectconfig0_changes.sequencerAvailable = /*sequencerAvailable*/
+      ctx2[4];
+      fxeffectconfig0.$set(fxeffectconfig0_changes);
+      const fxeffectconfig1_changes = {};
+      if (dirty[0] & /*fxConfig*/
+      4) fxeffectconfig1_changes.config = /*fxConfig*/
+      ctx2[2].muzzle;
+      if (dirty[0] & /*sequencerAvailable*/
+      16) fxeffectconfig1_changes.sequencerAvailable = /*sequencerAvailable*/
+      ctx2[4];
+      fxeffectconfig1.$set(fxeffectconfig1_changes);
+      const fxeffectconfig2_changes = {};
+      if (dirty[0] & /*fxConfig*/
+      4) fxeffectconfig2_changes.config = /*fxConfig*/
+      ctx2[2].impact;
+      if (dirty[0] & /*sequencerAvailable*/
+      16) fxeffectconfig2_changes.sequencerAvailable = /*sequencerAvailable*/
+      ctx2[4];
+      fxeffectconfig2.$set(fxeffectconfig2_changes);
+      if (
+        /*fxConfig*/
+        ctx2[2].impact?.enabled && /*fxConfig*/
+        ctx2[2].projectile?.enabled
+      ) {
+        if (if_block6) ;
+        else {
+          if_block6 = create_if_block_6$1();
+          if_block6.c();
+          if_block6.m(section6, null);
+        }
+      } else if (if_block6) {
+        if_block6.d(1);
+        if_block6 = null;
+      }
+      if (!current || dirty[0] & /*fxConfig*/
+      4) {
+        toggle_class(
+          i5,
+          "fa-toggle-on",
+          /*fxConfig*/
+          ctx2[2].casing?.enabled
+        );
+      }
+      if (!current || dirty[0] & /*fxConfig*/
+      4) {
+        toggle_class(i5, "fa-toggle-off", !/*fxConfig*/
+        ctx2[2].casing?.enabled);
+      }
+      if (!current || dirty[0] & /*fxConfig*/
+      4 && button2_title_value !== (button2_title_value = /*fxConfig*/
+      ctx2[2].casing?.enabled ? "Disable Casing" : "Enable Casing")) {
+        attr(button2, "title", button2_title_value);
+      }
+      if (!current || dirty[0] & /*fxConfig*/
+      4) {
+        toggle_class(
+          button2,
+          "active",
+          /*fxConfig*/
+          ctx2[2].casing?.enabled
+        );
+      }
+      if (
+        /*fxConfig*/
+        ctx2[2].casing?.enabled
+      ) {
+        if (if_block7) {
+          if_block7.p(ctx2, dirty);
+        } else {
+          if_block7 = create_if_block_2$1(ctx2);
+          if_block7.c();
+          if_block7.m(section7, null);
+        }
+      } else if (if_block7) {
+        if_block7.d(1);
+        if_block7 = null;
+      }
+      if (!current || dirty[0] & /*showPresets*/
+      8) {
+        toggle_class(
+          button9,
+          "active",
+          /*showPresets*/
+          ctx2[3]
+        );
+      }
+      if (
+        /*showPresets*/
+        ctx2[3]
+      ) {
+        if (if_block8) {
+          if_block8.p(ctx2, dirty);
+        } else {
+          if_block8 = create_if_block_1$1(ctx2);
+          if_block8.c();
+          if_block8.m(if_block8_anchor.parentNode, if_block8_anchor);
+        }
+      } else if (if_block8) {
+        if_block8.d(1);
+        if_block8 = null;
+      }
+    },
+    i(local) {
+      if (current) return;
+      transition_in(fxsoundlist.$$.fragment, local);
+      transition_in(fxeffectconfig0.$$.fragment, local);
+      transition_in(fxeffectconfig1.$$.fragment, local);
+      transition_in(fxeffectconfig2.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(fxsoundlist.$$.fragment, local);
+      transition_out(fxeffectconfig0.$$.fragment, local);
+      transition_out(fxeffectconfig1.$$.fragment, local);
+      transition_out(fxeffectconfig2.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(section0);
+        detach(t2);
+        detach(section1);
+        detach(t6);
+        detach(section2);
+        detach(t9);
+        detach(section3);
+        detach(t35);
+        detach(section4);
+        detach(t36);
+        detach(section5);
+        detach(t37);
+        detach(section6);
+        detach(t39);
+        detach(section7);
+        detach(t43);
+        detach(section8);
+        detach(t47);
+        detach(section9);
+        detach(t57);
+        detach(if_block8_anchor);
+      }
+      destroy_each(each_blocks_1, detaching);
+      destroy_each(each_blocks, detaching);
+      if (if_block0) if_block0.d();
+      destroy_component(fxsoundlist);
+      if (if_block1) if_block1.d();
+      if (if_block2) if_block2.d();
+      if (if_block3) if_block3.d();
+      if (if_block4) if_block4.d();
+      if (if_block5) if_block5.d();
+      destroy_component(fxeffectconfig0);
+      destroy_component(fxeffectconfig1);
+      destroy_component(fxeffectconfig2);
+      if (if_block6) if_block6.d();
+      if (if_block7) if_block7.d();
+      if (if_block8) if_block8.d(detaching);
+      mounted = false;
+      run_all(dispose);
+    }
+  };
+}
+function create_each_block_3(ctx) {
+  let button;
+  let i;
+  let t0;
+  let span;
+  let t2;
+  let mounted;
+  let dispose;
+  function click_handler() {
+    return (
+      /*click_handler*/
+      ctx[26](
+        /*ft*/
+        ctx[71]
+      )
+    );
+  }
+  return {
+    c() {
+      button = element("button");
+      i = element("i");
+      t0 = space();
+      span = element("span");
+      span.textContent = `${/*ft*/
+      ctx[71].label}`;
+      t2 = space();
+      attr(i, "class", "fas " + /*ft*/
+      ctx[71].icon);
+      attr(button, "class", "fx-type-btn");
+      attr(
+        button,
+        "title",
+        /*ft*/
+        ctx[71].label
+      );
+      toggle_class(
+        button,
+        "selected",
+        /*fxConfig*/
+        ctx[2].fxType === /*ft*/
+        ctx[71].value
+      );
+    },
+    m(target, anchor) {
+      insert(target, button, anchor);
+      append(button, i);
+      append(button, t0);
+      append(button, span);
+      append(button, t2);
+      if (!mounted) {
+        dispose = listen(button, "click", click_handler);
+        mounted = true;
+      }
+    },
+    p(new_ctx, dirty) {
+      ctx = new_ctx;
+      if (dirty[0] & /*fxConfig, FX_TYPES*/
+      132) {
+        toggle_class(
+          button,
+          "selected",
+          /*fxConfig*/
+          ctx[2].fxType === /*ft*/
+          ctx[71].value
+        );
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(button);
+      }
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_each_block_2(ctx) {
+  let button;
+  let t0_value = (
+    /*rm*/
+    ctx[68].label + ""
+  );
+  let t0;
+  let t1;
+  let mounted;
+  let dispose;
+  function click_handler_1() {
+    return (
+      /*click_handler_1*/
+      ctx[27](
+        /*rm*/
+        ctx[68]
+      )
+    );
+  }
+  return {
+    c() {
+      button = element("button");
+      t0 = text(t0_value);
+      t1 = space();
+      attr(button, "class", "fx-rof-btn");
+      attr(
+        button,
+        "title",
+        /*rm*/
+        ctx[68].hint
+      );
+      toggle_class(
+        button,
+        "selected",
+        /*fxConfig*/
+        ctx[2].rateOfFire.mode === /*rm*/
+        ctx[68].value
+      );
+    },
+    m(target, anchor) {
+      insert(target, button, anchor);
+      append(button, t0);
+      append(button, t1);
+      if (!mounted) {
+        dispose = listen(button, "click", click_handler_1);
+        mounted = true;
+      }
+    },
+    p(new_ctx, dirty) {
+      ctx = new_ctx;
+      if (dirty[0] & /*fxConfig, ROF_MODES*/
+      516) {
+        toggle_class(
+          button,
+          "selected",
+          /*fxConfig*/
+          ctx[2].rateOfFire.mode === /*rm*/
+          ctx[68].value
+        );
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(button);
+      }
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_if_block_14$1(ctx) {
+  let div;
+  let t0;
+  let t1;
+  let label0;
+  let span0;
+  let t3;
+  let input0;
+  let input0_value_value;
+  let t4;
+  let label1;
+  let input1;
+  let input1_checked_value;
+  let t5;
+  let span1;
+  let t7;
+  let p;
+  let mounted;
+  let dispose;
+  let if_block0 = (
+    /*fxConfig*/
+    ctx[2].rateOfFire.mode === "burst" && create_if_block_16$1(ctx)
+  );
+  let if_block1 = (
+    /*fxConfig*/
+    ctx[2].rateOfFire.mode === "auto" && create_if_block_15$1(ctx)
+  );
+  return {
+    c() {
+      div = element("div");
+      if (if_block0) if_block0.c();
+      t0 = space();
+      if (if_block1) if_block1.c();
+      t1 = space();
+      label0 = element("label");
+      span0 = element("span");
+      span0.textContent = "Delay (ms)";
+      t3 = space();
+      input0 = element("input");
+      t4 = space();
+      label1 = element("label");
+      input1 = element("input");
+      t5 = space();
+      span1 = element("span");
+      span1.textContent = "Randomize delay";
+      t7 = space();
+      p = element("p");
+      p.innerHTML = `<i class="fas fa-info-circle"></i> Provider can override with shotEvents`;
+      attr(input0, "type", "number");
+      attr(input0, "min", "20");
+      attr(input0, "max", "2000");
+      input0.value = input0_value_value = /*fxConfig*/
+      ctx[2].rateOfFire.delayBetweenShots;
+      attr(label0, "class", "fx-inline-field");
+      attr(input1, "type", "checkbox");
+      input1.checked = input1_checked_value = /*fxConfig*/
+      ctx[2].rateOfFire.randomizeDelay;
+      attr(label1, "class", "fx-checkbox-field");
+      attr(div, "class", "fx-rof-details");
+      attr(p, "class", "fx-hint");
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      if (if_block0) if_block0.m(div, null);
+      append(div, t0);
+      if (if_block1) if_block1.m(div, null);
+      append(div, t1);
+      append(div, label0);
+      append(label0, span0);
+      append(label0, t3);
+      append(label0, input0);
+      append(div, t4);
+      append(div, label1);
+      append(label1, input1);
+      append(label1, t5);
+      append(label1, span1);
+      insert(target, t7, anchor);
+      insert(target, p, anchor);
+      if (!mounted) {
+        dispose = [
+          listen(
+            input0,
+            "change",
+            /*change_handler_2*/
+            ctx[30]
+          ),
+          listen(
+            input1,
+            "change",
+            /*toggleRofRandomize*/
+            ctx[12]
+          )
+        ];
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (
+        /*fxConfig*/
+        ctx2[2].rateOfFire.mode === "burst"
+      ) {
+        if (if_block0) {
+          if_block0.p(ctx2, dirty);
+        } else {
+          if_block0 = create_if_block_16$1(ctx2);
+          if_block0.c();
+          if_block0.m(div, t0);
+        }
+      } else if (if_block0) {
+        if_block0.d(1);
+        if_block0 = null;
+      }
+      if (
+        /*fxConfig*/
+        ctx2[2].rateOfFire.mode === "auto"
+      ) {
+        if (if_block1) {
+          if_block1.p(ctx2, dirty);
+        } else {
+          if_block1 = create_if_block_15$1(ctx2);
+          if_block1.c();
+          if_block1.m(div, t1);
+        }
+      } else if (if_block1) {
+        if_block1.d(1);
+        if_block1 = null;
+      }
+      if (dirty[0] & /*fxConfig*/
+      4 && input0_value_value !== (input0_value_value = /*fxConfig*/
+      ctx2[2].rateOfFire.delayBetweenShots) && input0.value !== input0_value_value) {
+        input0.value = input0_value_value;
+      }
+      if (dirty[0] & /*fxConfig*/
+      4 && input1_checked_value !== (input1_checked_value = /*fxConfig*/
+      ctx2[2].rateOfFire.randomizeDelay)) {
+        input1.checked = input1_checked_value;
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+        detach(t7);
+        detach(p);
+      }
+      if (if_block0) if_block0.d();
+      if (if_block1) if_block1.d();
+      mounted = false;
+      run_all(dispose);
+    }
+  };
+}
+function create_if_block_16$1(ctx) {
+  let label;
+  let span;
+  let t1;
+  let input;
+  let input_value_value;
+  let mounted;
+  let dispose;
+  return {
+    c() {
+      label = element("label");
+      span = element("span");
+      span.textContent = "Burst count";
+      t1 = space();
+      input = element("input");
+      attr(input, "type", "number");
+      attr(input, "min", "2");
+      attr(input, "max", "20");
+      input.value = input_value_value = /*fxConfig*/
+      ctx[2].rateOfFire.burstCount;
+      attr(label, "class", "fx-inline-field");
+    },
+    m(target, anchor) {
+      insert(target, label, anchor);
+      append(label, span);
+      append(label, t1);
+      append(label, input);
+      if (!mounted) {
+        dispose = listen(
+          input,
+          "change",
+          /*change_handler*/
+          ctx[28]
+        );
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*fxConfig*/
+      4 && input_value_value !== (input_value_value = /*fxConfig*/
+      ctx2[2].rateOfFire.burstCount) && input.value !== input_value_value) {
+        input.value = input_value_value;
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(label);
+      }
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_if_block_15$1(ctx) {
+  let label;
+  let span;
+  let t1;
+  let input;
+  let input_value_value;
+  let mounted;
+  let dispose;
+  return {
+    c() {
+      label = element("label");
+      span = element("span");
+      span.textContent = "Auto count";
+      t1 = space();
+      input = element("input");
+      attr(input, "type", "number");
+      attr(input, "min", "2");
+      attr(input, "max", "50");
+      input.value = input_value_value = /*fxConfig*/
+      ctx[2].rateOfFire.autoCount;
+      attr(label, "class", "fx-inline-field");
+    },
+    m(target, anchor) {
+      insert(target, label, anchor);
+      append(label, span);
+      append(label, t1);
+      append(label, input);
+      if (!mounted) {
+        dispose = listen(
+          input,
+          "change",
+          /*change_handler_1*/
+          ctx[29]
+        );
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*fxConfig*/
+      4 && input_value_value !== (input_value_value = /*fxConfig*/
+      ctx2[2].rateOfFire.autoCount) && input.value !== input_value_value) {
+        input.value = input_value_value;
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(label);
+      }
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_if_block_13$1(ctx) {
+  let button;
+  let mounted;
+  let dispose;
+  return {
+    c() {
+      button = element("button");
+      button.innerHTML = `<i class="fas fa-times"></i>`;
+      attr(button, "class", "fx-btn-small");
+      attr(button, "title", "Clear");
+    },
+    m(target, anchor) {
+      insert(target, button, anchor);
+      if (!mounted) {
+        dispose = listen(
+          button,
+          "click",
+          /*click_handler_3*/
+          ctx[32]
+        );
+        mounted = true;
+      }
+    },
+    p: noop,
+    d(detaching) {
+      if (detaching) {
+        detach(button);
+      }
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_if_block_12$1(ctx) {
+  let div;
+  let label;
+  let t1;
+  let input;
+  let input_value_value;
+  let t2;
+  let span;
+  let t3_value = Math.round(
+    /*fxConfig*/
+    (ctx[2].jam?.sound?.volume ?? 0.8) * 100
+  ) + "";
+  let t3;
+  let t4;
+  let t5;
+  let button;
+  let mounted;
+  let dispose;
+  return {
+    c() {
+      div = element("div");
+      label = element("label");
+      label.textContent = "Volume";
+      t1 = space();
+      input = element("input");
+      t2 = space();
+      span = element("span");
+      t3 = text(t3_value);
+      t4 = text("%");
+      t5 = space();
+      button = element("button");
+      button.innerHTML = `<i class="fas fa-play"></i> Preview`;
+      attr(label, "class", "fx-field-label");
+      attr(input, "type", "range");
+      attr(input, "min", "0");
+      attr(input, "max", "1");
+      attr(input, "step", "0.05");
+      input.value = input_value_value = /*fxConfig*/
+      ctx[2].jam?.sound?.volume ?? 0.8;
+      attr(span, "class", "fx-sound-volume-label");
+      attr(div, "class", "fx-field-row");
+      attr(button, "class", "fx-btn fx-btn-small");
+      attr(button, "title", "Preview jam sound");
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      append(div, label);
+      append(div, t1);
+      append(div, input);
+      append(div, t2);
+      append(div, span);
+      append(span, t3);
+      append(span, t4);
+      insert(target, t5, anchor);
+      insert(target, button, anchor);
+      if (!mounted) {
+        dispose = [
+          listen(
+            input,
+            "input",
+            /*input_handler*/
+            ctx[33]
+          ),
+          listen(
+            button,
+            "click",
+            /*click_handler_4*/
+            ctx[34]
+          )
+        ];
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*fxConfig*/
+      4 && input_value_value !== (input_value_value = /*fxConfig*/
+      ctx2[2].jam?.sound?.volume ?? 0.8)) {
+        input.value = input_value_value;
+      }
+      if (dirty[0] & /*fxConfig*/
+      4 && t3_value !== (t3_value = Math.round(
+        /*fxConfig*/
+        (ctx2[2].jam?.sound?.volume ?? 0.8) * 100
+      ) + "")) set_data(t3, t3_value);
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+        detach(t5);
+        detach(button);
+      }
+      mounted = false;
+      run_all(dispose);
+    }
+  };
+}
+function create_if_block_11$1(ctx) {
+  let button;
+  let mounted;
+  let dispose;
+  return {
+    c() {
+      button = element("button");
+      button.innerHTML = `<i class="fas fa-times"></i>`;
+      attr(button, "class", "fx-btn-small");
+      attr(button, "title", "Clear");
+    },
+    m(target, anchor) {
+      insert(target, button, anchor);
+      if (!mounted) {
+        dispose = listen(
+          button,
+          "click",
+          /*click_handler_6*/
+          ctx[36]
+        );
+        mounted = true;
+      }
+    },
+    p: noop,
+    d(detaching) {
+      if (detaching) {
+        detach(button);
+      }
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_if_block_10$1(ctx) {
+  let div;
+  let label;
+  let t1;
+  let input;
+  let input_value_value;
+  let t2;
+  let span;
+  let t3_value = Math.round(
+    /*fxConfig*/
+    (ctx[2].jam?.catastrophicSound?.volume ?? 1) * 100
+  ) + "";
+  let t3;
+  let t4;
+  let t5;
+  let button;
+  let mounted;
+  let dispose;
+  return {
+    c() {
+      div = element("div");
+      label = element("label");
+      label.textContent = "Volume";
+      t1 = space();
+      input = element("input");
+      t2 = space();
+      span = element("span");
+      t3 = text(t3_value);
+      t4 = text("%");
+      t5 = space();
+      button = element("button");
+      button.innerHTML = `<i class="fas fa-play"></i> Preview`;
+      attr(label, "class", "fx-field-label");
+      attr(input, "type", "range");
+      attr(input, "min", "0");
+      attr(input, "max", "1");
+      attr(input, "step", "0.05");
+      input.value = input_value_value = /*fxConfig*/
+      ctx[2].jam?.catastrophicSound?.volume ?? 1;
+      attr(span, "class", "fx-sound-volume-label");
+      attr(div, "class", "fx-field-row");
+      attr(button, "class", "fx-btn fx-btn-small");
+      attr(button, "title", "Preview catastrophic sound");
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      append(div, label);
+      append(div, t1);
+      append(div, input);
+      append(div, t2);
+      append(div, span);
+      append(span, t3);
+      append(span, t4);
+      insert(target, t5, anchor);
+      insert(target, button, anchor);
+      if (!mounted) {
+        dispose = [
+          listen(
+            input,
+            "input",
+            /*input_handler_1*/
+            ctx[37]
+          ),
+          listen(
+            button,
+            "click",
+            /*click_handler_7*/
+            ctx[38]
+          )
+        ];
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*fxConfig*/
+      4 && input_value_value !== (input_value_value = /*fxConfig*/
+      ctx2[2].jam?.catastrophicSound?.volume ?? 1)) {
+        input.value = input_value_value;
+      }
+      if (dirty[0] & /*fxConfig*/
+      4 && t3_value !== (t3_value = Math.round(
+        /*fxConfig*/
+        (ctx2[2].jam?.catastrophicSound?.volume ?? 1) * 100
+      ) + "")) set_data(t3, t3_value);
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+        detach(t5);
+        detach(button);
+      }
+      mounted = false;
+      run_all(dispose);
+    }
+  };
+}
+function create_if_block_7$1(ctx) {
+  let div0;
+  let label0;
+  let t1;
+  let select;
+  let option0;
+  let t2;
+  let t3_value = !/*sequencerAvailable*/
+  ctx[4] ? " (not installed)" : "";
+  let t3;
+  let t4;
+  let option0_disabled_value;
+  let option1;
+  let select_value_value;
+  let t6;
+  let t7;
+  let t8;
+  let div1;
+  let label1;
+  let t10;
+  let input;
+  let input_value_value;
+  let mounted;
+  let dispose;
+  let if_block0 = (
+    /*fxConfig*/
+    (ctx[2].jam?.catastrophicEffect?.source ?? "sequencer") === "sequencer" && create_if_block_9$1(ctx)
+  );
+  let if_block1 = (
+    /*fxConfig*/
+    ctx[2].jam?.catastrophicEffect?.source === "custom" && create_if_block_8$1(ctx)
+  );
+  return {
+    c() {
+      div0 = element("div");
+      label0 = element("label");
+      label0.textContent = "Source";
+      t1 = space();
+      select = element("select");
+      option0 = element("option");
+      t2 = text("Sequencer DB");
+      t3 = text(t3_value);
+      t4 = space();
+      option1 = element("option");
+      option1.textContent = "Custom File";
+      t6 = space();
+      if (if_block0) if_block0.c();
+      t7 = space();
+      if (if_block1) if_block1.c();
+      t8 = space();
+      div1 = element("div");
+      label1 = element("label");
+      label1.textContent = "Scale";
+      t10 = space();
+      input = element("input");
+      attr(label0, "class", "fx-field-label");
+      option0.__value = "sequencer";
+      set_input_value(option0, option0.__value);
+      option0.disabled = option0_disabled_value = !/*sequencerAvailable*/
+      ctx[4];
+      option1.__value = "custom";
+      set_input_value(option1, option1.__value);
+      attr(div0, "class", "fx-field-row");
+      attr(label1, "class", "fx-field-label");
+      attr(input, "type", "number");
+      attr(input, "min", "0.1");
+      attr(input, "max", "5");
+      attr(input, "step", "0.1");
+      input.value = input_value_value = /*fxConfig*/
+      ctx[2].jam?.catastrophicEffect?.scale ?? 1;
+      attr(div1, "class", "fx-field-row");
+    },
+    m(target, anchor) {
+      insert(target, div0, anchor);
+      append(div0, label0);
+      append(div0, t1);
+      append(div0, select);
+      append(select, option0);
+      append(option0, t2);
+      append(option0, t3);
+      append(option0, t4);
+      append(select, option1);
+      select_option(
+        select,
+        /*fxConfig*/
+        ctx[2].jam?.catastrophicEffect?.source ?? "sequencer"
+      );
+      insert(target, t6, anchor);
+      if (if_block0) if_block0.m(target, anchor);
+      insert(target, t7, anchor);
+      if (if_block1) if_block1.m(target, anchor);
+      insert(target, t8, anchor);
+      insert(target, div1, anchor);
+      append(div1, label1);
+      append(div1, t10);
+      append(div1, input);
+      if (!mounted) {
+        dispose = [
+          listen(
+            select,
+            "change",
+            /*change_handler_4*/
+            ctx[40]
+          ),
+          listen(
+            input,
+            "change",
+            /*change_handler_6*/
+            ctx[43]
+          )
+        ];
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*sequencerAvailable*/
+      16 && t3_value !== (t3_value = !/*sequencerAvailable*/
+      ctx2[4] ? " (not installed)" : "")) set_data(t3, t3_value);
+      if (dirty[0] & /*sequencerAvailable*/
+      16 && option0_disabled_value !== (option0_disabled_value = !/*sequencerAvailable*/
+      ctx2[4])) {
+        option0.disabled = option0_disabled_value;
+      }
+      if (dirty[0] & /*fxConfig*/
+      4 && select_value_value !== (select_value_value = /*fxConfig*/
+      ctx2[2].jam?.catastrophicEffect?.source ?? "sequencer")) {
+        select_option(
+          select,
+          /*fxConfig*/
+          ctx2[2].jam?.catastrophicEffect?.source ?? "sequencer"
+        );
+      }
+      if (
+        /*fxConfig*/
+        (ctx2[2].jam?.catastrophicEffect?.source ?? "sequencer") === "sequencer"
+      ) {
+        if (if_block0) {
+          if_block0.p(ctx2, dirty);
+        } else {
+          if_block0 = create_if_block_9$1(ctx2);
+          if_block0.c();
+          if_block0.m(t7.parentNode, t7);
+        }
+      } else if (if_block0) {
+        if_block0.d(1);
+        if_block0 = null;
+      }
+      if (
+        /*fxConfig*/
+        ctx2[2].jam?.catastrophicEffect?.source === "custom"
+      ) {
+        if (if_block1) {
+          if_block1.p(ctx2, dirty);
+        } else {
+          if_block1 = create_if_block_8$1(ctx2);
+          if_block1.c();
+          if_block1.m(t8.parentNode, t8);
+        }
+      } else if (if_block1) {
+        if_block1.d(1);
+        if_block1 = null;
+      }
+      if (dirty[0] & /*fxConfig*/
+      4 && input_value_value !== (input_value_value = /*fxConfig*/
+      ctx2[2].jam?.catastrophicEffect?.scale ?? 1) && input.value !== input_value_value) {
+        input.value = input_value_value;
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div0);
+        detach(t6);
+        detach(t7);
+        detach(t8);
+        detach(div1);
+      }
+      if (if_block0) if_block0.d(detaching);
+      if (if_block1) if_block1.d(detaching);
+      mounted = false;
+      run_all(dispose);
+    }
+  };
+}
+function create_if_block_9$1(ctx) {
+  let div;
+  let label;
+  let t1;
+  let input;
+  let input_value_value;
+  let mounted;
+  let dispose;
+  return {
+    c() {
+      div = element("div");
+      label = element("label");
+      label.textContent = "Path";
+      t1 = space();
+      input = element("input");
+      attr(label, "class", "fx-field-label");
+      attr(input, "type", "text");
+      input.value = input_value_value = /*fxConfig*/
+      ctx[2].jam?.catastrophicEffect?.sequencerPath ?? "";
+      attr(input, "placeholder", "e.g. jb2a.explosion.01.orange");
+      attr(div, "class", "fx-field-row");
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      append(div, label);
+      append(div, t1);
+      append(div, input);
+      if (!mounted) {
+        dispose = listen(
+          input,
+          "change",
+          /*change_handler_5*/
+          ctx[41]
+        );
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*fxConfig*/
+      4 && input_value_value !== (input_value_value = /*fxConfig*/
+      ctx2[2].jam?.catastrophicEffect?.sequencerPath ?? "") && input.value !== input_value_value) {
+        input.value = input_value_value;
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+      }
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_if_block_8$1(ctx) {
+  let div1;
+  let label;
+  let t1;
+  let div0;
+  let input;
+  let input_value_value;
+  let t2;
+  let button;
+  let mounted;
+  let dispose;
+  return {
+    c() {
+      div1 = element("div");
+      label = element("label");
+      label.textContent = "File";
+      t1 = space();
+      div0 = element("div");
+      input = element("input");
+      t2 = space();
+      button = element("button");
+      button.innerHTML = `<i class="fas fa-file"></i>`;
+      attr(label, "class", "fx-field-label");
+      attr(input, "type", "text");
+      input.value = input_value_value = /*fxConfig*/
+      ctx[2].jam?.catastrophicEffect?.customFile ?? "";
+      input.readOnly = true;
+      attr(input, "placeholder", "Select a .webm file");
+      attr(button, "class", "fx-btn-small");
+      attr(div0, "class", "fx-file-picker-row");
+      attr(div1, "class", "fx-field-row");
+    },
+    m(target, anchor) {
+      insert(target, div1, anchor);
+      append(div1, label);
+      append(div1, t1);
+      append(div1, div0);
+      append(div0, input);
+      append(div0, t2);
+      append(div0, button);
+      if (!mounted) {
+        dispose = listen(
+          button,
+          "click",
+          /*click_handler_8*/
+          ctx[42]
+        );
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*fxConfig*/
+      4 && input_value_value !== (input_value_value = /*fxConfig*/
+      ctx2[2].jam?.catastrophicEffect?.customFile ?? "") && input.value !== input_value_value) {
+        input.value = input_value_value;
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div1);
+      }
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_if_block_6$1(ctx) {
+  let p;
+  return {
+    c() {
+      p = element("p");
+      p.innerHTML = `<i class="fas fa-info-circle"></i> Uses Projectile scatter for positioning`;
+      attr(p, "class", "fx-hint");
+    },
+    m(target, anchor) {
+      insert(target, p, anchor);
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(p);
+      }
+    }
+  };
+}
+function create_if_block_2$1(ctx) {
+  let div0;
+  let label0;
+  let t1;
+  let select0;
+  let option0;
+  let t2;
+  let t3_value = !/*sequencerAvailable*/
+  ctx[4] ? " (not installed)" : "";
+  let t3;
+  let t4;
+  let option0_disabled_value;
+  let option1;
+  let select0_value_value;
+  let t6;
+  let t7;
+  let t8;
+  let div1;
+  let label1;
+  let t10;
+  let input0;
+  let input0_value_value;
+  let t11;
+  let div2;
+  let label2;
+  let t13;
+  let input1;
+  let input1_value_value;
+  let t14;
+  let span0;
+  let t15_value = Math.round(
+    /*fxConfig*/
+    (ctx[2].casing.scatter ?? 0.5) * 100
+  ) + "";
+  let t15;
+  let t16;
+  let t17;
+  let div3;
+  let label3;
+  let t19;
+  let select1;
+  let option2;
+  let option3;
+  let option4;
+  let option5;
+  let select1_value_value;
+  let t24;
+  let label4;
+  let input2;
+  let input2_checked_value;
+  let t25;
+  let span1;
+  let t27;
+  let if_block2_anchor;
+  let mounted;
+  let dispose;
+  let if_block0 = (
+    /*fxConfig*/
+    ctx[2].casing.source === "sequencer" && create_if_block_5$1(ctx)
+  );
+  let if_block1 = (
+    /*fxConfig*/
+    ctx[2].casing.source === "custom" && create_if_block_4$1(ctx)
+  );
+  let if_block2 = (
+    /*fxConfig*/
+    ctx[2].casing.persist && create_if_block_3$1(ctx)
+  );
+  return {
+    c() {
+      div0 = element("div");
+      label0 = element("label");
+      label0.textContent = "Source";
+      t1 = space();
+      select0 = element("select");
+      option0 = element("option");
+      t2 = text("Sequencer DB");
+      t3 = text(t3_value);
+      t4 = space();
+      option1 = element("option");
+      option1.textContent = "Custom File";
+      t6 = space();
+      if (if_block0) if_block0.c();
+      t7 = space();
+      if (if_block1) if_block1.c();
+      t8 = space();
+      div1 = element("div");
+      label1 = element("label");
+      label1.textContent = "Scale";
+      t10 = space();
+      input0 = element("input");
+      t11 = space();
+      div2 = element("div");
+      label2 = element("label");
+      label2.textContent = "Scatter";
+      t13 = space();
+      input1 = element("input");
+      t14 = space();
+      span0 = element("span");
+      t15 = text(t15_value);
+      t16 = text("%");
+      t17 = space();
+      div3 = element("div");
+      label3 = element("label");
+      label3.textContent = "Eject";
+      t19 = space();
+      select1 = element("select");
+      option2 = element("option");
+      option2.textContent = "Right";
+      option3 = element("option");
+      option3.textContent = "Left";
+      option4 = element("option");
+      option4.textContent = "Up";
+      option5 = element("option");
+      option5.textContent = "Random";
+      t24 = space();
+      label4 = element("label");
+      input2 = element("input");
+      t25 = space();
+      span1 = element("span");
+      span1.textContent = "Stay on map";
+      t27 = space();
+      if (if_block2) if_block2.c();
+      if_block2_anchor = empty();
+      attr(label0, "class", "fx-field-label");
+      option0.__value = "sequencer";
+      set_input_value(option0, option0.__value);
+      option0.disabled = option0_disabled_value = !/*sequencerAvailable*/
+      ctx[4];
+      option1.__value = "custom";
+      set_input_value(option1, option1.__value);
+      attr(div0, "class", "fx-field-row");
+      attr(label1, "class", "fx-field-label");
+      attr(input0, "type", "number");
+      attr(input0, "min", "0.05");
+      attr(input0, "max", "2");
+      attr(input0, "step", "0.05");
+      input0.value = input0_value_value = /*fxConfig*/
+      ctx[2].casing.scale ?? 0.3;
+      attr(div1, "class", "fx-field-row");
+      attr(label2, "class", "fx-field-label");
+      attr(input1, "type", "range");
+      attr(input1, "min", "0");
+      attr(input1, "max", "2");
+      attr(input1, "step", "0.1");
+      input1.value = input1_value_value = /*fxConfig*/
+      ctx[2].casing.scatter ?? 0.5;
+      attr(span0, "class", "fx-sound-volume-label");
+      attr(div2, "class", "fx-field-row");
+      attr(label3, "class", "fx-field-label");
+      option2.__value = "right";
+      set_input_value(option2, option2.__value);
+      option3.__value = "left";
+      set_input_value(option3, option3.__value);
+      option4.__value = "up";
+      set_input_value(option4, option4.__value);
+      option5.__value = "random";
+      set_input_value(option5, option5.__value);
+      attr(div3, "class", "fx-field-row");
+      attr(input2, "type", "checkbox");
+      input2.checked = input2_checked_value = /*fxConfig*/
+      ctx[2].casing.persist ?? true;
+      attr(label4, "class", "fx-checkbox-field");
+    },
+    m(target, anchor) {
+      insert(target, div0, anchor);
+      append(div0, label0);
+      append(div0, t1);
+      append(div0, select0);
+      append(select0, option0);
+      append(option0, t2);
+      append(option0, t3);
+      append(option0, t4);
+      append(select0, option1);
+      select_option(
+        select0,
+        /*fxConfig*/
+        ctx[2].casing.source ?? "sequencer"
+      );
+      insert(target, t6, anchor);
+      if (if_block0) if_block0.m(target, anchor);
+      insert(target, t7, anchor);
+      if (if_block1) if_block1.m(target, anchor);
+      insert(target, t8, anchor);
+      insert(target, div1, anchor);
+      append(div1, label1);
+      append(div1, t10);
+      append(div1, input0);
+      insert(target, t11, anchor);
+      insert(target, div2, anchor);
+      append(div2, label2);
+      append(div2, t13);
+      append(div2, input1);
+      append(div2, t14);
+      append(div2, span0);
+      append(span0, t15);
+      append(span0, t16);
+      insert(target, t17, anchor);
+      insert(target, div3, anchor);
+      append(div3, label3);
+      append(div3, t19);
+      append(div3, select1);
+      append(select1, option2);
+      append(select1, option3);
+      append(select1, option4);
+      append(select1, option5);
+      select_option(
+        select1,
+        /*fxConfig*/
+        ctx[2].casing.ejectDirection ?? "right"
+      );
+      insert(target, t24, anchor);
+      insert(target, label4, anchor);
+      append(label4, input2);
+      append(label4, t25);
+      append(label4, span1);
+      insert(target, t27, anchor);
+      if (if_block2) if_block2.m(target, anchor);
+      insert(target, if_block2_anchor, anchor);
+      if (!mounted) {
+        dispose = [
+          listen(
+            select0,
+            "change",
+            /*change_handler_7*/
+            ctx[48]
+          ),
+          listen(
+            input0,
+            "change",
+            /*change_handler_9*/
+            ctx[51]
+          ),
+          listen(
+            input1,
+            "input",
+            /*input_handler_2*/
+            ctx[52]
+          ),
+          listen(
+            select1,
+            "change",
+            /*change_handler_10*/
+            ctx[53]
+          ),
+          listen(
+            input2,
+            "change",
+            /*change_handler_11*/
+            ctx[54]
+          )
+        ];
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*sequencerAvailable*/
+      16 && t3_value !== (t3_value = !/*sequencerAvailable*/
+      ctx2[4] ? " (not installed)" : "")) set_data(t3, t3_value);
+      if (dirty[0] & /*sequencerAvailable*/
+      16 && option0_disabled_value !== (option0_disabled_value = !/*sequencerAvailable*/
+      ctx2[4])) {
+        option0.disabled = option0_disabled_value;
+      }
+      if (dirty[0] & /*fxConfig*/
+      4 && select0_value_value !== (select0_value_value = /*fxConfig*/
+      ctx2[2].casing.source ?? "sequencer")) {
+        select_option(
+          select0,
+          /*fxConfig*/
+          ctx2[2].casing.source ?? "sequencer"
+        );
+      }
+      if (
+        /*fxConfig*/
+        ctx2[2].casing.source === "sequencer"
+      ) {
+        if (if_block0) {
+          if_block0.p(ctx2, dirty);
+        } else {
+          if_block0 = create_if_block_5$1(ctx2);
+          if_block0.c();
+          if_block0.m(t7.parentNode, t7);
+        }
+      } else if (if_block0) {
+        if_block0.d(1);
+        if_block0 = null;
+      }
+      if (
+        /*fxConfig*/
+        ctx2[2].casing.source === "custom"
+      ) {
+        if (if_block1) {
+          if_block1.p(ctx2, dirty);
+        } else {
+          if_block1 = create_if_block_4$1(ctx2);
+          if_block1.c();
+          if_block1.m(t8.parentNode, t8);
+        }
+      } else if (if_block1) {
+        if_block1.d(1);
+        if_block1 = null;
+      }
+      if (dirty[0] & /*fxConfig*/
+      4 && input0_value_value !== (input0_value_value = /*fxConfig*/
+      ctx2[2].casing.scale ?? 0.3) && input0.value !== input0_value_value) {
+        input0.value = input0_value_value;
+      }
+      if (dirty[0] & /*fxConfig*/
+      4 && input1_value_value !== (input1_value_value = /*fxConfig*/
+      ctx2[2].casing.scatter ?? 0.5)) {
+        input1.value = input1_value_value;
+      }
+      if (dirty[0] & /*fxConfig*/
+      4 && t15_value !== (t15_value = Math.round(
+        /*fxConfig*/
+        (ctx2[2].casing.scatter ?? 0.5) * 100
+      ) + "")) set_data(t15, t15_value);
+      if (dirty[0] & /*fxConfig*/
+      4 && select1_value_value !== (select1_value_value = /*fxConfig*/
+      ctx2[2].casing.ejectDirection ?? "right")) {
+        select_option(
+          select1,
+          /*fxConfig*/
+          ctx2[2].casing.ejectDirection ?? "right"
+        );
+      }
+      if (dirty[0] & /*fxConfig*/
+      4 && input2_checked_value !== (input2_checked_value = /*fxConfig*/
+      ctx2[2].casing.persist ?? true)) {
+        input2.checked = input2_checked_value;
+      }
+      if (
+        /*fxConfig*/
+        ctx2[2].casing.persist
+      ) {
+        if (if_block2) {
+          if_block2.p(ctx2, dirty);
+        } else {
+          if_block2 = create_if_block_3$1(ctx2);
+          if_block2.c();
+          if_block2.m(if_block2_anchor.parentNode, if_block2_anchor);
+        }
+      } else if (if_block2) {
+        if_block2.d(1);
+        if_block2 = null;
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div0);
+        detach(t6);
+        detach(t7);
+        detach(t8);
+        detach(div1);
+        detach(t11);
+        detach(div2);
+        detach(t17);
+        detach(div3);
+        detach(t24);
+        detach(label4);
+        detach(t27);
+        detach(if_block2_anchor);
+      }
+      if (if_block0) if_block0.d(detaching);
+      if (if_block1) if_block1.d(detaching);
+      if (if_block2) if_block2.d(detaching);
+      mounted = false;
+      run_all(dispose);
+    }
+  };
+}
+function create_if_block_5$1(ctx) {
+  let div;
+  let label;
+  let t1;
+  let input;
+  let input_value_value;
+  let mounted;
+  let dispose;
+  return {
+    c() {
+      div = element("div");
+      label = element("label");
+      label.textContent = "Path";
+      t1 = space();
+      input = element("input");
+      attr(label, "class", "fx-field-label");
+      attr(input, "type", "text");
+      input.value = input_value_value = /*fxConfig*/
+      ctx[2].casing.sequencerPath ?? "";
+      attr(input, "placeholder", "e.g. jb2a.bullet.shell");
+      attr(div, "class", "fx-field-row");
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      append(div, label);
+      append(div, t1);
+      append(div, input);
+      if (!mounted) {
+        dispose = listen(
+          input,
+          "change",
+          /*change_handler_8*/
+          ctx[49]
+        );
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*fxConfig*/
+      4 && input_value_value !== (input_value_value = /*fxConfig*/
+      ctx2[2].casing.sequencerPath ?? "") && input.value !== input_value_value) {
+        input.value = input_value_value;
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+      }
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_if_block_4$1(ctx) {
+  let div1;
+  let label;
+  let t1;
+  let div0;
+  let input;
+  let input_value_value;
+  let t2;
+  let button;
+  let mounted;
+  let dispose;
+  return {
+    c() {
+      div1 = element("div");
+      label = element("label");
+      label.textContent = "File";
+      t1 = space();
+      div0 = element("div");
+      input = element("input");
+      t2 = space();
+      button = element("button");
+      button.innerHTML = `<i class="fas fa-file"></i>`;
+      attr(label, "class", "fx-field-label");
+      attr(input, "type", "text");
+      input.value = input_value_value = /*fxConfig*/
+      ctx[2].casing.customFile ?? "";
+      input.readOnly = true;
+      attr(input, "placeholder", "Select a .webm file");
+      attr(button, "class", "fx-btn-small");
+      attr(div0, "class", "fx-file-picker-row");
+      attr(div1, "class", "fx-field-row");
+    },
+    m(target, anchor) {
+      insert(target, div1, anchor);
+      append(div1, label);
+      append(div1, t1);
+      append(div1, div0);
+      append(div0, input);
+      append(div0, t2);
+      append(div0, button);
+      if (!mounted) {
+        dispose = listen(
+          button,
+          "click",
+          /*click_handler_10*/
+          ctx[50]
+        );
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*fxConfig*/
+      4 && input_value_value !== (input_value_value = /*fxConfig*/
+      ctx2[2].casing.customFile ?? "") && input.value !== input_value_value) {
+        input.value = input_value_value;
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div1);
+      }
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_if_block_3$1(ctx) {
+  let div;
+  let label;
+  let t1;
+  let input;
+  let input_value_value;
+  let t2;
+  let span;
+  let t3_value = (
+    /*fxConfig*/
+    ctx[2].casing.duration ? `${/*fxConfig*/
+    ctx[2].casing.duration}s` : "permanent"
+  );
+  let t3;
+  let t4;
+  let p;
+  let mounted;
+  let dispose;
+  return {
+    c() {
+      div = element("div");
+      label = element("label");
+      label.textContent = "Duration";
+      t1 = space();
+      input = element("input");
+      t2 = space();
+      span = element("span");
+      t3 = text(t3_value);
+      t4 = space();
+      p = element("p");
+      p.innerHTML = `<i class="fas fa-info-circle"></i> 0 = permanent (clear via Sequencer Effect Manager)`;
+      attr(label, "class", "fx-field-label");
+      attr(input, "type", "number");
+      attr(input, "min", "0");
+      attr(input, "max", "600");
+      attr(input, "step", "5");
+      input.value = input_value_value = /*fxConfig*/
+      ctx[2].casing.duration ?? 0;
+      attr(span, "class", "fx-hint-inline");
+      attr(div, "class", "fx-field-row");
+      attr(p, "class", "fx-hint");
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      append(div, label);
+      append(div, t1);
+      append(div, input);
+      append(div, t2);
+      append(div, span);
+      append(span, t3);
+      insert(target, t4, anchor);
+      insert(target, p, anchor);
+      if (!mounted) {
+        dispose = listen(
+          input,
+          "change",
+          /*change_handler_12*/
+          ctx[55]
+        );
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*fxConfig*/
+      4 && input_value_value !== (input_value_value = /*fxConfig*/
+      ctx2[2].casing.duration ?? 0) && input.value !== input_value_value) {
+        input.value = input_value_value;
+      }
+      if (dirty[0] & /*fxConfig*/
+      4 && t3_value !== (t3_value = /*fxConfig*/
+      ctx2[2].casing.duration ? `${/*fxConfig*/
+      ctx2[2].casing.duration}s` : "permanent")) set_data(t3, t3_value);
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+        detach(t4);
+        detach(p);
+      }
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_if_block_1$1(ctx) {
+  let section;
+  let t0;
+  let p;
+  let each_value = ensure_array_like(
+    /*presetCategories*/
+    ctx[22]
+  );
+  let each_blocks = [];
+  for (let i = 0; i < each_value.length; i += 1) {
+    each_blocks[i] = create_each_block$1(get_each_context$1(ctx, each_value, i));
+  }
+  return {
+    c() {
+      section = element("section");
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        each_blocks[i].c();
+      }
+      t0 = space();
+      p = element("p");
+      p.innerHTML = `<i class="fas fa-info-circle"></i> Presets set effect types and rate of fire. Your sounds are preserved.`;
+      attr(p, "class", "fx-hint");
+      attr(section, "class", "fx-section fx-presets-panel");
+    },
+    m(target, anchor) {
+      insert(target, section, anchor);
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        if (each_blocks[i]) {
+          each_blocks[i].m(section, null);
+        }
+      }
+      append(section, t0);
+      append(section, p);
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*presetCategories, applyPreset*/
+      12582912) {
+        each_value = ensure_array_like(
+          /*presetCategories*/
+          ctx2[22]
+        );
+        let i;
+        for (i = 0; i < each_value.length; i += 1) {
+          const child_ctx = get_each_context$1(ctx2, each_value, i);
+          if (each_blocks[i]) {
+            each_blocks[i].p(child_ctx, dirty);
+          } else {
+            each_blocks[i] = create_each_block$1(child_ctx);
+            each_blocks[i].c();
+            each_blocks[i].m(section, t0);
+          }
+        }
+        for (; i < each_blocks.length; i += 1) {
+          each_blocks[i].d(1);
+        }
+        each_blocks.length = each_value.length;
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(section);
+      }
+      destroy_each(each_blocks, detaching);
+    }
+  };
+}
+function create_each_block_1$1(ctx) {
+  let button;
+  let i;
+  let t0;
+  let span;
+  let mounted;
+  let dispose;
+  function click_handler_12() {
+    return (
+      /*click_handler_12*/
+      ctx[57](
+        /*preset*/
+        ctx[65]
+      )
+    );
+  }
+  return {
+    c() {
+      button = element("button");
+      i = element("i");
+      t0 = space();
+      span = element("span");
+      span.textContent = `${/*preset*/
+      ctx[65].name}`;
+      attr(i, "class", "fas " + /*preset*/
+      ctx[65].icon);
+      attr(button, "class", "fx-preset-btn");
+      attr(
+        button,
+        "title",
+        /*preset*/
+        ctx[65].description
+      );
+    },
+    m(target, anchor) {
+      insert(target, button, anchor);
+      append(button, i);
+      append(button, t0);
+      append(button, span);
+      if (!mounted) {
+        dispose = listen(button, "click", click_handler_12);
+        mounted = true;
+      }
+    },
+    p(new_ctx, dirty) {
+      ctx = new_ctx;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(button);
+      }
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_each_block$1(ctx) {
+  let div1;
+  let h5;
+  let t1;
+  let div0;
+  let each_value_1 = ensure_array_like(getPresetsByCategory(
+    /*cat*/
+    ctx[62]
+  ));
+  let each_blocks = [];
+  for (let i = 0; i < each_value_1.length; i += 1) {
+    each_blocks[i] = create_each_block_1$1(get_each_context_1$1(ctx, each_value_1, i));
+  }
+  return {
+    c() {
+      div1 = element("div");
+      h5 = element("h5");
+      h5.textContent = `${/*cat*/
+      ctx[62]}`;
+      t1 = space();
+      div0 = element("div");
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        each_blocks[i].c();
+      }
+      attr(h5, "class", "fx-preset-category-title");
+      attr(div0, "class", "fx-preset-grid");
+      attr(div1, "class", "fx-preset-category");
+    },
+    m(target, anchor) {
+      insert(target, div1, anchor);
+      append(div1, h5);
+      append(div1, t1);
+      append(div1, div0);
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        if (each_blocks[i]) {
+          each_blocks[i].m(div0, null);
+        }
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*presetCategories, applyPreset*/
+      12582912) {
+        each_value_1 = ensure_array_like(getPresetsByCategory(
+          /*cat*/
+          ctx2[62]
+        ));
+        let i;
+        for (i = 0; i < each_value_1.length; i += 1) {
+          const child_ctx = get_each_context_1$1(ctx2, each_value_1, i);
+          if (each_blocks[i]) {
+            each_blocks[i].p(child_ctx, dirty);
+          } else {
+            each_blocks[i] = create_each_block_1$1(child_ctx);
+            each_blocks[i].c();
+            each_blocks[i].m(div0, null);
+          }
+        }
+        for (; i < each_blocks.length; i += 1) {
+          each_blocks[i].d(1);
+        }
+        each_blocks.length = each_value_1.length;
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div1);
+      }
+      destroy_each(each_blocks, detaching);
+    }
+  };
+}
+function create_default_slot$3(ctx) {
+  let main;
+  let section;
+  let label;
+  let span;
+  let t1;
+  let button;
+  let i;
+  let button_title_value;
+  let t2;
+  let current;
+  let mounted;
+  let dispose;
+  let if_block = (
+    /*fxConfig*/
+    ctx[2].enabled && create_if_block$2(ctx)
+  );
+  return {
+    c() {
+      main = element("main");
+      section = element("section");
+      label = element("label");
+      span = element("span");
+      span.textContent = "Enable FX";
+      t1 = space();
+      button = element("button");
+      i = element("i");
+      t2 = space();
+      if (if_block) if_block.c();
+      attr(span, "class", "fx-toggle-label");
+      attr(i, "class", "fas");
+      toggle_class(
+        i,
+        "fa-toggle-on",
+        /*fxConfig*/
+        ctx[2].enabled
+      );
+      toggle_class(i, "fa-toggle-off", !/*fxConfig*/
+      ctx[2].enabled);
+      attr(button, "class", "fx-toggle-btn");
+      attr(button, "title", button_title_value = /*fxConfig*/
+      ctx[2].enabled ? "Disable FX" : "Enable FX");
+      toggle_class(
+        button,
+        "active",
+        /*fxConfig*/
+        ctx[2].enabled
+      );
+      attr(label, "class", "fx-toggle-row");
+      attr(section, "class", "fx-section fx-enable");
+      attr(main, "class", "weapon-fx-shell");
+    },
+    m(target, anchor) {
+      insert(target, main, anchor);
+      append(main, section);
+      append(section, label);
+      append(label, span);
+      append(label, t1);
+      append(label, button);
+      append(button, i);
+      append(main, t2);
+      if (if_block) if_block.m(main, null);
+      current = true;
+      if (!mounted) {
+        dispose = listen(
+          button,
+          "click",
+          /*toggleEnabled*/
+          ctx[6]
+        );
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (!current || dirty[0] & /*fxConfig*/
+      4) {
+        toggle_class(
+          i,
+          "fa-toggle-on",
+          /*fxConfig*/
+          ctx2[2].enabled
+        );
+      }
+      if (!current || dirty[0] & /*fxConfig*/
+      4) {
+        toggle_class(i, "fa-toggle-off", !/*fxConfig*/
+        ctx2[2].enabled);
+      }
+      if (!current || dirty[0] & /*fxConfig*/
+      4 && button_title_value !== (button_title_value = /*fxConfig*/
+      ctx2[2].enabled ? "Disable FX" : "Enable FX")) {
+        attr(button, "title", button_title_value);
+      }
+      if (!current || dirty[0] & /*fxConfig*/
+      4) {
+        toggle_class(
+          button,
+          "active",
+          /*fxConfig*/
+          ctx2[2].enabled
+        );
+      }
+      if (
+        /*fxConfig*/
+        ctx2[2].enabled
+      ) {
+        if (if_block) {
+          if_block.p(ctx2, dirty);
+          if (dirty[0] & /*fxConfig*/
+          4) {
+            transition_in(if_block, 1);
+          }
+        } else {
+          if_block = create_if_block$2(ctx2);
+          if_block.c();
+          transition_in(if_block, 1);
+          if_block.m(main, null);
+        }
+      } else if (if_block) {
+        group_outros();
+        transition_out(if_block, 1, 1, () => {
+          if_block = null;
+        });
+        check_outros();
+      }
+    },
+    i(local) {
+      if (current) return;
+      transition_in(if_block);
+      current = true;
+    },
+    o(local) {
+      transition_out(if_block);
+      current = false;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(main);
+      }
+      if (if_block) if_block.d();
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_fragment$3(ctx) {
+  let applicationshell;
+  let updating_elementRoot;
+  let current;
+  function applicationshell_elementRoot_binding(value) {
+    ctx[58](value);
+  }
+  let applicationshell_props = {
+    $$slots: { default: [create_default_slot$3] },
+    $$scope: { ctx }
+  };
+  if (
+    /*elementRoot*/
+    ctx[0] !== void 0
+  ) {
+    applicationshell_props.elementRoot = /*elementRoot*/
+    ctx[0];
+  }
+  applicationshell = new ApplicationShell({ props: applicationshell_props });
+  binding_callbacks.push(() => bind(applicationshell, "elementRoot", applicationshell_elementRoot_binding));
+  return {
+    c() {
+      create_component(applicationshell.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(applicationshell, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const applicationshell_changes = {};
+      if (dirty[0] & /*showPresets, fxConfig, sequencerAvailable*/
+      28 | dirty[2] & /*$$scope*/
+      4096) {
+        applicationshell_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      if (!updating_elementRoot && dirty[0] & /*elementRoot*/
+      1) {
+        updating_elementRoot = true;
+        applicationshell_changes.elementRoot = /*elementRoot*/
+        ctx2[0];
+        add_flush_callback(() => updating_elementRoot = false);
+      }
+      applicationshell.$set(applicationshell_changes);
+    },
+    i(local) {
+      if (current) return;
+      transition_in(applicationshell.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(applicationshell.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(applicationshell, detaching);
+    }
+  };
+}
+function instance$3($$self, $$props, $$invalidate) {
+  let doc;
+  let sequencerAvailable;
+  let $tjsDoc, $$unsubscribe_tjsDoc = noop, $$subscribe_tjsDoc = () => ($$unsubscribe_tjsDoc(), $$unsubscribe_tjsDoc = subscribe(tjsDoc, ($$value) => $$invalidate(25, $tjsDoc = $$value)), tjsDoc);
+  $$self.$$.on_destroy.push(() => $$unsubscribe_tjsDoc());
+  let { elementRoot = void 0 } = $$props;
+  let { tjsDoc = null } = $$props;
+  $$subscribe_tjsDoc();
+  const external = getContext("#external");
+  external?.application;
+  const DEFAULT_WEAPON_FX2 = {
+    enabled: false,
+    fxType: "ranged",
+    sounds: [],
+    soundMode: "random",
+    jam: {
+      sound: { path: "", volume: 0.8 },
+      catastrophicSound: { path: "", volume: 1 },
+      catastrophicEffect: {
+        enabled: false,
+        source: "sequencer",
+        sequencerPath: "",
+        customFile: "",
+        scale: 1
+      }
+    },
+    rateOfFire: {
+      mode: "single",
+      burstCount: 3,
+      autoCount: 5,
+      delayBetweenShots: 100,
+      randomizeDelay: true
+    },
+    projectile: {
+      enabled: false,
+      source: "sequencer",
+      sequencerPath: "",
+      customFile: "",
+      builtinType: "tracer",
+      travelMode: "beam",
+      color: "#ffaa00",
+      scale: 1,
+      speed: 1,
+      scatter: 0.3,
+      randomizeMirrorY: false
+    },
+    impact: {
+      enabled: false,
+      source: "sequencer",
+      sequencerPath: "",
+      customFile: "",
+      builtinType: "flash",
+      color: "#ff4400",
+      scale: 0.5,
+      randomOffset: 0.3
+    },
+    muzzle: {
+      enabled: false,
+      source: "sequencer",
+      sequencerPath: "",
+      customFile: "",
+      builtinType: "flash",
+      color: "#ffff00",
+      scale: 0.5
+    },
+    casing: {
+      enabled: false,
+      source: "sequencer",
+      sequencerPath: "",
+      customFile: "",
+      scale: 0.3,
+      persist: true,
+      duration: 0,
+      scatter: 0.5,
+      ejectDirection: "right"
+    }
+  };
+  let fxConfig = { ...DEFAULT_WEAPON_FX2 };
+  async function saveConfig(config) {
+    if (!doc) return;
+    await doc.setFlag(MODULE_ID, "weaponFx", config);
+  }
+  async function toggleEnabled() {
+    const updated = { ...fxConfig, enabled: !fxConfig.enabled };
+    await saveConfig(updated);
+  }
+  const FX_TYPES = [
+    {
+      value: "ranged",
+      label: "Ranged",
+      icon: "fa-crosshairs"
+    },
+    {
+      value: "melee",
+      label: "Melee",
+      icon: "fa-sword"
+    },
+    {
+      value: "magic",
+      label: "Magic",
+      icon: "fa-wand-sparkles"
+    },
+    {
+      value: "thrown",
+      label: "Thrown",
+      icon: "fa-hand-fist"
+    },
+    {
+      value: "custom",
+      label: "Custom",
+      icon: "fa-gear"
+    }
+  ];
+  async function setFxType(type) {
+    await saveConfig({ ...fxConfig, fxType: type });
+  }
+  const ROF_MODES = [
+    {
+      value: "single",
+      label: "Single",
+      hint: "One shot per use"
+    },
+    {
+      value: "semi",
+      label: "Semi",
+      hint: "One shot per use (semi-auto flavor)"
+    },
+    {
+      value: "burst",
+      label: "Burst",
+      hint: "Multiple shots in quick succession"
+    },
+    {
+      value: "auto",
+      label: "Auto",
+      hint: "Sustained automatic fire"
+    }
+  ];
+  async function setRofMode(mode) {
+    await saveConfig({
+      ...fxConfig,
+      rateOfFire: { ...fxConfig.rateOfFire, mode }
+    });
+  }
+  async function setRofField(field, value) {
+    const num = Number(value);
+    if (isNaN(num)) return;
+    await saveConfig({
+      ...fxConfig,
+      rateOfFire: { ...fxConfig.rateOfFire, [field]: num }
+    });
+  }
+  async function toggleRofRandomize() {
+    await saveConfig({
+      ...fxConfig,
+      rateOfFire: {
+        ...fxConfig.rateOfFire,
+        randomizeDelay: !fxConfig.rateOfFire.randomizeDelay
+      }
+    });
+  }
+  async function handleSoundsChanged(event) {
+    await saveConfig({ ...fxConfig, sounds: event.detail.sounds });
+  }
+  async function handleSoundModeChanged(event) {
+    await saveConfig({
+      ...fxConfig,
+      soundMode: event.detail.mode
+    });
+  }
+  async function handleEffectChanged(section, event) {
+    await saveConfig({ ...fxConfig, [section]: event.detail });
+  }
+  function testSound() {
+    if (!fxConfig.sounds.length) {
+      ui.notifications.warn("No sounds configured.");
+      return;
+    }
+    const sound = fxConfig.sounds[Math.floor(Math.random() * fxConfig.sounds.length)];
+    const audio = new Audio(sound.path);
+    audio.volume = sound.volume ?? 0.8;
+    audio.play().catch((err) => console.warn("[ARS] WeaponFX test sound failed:", err));
+  }
+  function testEffect() {
+    if (!doc) return;
+    playWeaponFx(doc, { soundOnly: false }).catch((err) => {
+      console.warn("[ARS] WeaponFX test effect failed:", err);
+      ui.notifications.warn("Test effect failed. Check console for details.");
+    });
+  }
+  async function copyFxConfig() {
+    const configToCopy = { ...fxConfig };
+    delete configToCopy.enabled;
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(configToCopy, null, 2));
+      ui.notifications.info("FX config copied to clipboard");
+    } catch {
+      WeaponFxShell._copiedConfig = configToCopy;
+      ui.notifications.info("FX config copied");
+    }
+  }
+  async function pasteFxConfig() {
+    let pastedConfig;
+    try {
+      const text2 = await navigator.clipboard.readText();
+      pastedConfig = JSON.parse(text2);
+    } catch {
+      pastedConfig = WeaponFxShell._copiedConfig;
+    }
+    if (!pastedConfig || typeof pastedConfig !== "object") {
+      ui.notifications.warn("No valid FX config in clipboard");
+      return;
+    }
+    const merged = {
+      ...fxConfig,
+      ...pastedConfig,
+      enabled: fxConfig.enabled
+    };
+    await saveConfig(merged);
+    ui.notifications.info("FX config pasted");
+  }
+  async function exportFx() {
+    if (!doc) return;
+    const data = exportWeaponFx(doc);
+    if (!data) {
+      ui.notifications.warn("No weapon FX configured to export");
+      return;
+    }
+    const copied = await copyFxToClipboard(data);
+    if (copied) {
+      ui.notifications.info("Weapon FX exported to clipboard");
+    } else {
+      downloadFxAsFile(data, `weapon-fx-${doc.name}.json`);
+      ui.notifications.info("Weapon FX downloaded as file");
+    }
+  }
+  async function importFx() {
+    let jsonText;
+    try {
+      jsonText = await navigator.clipboard.readText();
+    } catch {
+      ui.notifications.warn("Cannot read clipboard. Try pasting directly.");
+      return;
+    }
+    if (!jsonText?.trim()) {
+      ui.notifications.warn("Clipboard is empty");
+      return;
+    }
+    const result = await importFxToItem(doc, jsonText);
+    if (result.success) {
+      ui.notifications.info(`Imported ${result.type === "allFx" ? "all FX" : "weapon FX"} config`);
+    } else {
+      ui.notifications.warn(`Import failed: ${result.error}`);
+    }
+  }
+  let showPresets = false;
+  const presetCategories = getPresetCategories();
+  async function applyPreset(preset) {
+    const pc = preset.config;
+    const merged = {
+      ...fxConfig,
+      fxType: pc.fxType ?? fxConfig.fxType,
+      rateOfFire: {
+        ...fxConfig.rateOfFire,
+        ...pc.rateOfFire ?? {}
+      },
+      projectile: {
+        ...fxConfig.projectile,
+        ...pc.projectile ?? {}
+      },
+      impact: { ...fxConfig.impact, ...pc.impact ?? {} },
+      muzzle: { ...fxConfig.muzzle, ...pc.muzzle ?? {} },
+      casing: { ...fxConfig.casing, ...pc.casing ?? {} }
+    };
+    merged.sounds = fxConfig.sounds;
+    merged.soundMode = fxConfig.soundMode;
+    await saveConfig(merged);
+    $$invalidate(3, showPresets = false);
+    ui.notifications.info(`Applied preset: ${preset.name}`);
+  }
+  const click_handler = (ft) => setFxType(ft.value);
+  const click_handler_1 = (rm) => setRofMode(rm.value);
+  const change_handler = (e) => setRofField("burstCount", e.target.value);
+  const change_handler_1 = (e) => setRofField("autoCount", e.target.value);
+  const change_handler_2 = (e) => setRofField("delayBetweenShots", e.target.value);
+  const click_handler_2 = () => {
+    openAudioPicker(
+      (path) => {
+        if (path) saveConfig({
+          ...fxConfig,
+          jam: {
+            ...fxConfig.jam,
+            sound: { ...fxConfig.jam?.sound, path }
+          }
+        });
+      },
+      fxConfig.jam?.sound?.path
+    );
+  };
+  const click_handler_3 = () => saveConfig({
+    ...fxConfig,
+    jam: {
+      ...fxConfig.jam,
+      sound: { ...fxConfig.jam?.sound, path: "" }
+    }
+  });
+  const input_handler = (e) => saveConfig({
+    ...fxConfig,
+    jam: {
+      ...fxConfig.jam,
+      sound: {
+        ...fxConfig.jam?.sound,
+        volume: Number(e.target.value)
+      }
+    }
+  });
+  const click_handler_4 = () => {
+    const audio = new Audio(fxConfig.jam.sound.path);
+    audio.volume = fxConfig.jam.sound.volume ?? 0.8;
+    audio.play().catch(() => {
+    });
+  };
+  const click_handler_5 = () => {
+    openAudioPicker(
+      (path) => {
+        if (path) saveConfig({
+          ...fxConfig,
+          jam: {
+            ...fxConfig.jam,
+            catastrophicSound: { ...fxConfig.jam?.catastrophicSound, path }
+          }
+        });
+      },
+      fxConfig.jam?.catastrophicSound?.path
+    );
+  };
+  const click_handler_6 = () => saveConfig({
+    ...fxConfig,
+    jam: {
+      ...fxConfig.jam,
+      catastrophicSound: {
+        ...fxConfig.jam?.catastrophicSound,
+        path: ""
+      }
+    }
+  });
+  const input_handler_1 = (e) => saveConfig({
+    ...fxConfig,
+    jam: {
+      ...fxConfig.jam,
+      catastrophicSound: {
+        ...fxConfig.jam?.catastrophicSound,
+        volume: Number(e.target.value)
+      }
+    }
+  });
+  const click_handler_7 = () => {
+    const audio = new Audio(fxConfig.jam.catastrophicSound.path);
+    audio.volume = fxConfig.jam.catastrophicSound.volume ?? 1;
+    audio.play().catch(() => {
+    });
+  };
+  const change_handler_3 = () => saveConfig({
+    ...fxConfig,
+    jam: {
+      ...fxConfig.jam,
+      catastrophicEffect: {
+        ...fxConfig.jam?.catastrophicEffect,
+        enabled: !(fxConfig.jam?.catastrophicEffect?.enabled ?? false)
+      }
+    }
+  });
+  const change_handler_4 = (e) => saveConfig({
+    ...fxConfig,
+    jam: {
+      ...fxConfig.jam,
+      catastrophicEffect: {
+        ...fxConfig.jam?.catastrophicEffect,
+        source: e.target.value
+      }
+    }
+  });
+  const change_handler_5 = (e) => saveConfig({
+    ...fxConfig,
+    jam: {
+      ...fxConfig.jam,
+      catastrophicEffect: {
+        ...fxConfig.jam?.catastrophicEffect,
+        sequencerPath: e.target.value
+      }
+    }
+  });
+  const click_handler_8 = () => {
+    const picker = new FilePicker({
+      type: "imagevideo",
+      current: fxConfig.jam?.catastrophicEffect?.customFile || "",
+      callback: (path) => {
+        if (path) saveConfig({
+          ...fxConfig,
+          jam: {
+            ...fxConfig.jam,
+            catastrophicEffect: {
+              ...fxConfig.jam?.catastrophicEffect,
+              customFile: path
+            }
+          }
+        });
+      }
+    });
+    picker.render(true);
+  };
+  const change_handler_6 = (e) => {
+    const n = Number(e.target.value);
+    if (!isNaN(n)) saveConfig({
+      ...fxConfig,
+      jam: {
+        ...fxConfig.jam,
+        catastrophicEffect: {
+          ...fxConfig.jam?.catastrophicEffect,
+          scale: n
+        }
+      }
+    });
+  };
+  const changed_handler = (e) => handleEffectChanged("projectile", e);
+  const changed_handler_1 = (e) => handleEffectChanged("muzzle", e);
+  const changed_handler_2 = (e) => handleEffectChanged("impact", e);
+  const click_handler_9 = () => handleEffectChanged("casing", {
+    detail: {
+      ...fxConfig.casing,
+      enabled: !fxConfig.casing?.enabled
+    }
+  });
+  const change_handler_7 = (e) => handleEffectChanged("casing", {
+    detail: {
+      ...fxConfig.casing,
+      source: e.target.value
+    }
+  });
+  const change_handler_8 = (e) => handleEffectChanged("casing", {
+    detail: {
+      ...fxConfig.casing,
+      sequencerPath: e.target.value
+    }
+  });
+  const click_handler_10 = () => {
+    const picker = new FilePicker({
+      type: "imagevideo",
+      current: fxConfig.casing.customFile || "",
+      callback: (path) => {
+        if (path) handleEffectChanged("casing", {
+          detail: { ...fxConfig.casing, customFile: path }
+        });
+      }
+    });
+    picker.render(true);
+  };
+  const change_handler_9 = (e) => {
+    const n = Number(e.target.value);
+    if (!isNaN(n)) handleEffectChanged("casing", { detail: { ...fxConfig.casing, scale: n } });
+  };
+  const input_handler_2 = (e) => {
+    const n = Number(e.target.value);
+    if (!isNaN(n)) handleEffectChanged("casing", {
+      detail: { ...fxConfig.casing, scatter: n }
+    });
+  };
+  const change_handler_10 = (e) => handleEffectChanged("casing", {
+    detail: {
+      ...fxConfig.casing,
+      ejectDirection: e.target.value
+    }
+  });
+  const change_handler_11 = () => handleEffectChanged("casing", {
+    detail: {
+      ...fxConfig.casing,
+      persist: !(fxConfig.casing.persist ?? true)
+    }
+  });
+  const change_handler_12 = (e) => {
+    const n = Number(e.target.value);
+    if (!isNaN(n)) handleEffectChanged("casing", {
+      detail: { ...fxConfig.casing, duration: n }
+    });
+  };
+  const click_handler_11 = () => $$invalidate(3, showPresets = !showPresets);
+  const click_handler_12 = (preset) => applyPreset(preset);
+  function applicationshell_elementRoot_binding(value) {
+    elementRoot = value;
+    $$invalidate(0, elementRoot);
+  }
+  $$self.$$set = ($$props2) => {
+    if ("elementRoot" in $$props2) $$invalidate(0, elementRoot = $$props2.elementRoot);
+    if ("tjsDoc" in $$props2) $$subscribe_tjsDoc($$invalidate(1, tjsDoc = $$props2.tjsDoc));
+  };
+  $$self.$$.update = () => {
+    if ($$self.$$.dirty[0] & /*tjsDoc, $tjsDoc*/
+    33554434) {
+      $$invalidate(24, doc = tjsDoc ? $tjsDoc : null);
+    }
+    if ($$self.$$.dirty[0] & /*doc*/
+    16777216) {
+      if (doc) {
+        const saved = doc.getFlag(MODULE_ID, "weaponFx");
+        $$invalidate(2, fxConfig = saved ? {
+          ...DEFAULT_WEAPON_FX2,
+          ...saved,
+          rateOfFire: {
+            ...DEFAULT_WEAPON_FX2.rateOfFire,
+            ...saved.rateOfFire ?? {}
+          }
+        } : { ...DEFAULT_WEAPON_FX2 });
+      }
+    }
+  };
+  $$invalidate(4, sequencerAvailable = typeof Sequencer !== "undefined" && game.modules?.get("sequencer")?.active === true);
+  return [
+    elementRoot,
+    tjsDoc,
+    fxConfig,
+    showPresets,
+    sequencerAvailable,
+    saveConfig,
+    toggleEnabled,
+    FX_TYPES,
+    setFxType,
+    ROF_MODES,
+    setRofMode,
+    setRofField,
+    toggleRofRandomize,
+    handleSoundsChanged,
+    handleSoundModeChanged,
+    handleEffectChanged,
+    testSound,
+    testEffect,
+    copyFxConfig,
+    pasteFxConfig,
+    exportFx,
+    importFx,
+    presetCategories,
+    applyPreset,
+    doc,
+    $tjsDoc,
+    click_handler,
+    click_handler_1,
+    change_handler,
+    change_handler_1,
+    change_handler_2,
+    click_handler_2,
+    click_handler_3,
+    input_handler,
+    click_handler_4,
+    click_handler_5,
+    click_handler_6,
+    input_handler_1,
+    click_handler_7,
+    change_handler_3,
+    change_handler_4,
+    change_handler_5,
+    click_handler_8,
+    change_handler_6,
+    changed_handler,
+    changed_handler_1,
+    changed_handler_2,
+    click_handler_9,
+    change_handler_7,
+    change_handler_8,
+    click_handler_10,
+    change_handler_9,
+    input_handler_2,
+    change_handler_10,
+    change_handler_11,
+    change_handler_12,
+    click_handler_11,
+    click_handler_12,
+    applicationshell_elementRoot_binding
+  ];
+}
+class WeaponFxShell_1 extends SvelteComponent {
+  constructor(options) {
+    super();
+    init(this, options, instance$3, create_fragment$3, safe_not_equal, { elementRoot: 0, tjsDoc: 1 }, null, [-1, -1, -1]);
+  }
+  get elementRoot() {
+    return this.$$.ctx[0];
+  }
+  set elementRoot(elementRoot) {
+    this.$$set({ elementRoot });
+    flush();
+  }
+  get tjsDoc() {
+    return this.$$.ctx[1];
+  }
+  set tjsDoc(tjsDoc) {
+    this.$$set({ tjsDoc });
+    flush();
+  }
+}
+function create_if_block$1(ctx) {
+  let section0;
+  let div0;
+  let h40;
+  let t1;
+  let button0;
+  let i1;
+  let t2;
+  let t3;
+  let section1;
+  let div1;
+  let h41;
+  let t5;
+  let button1;
+  let i3;
+  let t6;
+  let t7;
+  let section2;
+  let div2;
+  let h42;
+  let t9;
+  let button2;
+  let i5;
+  let t10;
+  let t11;
+  let section3;
+  let div3;
+  let h43;
+  let t13;
+  let button3;
+  let i7;
+  let t14;
+  let t15;
+  let section4;
+  let button4;
+  let t17;
+  let button5;
+  let t19;
+  let button6;
+  let t21;
+  let button7;
+  let mounted;
+  let dispose;
+  let if_block0 = (
+    /*fxConfig*/
+    ctx[2].onHit.enabled && create_if_block_23(ctx)
+  );
+  let if_block1 = (
+    /*fxConfig*/
+    ctx[2].onDeflect.enabled && create_if_block_19(ctx)
+  );
+  let if_block2 = (
+    /*fxConfig*/
+    ctx[2].onPenetrate.enabled && create_if_block_15(ctx)
+  );
+  let if_block3 = (
+    /*fxConfig*/
+    ctx[2].aura.enabled && create_if_block_1(ctx)
+  );
+  return {
+    c() {
+      section0 = element("section");
+      div0 = element("div");
+      h40 = element("h4");
+      h40.innerHTML = `<i class="fas fa-shield-halved"></i> Shield Hit`;
+      t1 = space();
+      button0 = element("button");
+      i1 = element("i");
+      t2 = space();
+      if (if_block0) if_block0.c();
+      t3 = space();
+      section1 = element("section");
+      div1 = element("div");
+      h41 = element("h4");
+      h41.innerHTML = `<i class="fas fa-shield"></i> Armor Deflect`;
+      t5 = space();
+      button1 = element("button");
+      i3 = element("i");
+      t6 = space();
+      if (if_block1) if_block1.c();
+      t7 = space();
+      section2 = element("section");
+      div2 = element("div");
+      h42 = element("h4");
+      h42.innerHTML = `<i class="fas fa-heart-crack"></i> Armor Penetrate`;
+      t9 = space();
+      button2 = element("button");
+      i5 = element("i");
+      t10 = space();
+      if (if_block2) if_block2.c();
+      t11 = space();
+      section3 = element("section");
+      div3 = element("div");
+      h43 = element("h4");
+      h43.innerHTML = `<i class="fas fa-circle-radiation"></i> Shield Aura`;
+      t13 = space();
+      button3 = element("button");
+      i7 = element("i");
+      t14 = space();
+      if (if_block3) if_block3.c();
+      t15 = space();
+      section4 = element("section");
+      button4 = element("button");
+      button4.innerHTML = `<i class="fas fa-copy"></i> Copy`;
+      t17 = space();
+      button5 = element("button");
+      button5.innerHTML = `<i class="fas fa-paste"></i> Paste`;
+      t19 = space();
+      button6 = element("button");
+      button6.innerHTML = `<i class="fas fa-file-export"></i> Export`;
+      t21 = space();
+      button7 = element("button");
+      button7.innerHTML = `<i class="fas fa-file-import"></i> Import`;
+      attr(h40, "class", "fx-section-title");
+      attr(i1, "class", "fas");
+      toggle_class(
+        i1,
+        "fa-toggle-on",
+        /*fxConfig*/
+        ctx[2].onHit.enabled
+      );
+      toggle_class(i1, "fa-toggle-off", !/*fxConfig*/
+      ctx[2].onHit.enabled);
+      attr(button0, "class", "fx-toggle-btn");
+      toggle_class(
+        button0,
+        "active",
+        /*fxConfig*/
+        ctx[2].onHit.enabled
+      );
+      attr(div0, "class", "fx-effect-header");
+      attr(section0, "class", "fx-section");
+      attr(h41, "class", "fx-section-title");
+      attr(i3, "class", "fas");
+      toggle_class(
+        i3,
+        "fa-toggle-on",
+        /*fxConfig*/
+        ctx[2].onDeflect.enabled
+      );
+      toggle_class(i3, "fa-toggle-off", !/*fxConfig*/
+      ctx[2].onDeflect.enabled);
+      attr(button1, "class", "fx-toggle-btn");
+      toggle_class(
+        button1,
+        "active",
+        /*fxConfig*/
+        ctx[2].onDeflect.enabled
+      );
+      attr(div1, "class", "fx-effect-header");
+      attr(section1, "class", "fx-section");
+      attr(h42, "class", "fx-section-title");
+      attr(i5, "class", "fas");
+      toggle_class(
+        i5,
+        "fa-toggle-on",
+        /*fxConfig*/
+        ctx[2].onPenetrate.enabled
+      );
+      toggle_class(i5, "fa-toggle-off", !/*fxConfig*/
+      ctx[2].onPenetrate.enabled);
+      attr(button2, "class", "fx-toggle-btn");
+      toggle_class(
+        button2,
+        "active",
+        /*fxConfig*/
+        ctx[2].onPenetrate.enabled
+      );
+      attr(div2, "class", "fx-effect-header");
+      attr(section2, "class", "fx-section");
+      attr(h43, "class", "fx-section-title");
+      attr(i7, "class", "fas");
+      toggle_class(
+        i7,
+        "fa-toggle-on",
+        /*fxConfig*/
+        ctx[2].aura.enabled
+      );
+      toggle_class(i7, "fa-toggle-off", !/*fxConfig*/
+      ctx[2].aura.enabled);
+      attr(button3, "class", "fx-toggle-btn");
+      toggle_class(
+        button3,
+        "active",
+        /*fxConfig*/
+        ctx[2].aura.enabled
+      );
+      attr(div3, "class", "fx-effect-header");
+      attr(section3, "class", "fx-section");
+      attr(button4, "class", "fx-btn fx-btn-small");
+      attr(button4, "title", "Copy defensive FX config to clipboard");
+      attr(button5, "class", "fx-btn fx-btn-small");
+      attr(button5, "title", "Paste defensive FX config from clipboard");
+      attr(button6, "class", "fx-btn fx-btn-small");
+      attr(button6, "title", "Export defensive FX as portable JSON");
+      attr(button7, "class", "fx-btn fx-btn-small");
+      attr(button7, "title", "Import defensive FX from clipboard JSON");
+      attr(section4, "class", "fx-section fx-actions-row");
+    },
+    m(target, anchor) {
+      insert(target, section0, anchor);
+      append(section0, div0);
+      append(div0, h40);
+      append(div0, t1);
+      append(div0, button0);
+      append(button0, i1);
+      append(section0, t2);
+      if (if_block0) if_block0.m(section0, null);
+      insert(target, t3, anchor);
+      insert(target, section1, anchor);
+      append(section1, div1);
+      append(div1, h41);
+      append(div1, t5);
+      append(div1, button1);
+      append(button1, i3);
+      append(section1, t6);
+      if (if_block1) if_block1.m(section1, null);
+      insert(target, t7, anchor);
+      insert(target, section2, anchor);
+      append(section2, div2);
+      append(div2, h42);
+      append(div2, t9);
+      append(div2, button2);
+      append(button2, i5);
+      append(section2, t10);
+      if (if_block2) if_block2.m(section2, null);
+      insert(target, t11, anchor);
+      insert(target, section3, anchor);
+      append(section3, div3);
+      append(div3, h43);
+      append(div3, t13);
+      append(div3, button3);
+      append(button3, i7);
+      append(section3, t14);
+      if (if_block3) if_block3.m(section3, null);
+      insert(target, t15, anchor);
+      insert(target, section4, anchor);
+      append(section4, button4);
+      append(section4, t17);
+      append(section4, button5);
+      append(section4, t19);
+      append(section4, button6);
+      append(section4, t21);
+      append(section4, button7);
+      if (!mounted) {
+        dispose = [
+          listen(
+            button0,
+            "click",
+            /*click_handler*/
+            ctx[21]
+          ),
+          listen(
+            button1,
+            "click",
+            /*click_handler_4*/
+            ctx[29]
+          ),
+          listen(
+            button2,
+            "click",
+            /*click_handler_8*/
+            ctx[37]
+          ),
+          listen(
+            button3,
+            "click",
+            /*toggleAura*/
+            ctx[9]
+          ),
+          listen(
+            button4,
+            "click",
+            /*copyFxConfig*/
+            ctx[15]
+          ),
+          listen(
+            button5,
+            "click",
+            /*pasteFxConfig*/
+            ctx[16]
+          ),
+          listen(
+            button6,
+            "click",
+            /*exportFx*/
+            ctx[17]
+          ),
+          listen(
+            button7,
+            "click",
+            /*importFx*/
+            ctx[18]
+          )
+        ];
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*fxConfig*/
+      4) {
+        toggle_class(
+          i1,
+          "fa-toggle-on",
+          /*fxConfig*/
+          ctx2[2].onHit.enabled
+        );
+      }
+      if (dirty[0] & /*fxConfig*/
+      4) {
+        toggle_class(i1, "fa-toggle-off", !/*fxConfig*/
+        ctx2[2].onHit.enabled);
+      }
+      if (dirty[0] & /*fxConfig*/
+      4) {
+        toggle_class(
+          button0,
+          "active",
+          /*fxConfig*/
+          ctx2[2].onHit.enabled
+        );
+      }
+      if (
+        /*fxConfig*/
+        ctx2[2].onHit.enabled
+      ) {
+        if (if_block0) {
+          if_block0.p(ctx2, dirty);
+        } else {
+          if_block0 = create_if_block_23(ctx2);
+          if_block0.c();
+          if_block0.m(section0, null);
+        }
+      } else if (if_block0) {
+        if_block0.d(1);
+        if_block0 = null;
+      }
+      if (dirty[0] & /*fxConfig*/
+      4) {
+        toggle_class(
+          i3,
+          "fa-toggle-on",
+          /*fxConfig*/
+          ctx2[2].onDeflect.enabled
+        );
+      }
+      if (dirty[0] & /*fxConfig*/
+      4) {
+        toggle_class(i3, "fa-toggle-off", !/*fxConfig*/
+        ctx2[2].onDeflect.enabled);
+      }
+      if (dirty[0] & /*fxConfig*/
+      4) {
+        toggle_class(
+          button1,
+          "active",
+          /*fxConfig*/
+          ctx2[2].onDeflect.enabled
+        );
+      }
+      if (
+        /*fxConfig*/
+        ctx2[2].onDeflect.enabled
+      ) {
+        if (if_block1) {
+          if_block1.p(ctx2, dirty);
+        } else {
+          if_block1 = create_if_block_19(ctx2);
+          if_block1.c();
+          if_block1.m(section1, null);
+        }
+      } else if (if_block1) {
+        if_block1.d(1);
+        if_block1 = null;
+      }
+      if (dirty[0] & /*fxConfig*/
+      4) {
+        toggle_class(
+          i5,
+          "fa-toggle-on",
+          /*fxConfig*/
+          ctx2[2].onPenetrate.enabled
+        );
+      }
+      if (dirty[0] & /*fxConfig*/
+      4) {
+        toggle_class(i5, "fa-toggle-off", !/*fxConfig*/
+        ctx2[2].onPenetrate.enabled);
+      }
+      if (dirty[0] & /*fxConfig*/
+      4) {
+        toggle_class(
+          button2,
+          "active",
+          /*fxConfig*/
+          ctx2[2].onPenetrate.enabled
+        );
+      }
+      if (
+        /*fxConfig*/
+        ctx2[2].onPenetrate.enabled
+      ) {
+        if (if_block2) {
+          if_block2.p(ctx2, dirty);
+        } else {
+          if_block2 = create_if_block_15(ctx2);
+          if_block2.c();
+          if_block2.m(section2, null);
+        }
+      } else if (if_block2) {
+        if_block2.d(1);
+        if_block2 = null;
+      }
+      if (dirty[0] & /*fxConfig*/
+      4) {
+        toggle_class(
+          i7,
+          "fa-toggle-on",
+          /*fxConfig*/
+          ctx2[2].aura.enabled
+        );
+      }
+      if (dirty[0] & /*fxConfig*/
+      4) {
+        toggle_class(i7, "fa-toggle-off", !/*fxConfig*/
+        ctx2[2].aura.enabled);
+      }
+      if (dirty[0] & /*fxConfig*/
+      4) {
+        toggle_class(
+          button3,
+          "active",
+          /*fxConfig*/
+          ctx2[2].aura.enabled
+        );
+      }
+      if (
+        /*fxConfig*/
+        ctx2[2].aura.enabled
+      ) {
+        if (if_block3) {
+          if_block3.p(ctx2, dirty);
+        } else {
+          if_block3 = create_if_block_1(ctx2);
+          if_block3.c();
+          if_block3.m(section3, null);
+        }
+      } else if (if_block3) {
+        if_block3.d(1);
+        if_block3 = null;
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(section0);
+        detach(t3);
+        detach(section1);
+        detach(t7);
+        detach(section2);
+        detach(t11);
+        detach(section3);
+        detach(t15);
+        detach(section4);
+      }
+      if (if_block0) if_block0.d();
+      if (if_block1) if_block1.d();
+      if (if_block2) if_block2.d();
+      if (if_block3) if_block3.d();
+      mounted = false;
+      run_all(dispose);
+    }
+  };
+}
+function create_if_block_23(ctx) {
+  let p;
+  let t1;
+  let div0;
+  let label0;
+  let t3;
+  let select;
+  let option0;
+  let t4;
+  let t5_value = !/*sequencerAvailable*/
+  ctx[3] ? " (N/A)" : "";
+  let t5;
+  let option0_disabled_value;
+  let option1;
+  let select_value_value;
+  let t7;
+  let t8;
+  let div1;
+  let label1;
+  let t10;
+  let input0;
+  let input0_value_value;
+  let t11;
+  let div3;
+  let label2;
+  let t13;
+  let div2;
+  let input1;
+  let input1_value_value;
+  let t14;
+  let button0;
+  let t15;
+  let t16;
+  let t17;
+  let button1;
+  let mounted;
+  let dispose;
+  let if_block0 = (
+    /*fxConfig*/
+    ctx[2].onHit.effect.source === "sequencer" && create_if_block_26(ctx)
+  );
+  let if_block1 = (
+    /*fxConfig*/
+    ctx[2].onHit.sound.path && create_if_block_25(ctx)
+  );
+  let if_block2 = (
+    /*fxConfig*/
+    ctx[2].onHit.sound.path && create_if_block_24(ctx)
+  );
+  return {
+    c() {
+      p = element("p");
+      p.innerHTML = `<i class="fas fa-info-circle"></i> Played when shield absorbs damage`;
+      t1 = space();
+      div0 = element("div");
+      label0 = element("label");
+      label0.textContent = "Source";
+      t3 = space();
+      select = element("select");
+      option0 = element("option");
+      t4 = text("Sequencer DB");
+      t5 = text(t5_value);
+      option1 = element("option");
+      option1.textContent = "Custom File";
+      t7 = space();
+      if (if_block0) if_block0.c();
+      t8 = space();
+      div1 = element("div");
+      label1 = element("label");
+      label1.textContent = "Scale";
+      t10 = space();
+      input0 = element("input");
+      t11 = space();
+      div3 = element("div");
+      label2 = element("label");
+      label2.textContent = "Sound";
+      t13 = space();
+      div2 = element("div");
+      input1 = element("input");
+      t14 = space();
+      button0 = element("button");
+      button0.innerHTML = `<i class="fas fa-file"></i>`;
+      t15 = space();
+      if (if_block1) if_block1.c();
+      t16 = space();
+      if (if_block2) if_block2.c();
+      t17 = space();
+      button1 = element("button");
+      button1.innerHTML = `<i class="fas fa-play"></i> Test`;
+      attr(p, "class", "fx-hint");
+      attr(label0, "class", "fx-field-label");
+      option0.__value = "sequencer";
+      set_input_value(option0, option0.__value);
+      option0.disabled = option0_disabled_value = !/*sequencerAvailable*/
+      ctx[3];
+      option1.__value = "custom";
+      set_input_value(option1, option1.__value);
+      attr(div0, "class", "fx-field-row");
+      attr(label1, "class", "fx-field-label");
+      attr(input0, "type", "number");
+      attr(input0, "min", "0.1");
+      attr(input0, "max", "5");
+      attr(input0, "step", "0.1");
+      input0.value = input0_value_value = /*fxConfig*/
+      ctx[2].onHit.scale;
+      attr(div1, "class", "fx-field-row");
+      attr(label2, "class", "fx-field-label");
+      attr(input1, "type", "text");
+      input1.value = input1_value_value = /*fxConfig*/
+      ctx[2].onHit.sound.path;
+      input1.readOnly = true;
+      attr(input1, "placeholder", "No sound");
+      attr(button0, "class", "fx-btn-small");
+      attr(div2, "class", "fx-file-picker-row");
+      attr(div3, "class", "fx-field-row");
+      attr(button1, "class", "fx-btn fx-btn-small");
+      attr(button1, "title", "Test (select a token)");
+    },
+    m(target, anchor) {
+      insert(target, p, anchor);
+      insert(target, t1, anchor);
+      insert(target, div0, anchor);
+      append(div0, label0);
+      append(div0, t3);
+      append(div0, select);
+      append(select, option0);
+      append(option0, t4);
+      append(option0, t5);
+      append(select, option1);
+      select_option(
+        select,
+        /*fxConfig*/
+        ctx[2].onHit.effect.source
+      );
+      insert(target, t7, anchor);
+      if (if_block0) if_block0.m(target, anchor);
+      insert(target, t8, anchor);
+      insert(target, div1, anchor);
+      append(div1, label1);
+      append(div1, t10);
+      append(div1, input0);
+      insert(target, t11, anchor);
+      insert(target, div3, anchor);
+      append(div3, label2);
+      append(div3, t13);
+      append(div3, div2);
+      append(div2, input1);
+      append(div2, t14);
+      append(div2, button0);
+      append(div2, t15);
+      if (if_block1) if_block1.m(div2, null);
+      insert(target, t16, anchor);
+      if (if_block2) if_block2.m(target, anchor);
+      insert(target, t17, anchor);
+      insert(target, button1, anchor);
+      if (!mounted) {
+        dispose = [
+          listen(
+            select,
+            "change",
+            /*change_handler*/
+            ctx[22]
+          ),
+          listen(
+            input0,
+            "change",
+            /*change_handler_2*/
+            ctx[24]
+          ),
+          listen(
+            button0,
+            "click",
+            /*click_handler_1*/
+            ctx[25]
+          ),
+          listen(
+            button1,
+            "click",
+            /*click_handler_3*/
+            ctx[28]
+          )
+        ];
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*sequencerAvailable*/
+      8 && t5_value !== (t5_value = !/*sequencerAvailable*/
+      ctx2[3] ? " (N/A)" : "")) set_data(t5, t5_value);
+      if (dirty[0] & /*sequencerAvailable*/
+      8 && option0_disabled_value !== (option0_disabled_value = !/*sequencerAvailable*/
+      ctx2[3])) {
+        option0.disabled = option0_disabled_value;
+      }
+      if (dirty[0] & /*fxConfig*/
+      4 && select_value_value !== (select_value_value = /*fxConfig*/
+      ctx2[2].onHit.effect.source)) {
+        select_option(
+          select,
+          /*fxConfig*/
+          ctx2[2].onHit.effect.source
+        );
+      }
+      if (
+        /*fxConfig*/
+        ctx2[2].onHit.effect.source === "sequencer"
+      ) {
+        if (if_block0) {
+          if_block0.p(ctx2, dirty);
+        } else {
+          if_block0 = create_if_block_26(ctx2);
+          if_block0.c();
+          if_block0.m(t8.parentNode, t8);
+        }
+      } else if (if_block0) {
+        if_block0.d(1);
+        if_block0 = null;
+      }
+      if (dirty[0] & /*fxConfig*/
+      4 && input0_value_value !== (input0_value_value = /*fxConfig*/
+      ctx2[2].onHit.scale) && input0.value !== input0_value_value) {
+        input0.value = input0_value_value;
+      }
+      if (dirty[0] & /*fxConfig*/
+      4 && input1_value_value !== (input1_value_value = /*fxConfig*/
+      ctx2[2].onHit.sound.path) && input1.value !== input1_value_value) {
+        input1.value = input1_value_value;
+      }
+      if (
+        /*fxConfig*/
+        ctx2[2].onHit.sound.path
+      ) {
+        if (if_block1) {
+          if_block1.p(ctx2, dirty);
+        } else {
+          if_block1 = create_if_block_25(ctx2);
+          if_block1.c();
+          if_block1.m(div2, null);
+        }
+      } else if (if_block1) {
+        if_block1.d(1);
+        if_block1 = null;
+      }
+      if (
+        /*fxConfig*/
+        ctx2[2].onHit.sound.path
+      ) {
+        if (if_block2) {
+          if_block2.p(ctx2, dirty);
+        } else {
+          if_block2 = create_if_block_24(ctx2);
+          if_block2.c();
+          if_block2.m(t17.parentNode, t17);
+        }
+      } else if (if_block2) {
+        if_block2.d(1);
+        if_block2 = null;
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(p);
+        detach(t1);
+        detach(div0);
+        detach(t7);
+        detach(t8);
+        detach(div1);
+        detach(t11);
+        detach(div3);
+        detach(t16);
+        detach(t17);
+        detach(button1);
+      }
+      if (if_block0) if_block0.d(detaching);
+      if (if_block1) if_block1.d();
+      if (if_block2) if_block2.d(detaching);
+      mounted = false;
+      run_all(dispose);
+    }
+  };
+}
+function create_if_block_26(ctx) {
+  let div;
+  let label;
+  let t1;
+  let input;
+  let input_value_value;
+  let mounted;
+  let dispose;
+  return {
+    c() {
+      div = element("div");
+      label = element("label");
+      label.textContent = "Path";
+      t1 = space();
+      input = element("input");
+      attr(label, "class", "fx-field-label");
+      attr(input, "type", "text");
+      input.value = input_value_value = /*fxConfig*/
+      ctx[2].onHit.effect.sequencerPath;
+      attr(input, "placeholder", "e.g. jb2a.shield.01.loop.blue");
+      attr(div, "class", "fx-field-row");
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      append(div, label);
+      append(div, t1);
+      append(div, input);
+      if (!mounted) {
+        dispose = listen(
+          input,
+          "change",
+          /*change_handler_1*/
+          ctx[23]
+        );
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*fxConfig*/
+      4 && input_value_value !== (input_value_value = /*fxConfig*/
+      ctx2[2].onHit.effect.sequencerPath) && input.value !== input_value_value) {
+        input.value = input_value_value;
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+      }
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_if_block_25(ctx) {
+  let button;
+  let mounted;
+  let dispose;
+  return {
+    c() {
+      button = element("button");
+      button.innerHTML = `<i class="fas fa-times"></i>`;
+      attr(button, "class", "fx-btn-small");
+      attr(button, "title", "Clear");
+    },
+    m(target, anchor) {
+      insert(target, button, anchor);
+      if (!mounted) {
+        dispose = listen(
+          button,
+          "click",
+          /*click_handler_2*/
+          ctx[26]
+        );
+        mounted = true;
+      }
+    },
+    p: noop,
+    d(detaching) {
+      if (detaching) {
+        detach(button);
+      }
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_if_block_24(ctx) {
+  let div;
+  let label;
+  let t1;
+  let input;
+  let input_value_value;
+  let t2;
+  let span;
+  let t3_value = Math.round(
+    /*fxConfig*/
+    (ctx[2].onHit.sound.volume ?? 0.8) * 100
+  ) + "";
+  let t3;
+  let t4;
+  let mounted;
+  let dispose;
+  return {
+    c() {
+      div = element("div");
+      label = element("label");
+      label.textContent = "Volume";
+      t1 = space();
+      input = element("input");
+      t2 = space();
+      span = element("span");
+      t3 = text(t3_value);
+      t4 = text("%");
+      attr(label, "class", "fx-field-label");
+      attr(input, "type", "range");
+      attr(input, "min", "0");
+      attr(input, "max", "1");
+      attr(input, "step", "0.05");
+      input.value = input_value_value = /*fxConfig*/
+      ctx[2].onHit.sound.volume;
+      attr(span, "class", "fx-sound-volume-label");
+      attr(div, "class", "fx-field-row");
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      append(div, label);
+      append(div, t1);
+      append(div, input);
+      append(div, t2);
+      append(div, span);
+      append(span, t3);
+      append(span, t4);
+      if (!mounted) {
+        dispose = listen(
+          input,
+          "input",
+          /*input_handler*/
+          ctx[27]
+        );
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*fxConfig*/
+      4 && input_value_value !== (input_value_value = /*fxConfig*/
+      ctx2[2].onHit.sound.volume)) {
+        input.value = input_value_value;
+      }
+      if (dirty[0] & /*fxConfig*/
+      4 && t3_value !== (t3_value = Math.round(
+        /*fxConfig*/
+        (ctx2[2].onHit.sound.volume ?? 0.8) * 100
+      ) + "")) set_data(t3, t3_value);
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+      }
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_if_block_19(ctx) {
+  let p;
+  let t1;
+  let div0;
+  let label0;
+  let t3;
+  let select;
+  let option0;
+  let t4;
+  let t5_value = !/*sequencerAvailable*/
+  ctx[3] ? " (N/A)" : "";
+  let t5;
+  let option0_disabled_value;
+  let option1;
+  let select_value_value;
+  let t7;
+  let t8;
+  let div1;
+  let label1;
+  let t10;
+  let input0;
+  let input0_value_value;
+  let t11;
+  let div3;
+  let label2;
+  let t13;
+  let div2;
+  let input1;
+  let input1_value_value;
+  let t14;
+  let button0;
+  let t15;
+  let t16;
+  let t17;
+  let button1;
+  let mounted;
+  let dispose;
+  let if_block0 = (
+    /*fxConfig*/
+    ctx[2].onDeflect.effect.source === "sequencer" && create_if_block_22(ctx)
+  );
+  let if_block1 = (
+    /*fxConfig*/
+    ctx[2].onDeflect.sound.path && create_if_block_21(ctx)
+  );
+  let if_block2 = (
+    /*fxConfig*/
+    ctx[2].onDeflect.sound.path && create_if_block_20(ctx)
+  );
+  return {
+    c() {
+      p = element("p");
+      p.innerHTML = `<i class="fas fa-info-circle"></i> Played when armor save succeeds (sparks, ricochet)`;
+      t1 = space();
+      div0 = element("div");
+      label0 = element("label");
+      label0.textContent = "Source";
+      t3 = space();
+      select = element("select");
+      option0 = element("option");
+      t4 = text("Sequencer DB");
+      t5 = text(t5_value);
+      option1 = element("option");
+      option1.textContent = "Custom File";
+      t7 = space();
+      if (if_block0) if_block0.c();
+      t8 = space();
+      div1 = element("div");
+      label1 = element("label");
+      label1.textContent = "Scale";
+      t10 = space();
+      input0 = element("input");
+      t11 = space();
+      div3 = element("div");
+      label2 = element("label");
+      label2.textContent = "Sound";
+      t13 = space();
+      div2 = element("div");
+      input1 = element("input");
+      t14 = space();
+      button0 = element("button");
+      button0.innerHTML = `<i class="fas fa-file"></i>`;
+      t15 = space();
+      if (if_block1) if_block1.c();
+      t16 = space();
+      if (if_block2) if_block2.c();
+      t17 = space();
+      button1 = element("button");
+      button1.innerHTML = `<i class="fas fa-play"></i> Test`;
+      attr(p, "class", "fx-hint");
+      attr(label0, "class", "fx-field-label");
+      option0.__value = "sequencer";
+      set_input_value(option0, option0.__value);
+      option0.disabled = option0_disabled_value = !/*sequencerAvailable*/
+      ctx[3];
+      option1.__value = "custom";
+      set_input_value(option1, option1.__value);
+      attr(div0, "class", "fx-field-row");
+      attr(label1, "class", "fx-field-label");
+      attr(input0, "type", "number");
+      attr(input0, "min", "0.1");
+      attr(input0, "max", "5");
+      attr(input0, "step", "0.1");
+      input0.value = input0_value_value = /*fxConfig*/
+      ctx[2].onDeflect.scale;
+      attr(div1, "class", "fx-field-row");
+      attr(label2, "class", "fx-field-label");
+      attr(input1, "type", "text");
+      input1.value = input1_value_value = /*fxConfig*/
+      ctx[2].onDeflect.sound.path;
+      input1.readOnly = true;
+      attr(input1, "placeholder", "No sound");
+      attr(button0, "class", "fx-btn-small");
+      attr(div2, "class", "fx-file-picker-row");
+      attr(div3, "class", "fx-field-row");
+      attr(button1, "class", "fx-btn fx-btn-small");
+      attr(button1, "title", "Test (select a token)");
+    },
+    m(target, anchor) {
+      insert(target, p, anchor);
+      insert(target, t1, anchor);
+      insert(target, div0, anchor);
+      append(div0, label0);
+      append(div0, t3);
+      append(div0, select);
+      append(select, option0);
+      append(option0, t4);
+      append(option0, t5);
+      append(select, option1);
+      select_option(
+        select,
+        /*fxConfig*/
+        ctx[2].onDeflect.effect.source
+      );
+      insert(target, t7, anchor);
+      if (if_block0) if_block0.m(target, anchor);
+      insert(target, t8, anchor);
+      insert(target, div1, anchor);
+      append(div1, label1);
+      append(div1, t10);
+      append(div1, input0);
+      insert(target, t11, anchor);
+      insert(target, div3, anchor);
+      append(div3, label2);
+      append(div3, t13);
+      append(div3, div2);
+      append(div2, input1);
+      append(div2, t14);
+      append(div2, button0);
+      append(div2, t15);
+      if (if_block1) if_block1.m(div2, null);
+      insert(target, t16, anchor);
+      if (if_block2) if_block2.m(target, anchor);
+      insert(target, t17, anchor);
+      insert(target, button1, anchor);
+      if (!mounted) {
+        dispose = [
+          listen(
+            select,
+            "change",
+            /*change_handler_3*/
+            ctx[30]
+          ),
+          listen(
+            input0,
+            "change",
+            /*change_handler_5*/
+            ctx[32]
+          ),
+          listen(
+            button0,
+            "click",
+            /*click_handler_5*/
+            ctx[33]
+          ),
+          listen(
+            button1,
+            "click",
+            /*click_handler_7*/
+            ctx[36]
+          )
+        ];
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*sequencerAvailable*/
+      8 && t5_value !== (t5_value = !/*sequencerAvailable*/
+      ctx2[3] ? " (N/A)" : "")) set_data(t5, t5_value);
+      if (dirty[0] & /*sequencerAvailable*/
+      8 && option0_disabled_value !== (option0_disabled_value = !/*sequencerAvailable*/
+      ctx2[3])) {
+        option0.disabled = option0_disabled_value;
+      }
+      if (dirty[0] & /*fxConfig*/
+      4 && select_value_value !== (select_value_value = /*fxConfig*/
+      ctx2[2].onDeflect.effect.source)) {
+        select_option(
+          select,
+          /*fxConfig*/
+          ctx2[2].onDeflect.effect.source
+        );
+      }
+      if (
+        /*fxConfig*/
+        ctx2[2].onDeflect.effect.source === "sequencer"
+      ) {
+        if (if_block0) {
+          if_block0.p(ctx2, dirty);
+        } else {
+          if_block0 = create_if_block_22(ctx2);
+          if_block0.c();
+          if_block0.m(t8.parentNode, t8);
+        }
+      } else if (if_block0) {
+        if_block0.d(1);
+        if_block0 = null;
+      }
+      if (dirty[0] & /*fxConfig*/
+      4 && input0_value_value !== (input0_value_value = /*fxConfig*/
+      ctx2[2].onDeflect.scale) && input0.value !== input0_value_value) {
+        input0.value = input0_value_value;
+      }
+      if (dirty[0] & /*fxConfig*/
+      4 && input1_value_value !== (input1_value_value = /*fxConfig*/
+      ctx2[2].onDeflect.sound.path) && input1.value !== input1_value_value) {
+        input1.value = input1_value_value;
+      }
+      if (
+        /*fxConfig*/
+        ctx2[2].onDeflect.sound.path
+      ) {
+        if (if_block1) {
+          if_block1.p(ctx2, dirty);
+        } else {
+          if_block1 = create_if_block_21(ctx2);
+          if_block1.c();
+          if_block1.m(div2, null);
+        }
+      } else if (if_block1) {
+        if_block1.d(1);
+        if_block1 = null;
+      }
+      if (
+        /*fxConfig*/
+        ctx2[2].onDeflect.sound.path
+      ) {
+        if (if_block2) {
+          if_block2.p(ctx2, dirty);
+        } else {
+          if_block2 = create_if_block_20(ctx2);
+          if_block2.c();
+          if_block2.m(t17.parentNode, t17);
+        }
+      } else if (if_block2) {
+        if_block2.d(1);
+        if_block2 = null;
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(p);
+        detach(t1);
+        detach(div0);
+        detach(t7);
+        detach(t8);
+        detach(div1);
+        detach(t11);
+        detach(div3);
+        detach(t16);
+        detach(t17);
+        detach(button1);
+      }
+      if (if_block0) if_block0.d(detaching);
+      if (if_block1) if_block1.d();
+      if (if_block2) if_block2.d(detaching);
+      mounted = false;
+      run_all(dispose);
+    }
+  };
+}
+function create_if_block_22(ctx) {
+  let div;
+  let label;
+  let t1;
+  let input;
+  let input_value_value;
+  let mounted;
+  let dispose;
+  return {
+    c() {
+      div = element("div");
+      label = element("label");
+      label.textContent = "Path";
+      t1 = space();
+      input = element("input");
+      attr(label, "class", "fx-field-label");
+      attr(input, "type", "text");
+      input.value = input_value_value = /*fxConfig*/
+      ctx[2].onDeflect.effect.sequencerPath;
+      attr(input, "placeholder", "e.g. jb2a.impact.004.blue");
+      attr(div, "class", "fx-field-row");
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      append(div, label);
+      append(div, t1);
+      append(div, input);
+      if (!mounted) {
+        dispose = listen(
+          input,
+          "change",
+          /*change_handler_4*/
+          ctx[31]
+        );
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*fxConfig*/
+      4 && input_value_value !== (input_value_value = /*fxConfig*/
+      ctx2[2].onDeflect.effect.sequencerPath) && input.value !== input_value_value) {
+        input.value = input_value_value;
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+      }
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_if_block_21(ctx) {
+  let button;
+  let mounted;
+  let dispose;
+  return {
+    c() {
+      button = element("button");
+      button.innerHTML = `<i class="fas fa-times"></i>`;
+      attr(button, "class", "fx-btn-small");
+      attr(button, "title", "Clear");
+    },
+    m(target, anchor) {
+      insert(target, button, anchor);
+      if (!mounted) {
+        dispose = listen(
+          button,
+          "click",
+          /*click_handler_6*/
+          ctx[34]
+        );
+        mounted = true;
+      }
+    },
+    p: noop,
+    d(detaching) {
+      if (detaching) {
+        detach(button);
+      }
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_if_block_20(ctx) {
+  let div;
+  let label;
+  let t1;
+  let input;
+  let input_value_value;
+  let t2;
+  let span;
+  let t3_value = Math.round(
+    /*fxConfig*/
+    (ctx[2].onDeflect.sound.volume ?? 0.8) * 100
+  ) + "";
+  let t3;
+  let t4;
+  let mounted;
+  let dispose;
+  return {
+    c() {
+      div = element("div");
+      label = element("label");
+      label.textContent = "Volume";
+      t1 = space();
+      input = element("input");
+      t2 = space();
+      span = element("span");
+      t3 = text(t3_value);
+      t4 = text("%");
+      attr(label, "class", "fx-field-label");
+      attr(input, "type", "range");
+      attr(input, "min", "0");
+      attr(input, "max", "1");
+      attr(input, "step", "0.05");
+      input.value = input_value_value = /*fxConfig*/
+      ctx[2].onDeflect.sound.volume;
+      attr(span, "class", "fx-sound-volume-label");
+      attr(div, "class", "fx-field-row");
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      append(div, label);
+      append(div, t1);
+      append(div, input);
+      append(div, t2);
+      append(div, span);
+      append(span, t3);
+      append(span, t4);
+      if (!mounted) {
+        dispose = listen(
+          input,
+          "input",
+          /*input_handler_1*/
+          ctx[35]
+        );
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*fxConfig*/
+      4 && input_value_value !== (input_value_value = /*fxConfig*/
+      ctx2[2].onDeflect.sound.volume)) {
+        input.value = input_value_value;
+      }
+      if (dirty[0] & /*fxConfig*/
+      4 && t3_value !== (t3_value = Math.round(
+        /*fxConfig*/
+        (ctx2[2].onDeflect.sound.volume ?? 0.8) * 100
+      ) + "")) set_data(t3, t3_value);
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+      }
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_if_block_15(ctx) {
+  let p;
+  let t1;
+  let div0;
+  let label0;
+  let t3;
+  let select;
+  let option0;
+  let t4;
+  let t5_value = !/*sequencerAvailable*/
+  ctx[3] ? " (N/A)" : "";
+  let t5;
+  let option0_disabled_value;
+  let option1;
+  let select_value_value;
+  let t7;
+  let t8;
+  let div1;
+  let label1;
+  let t10;
+  let input0;
+  let input0_value_value;
+  let t11;
+  let div3;
+  let label2;
+  let t13;
+  let div2;
+  let input1;
+  let input1_value_value;
+  let t14;
+  let button0;
+  let t15;
+  let t16;
+  let t17;
+  let button1;
+  let mounted;
+  let dispose;
+  let if_block0 = (
+    /*fxConfig*/
+    ctx[2].onPenetrate.effect.source === "sequencer" && create_if_block_18(ctx)
+  );
+  let if_block1 = (
+    /*fxConfig*/
+    ctx[2].onPenetrate.sound.path && create_if_block_17(ctx)
+  );
+  let if_block2 = (
+    /*fxConfig*/
+    ctx[2].onPenetrate.sound.path && create_if_block_16(ctx)
+  );
+  return {
+    c() {
+      p = element("p");
+      p.innerHTML = `<i class="fas fa-info-circle"></i> Played when armor save fails (blood, damage)`;
+      t1 = space();
+      div0 = element("div");
+      label0 = element("label");
+      label0.textContent = "Source";
+      t3 = space();
+      select = element("select");
+      option0 = element("option");
+      t4 = text("Sequencer DB");
+      t5 = text(t5_value);
+      option1 = element("option");
+      option1.textContent = "Custom File";
+      t7 = space();
+      if (if_block0) if_block0.c();
+      t8 = space();
+      div1 = element("div");
+      label1 = element("label");
+      label1.textContent = "Scale";
+      t10 = space();
+      input0 = element("input");
+      t11 = space();
+      div3 = element("div");
+      label2 = element("label");
+      label2.textContent = "Sound";
+      t13 = space();
+      div2 = element("div");
+      input1 = element("input");
+      t14 = space();
+      button0 = element("button");
+      button0.innerHTML = `<i class="fas fa-file"></i>`;
+      t15 = space();
+      if (if_block1) if_block1.c();
+      t16 = space();
+      if (if_block2) if_block2.c();
+      t17 = space();
+      button1 = element("button");
+      button1.innerHTML = `<i class="fas fa-play"></i> Test`;
+      attr(p, "class", "fx-hint");
+      attr(label0, "class", "fx-field-label");
+      option0.__value = "sequencer";
+      set_input_value(option0, option0.__value);
+      option0.disabled = option0_disabled_value = !/*sequencerAvailable*/
+      ctx[3];
+      option1.__value = "custom";
+      set_input_value(option1, option1.__value);
+      attr(div0, "class", "fx-field-row");
+      attr(label1, "class", "fx-field-label");
+      attr(input0, "type", "number");
+      attr(input0, "min", "0.1");
+      attr(input0, "max", "5");
+      attr(input0, "step", "0.1");
+      input0.value = input0_value_value = /*fxConfig*/
+      ctx[2].onPenetrate.scale;
+      attr(div1, "class", "fx-field-row");
+      attr(label2, "class", "fx-field-label");
+      attr(input1, "type", "text");
+      input1.value = input1_value_value = /*fxConfig*/
+      ctx[2].onPenetrate.sound.path;
+      input1.readOnly = true;
+      attr(input1, "placeholder", "No sound");
+      attr(button0, "class", "fx-btn-small");
+      attr(div2, "class", "fx-file-picker-row");
+      attr(div3, "class", "fx-field-row");
+      attr(button1, "class", "fx-btn fx-btn-small");
+      attr(button1, "title", "Test (select a token)");
+    },
+    m(target, anchor) {
+      insert(target, p, anchor);
+      insert(target, t1, anchor);
+      insert(target, div0, anchor);
+      append(div0, label0);
+      append(div0, t3);
+      append(div0, select);
+      append(select, option0);
+      append(option0, t4);
+      append(option0, t5);
+      append(select, option1);
+      select_option(
+        select,
+        /*fxConfig*/
+        ctx[2].onPenetrate.effect.source
+      );
+      insert(target, t7, anchor);
+      if (if_block0) if_block0.m(target, anchor);
+      insert(target, t8, anchor);
+      insert(target, div1, anchor);
+      append(div1, label1);
+      append(div1, t10);
+      append(div1, input0);
+      insert(target, t11, anchor);
+      insert(target, div3, anchor);
+      append(div3, label2);
+      append(div3, t13);
+      append(div3, div2);
+      append(div2, input1);
+      append(div2, t14);
+      append(div2, button0);
+      append(div2, t15);
+      if (if_block1) if_block1.m(div2, null);
+      insert(target, t16, anchor);
+      if (if_block2) if_block2.m(target, anchor);
+      insert(target, t17, anchor);
+      insert(target, button1, anchor);
+      if (!mounted) {
+        dispose = [
+          listen(
+            select,
+            "change",
+            /*change_handler_6*/
+            ctx[38]
+          ),
+          listen(
+            input0,
+            "change",
+            /*change_handler_8*/
+            ctx[40]
+          ),
+          listen(
+            button0,
+            "click",
+            /*click_handler_9*/
+            ctx[41]
+          ),
+          listen(
+            button1,
+            "click",
+            /*click_handler_11*/
+            ctx[44]
+          )
+        ];
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*sequencerAvailable*/
+      8 && t5_value !== (t5_value = !/*sequencerAvailable*/
+      ctx2[3] ? " (N/A)" : "")) set_data(t5, t5_value);
+      if (dirty[0] & /*sequencerAvailable*/
+      8 && option0_disabled_value !== (option0_disabled_value = !/*sequencerAvailable*/
+      ctx2[3])) {
+        option0.disabled = option0_disabled_value;
+      }
+      if (dirty[0] & /*fxConfig*/
+      4 && select_value_value !== (select_value_value = /*fxConfig*/
+      ctx2[2].onPenetrate.effect.source)) {
+        select_option(
+          select,
+          /*fxConfig*/
+          ctx2[2].onPenetrate.effect.source
+        );
+      }
+      if (
+        /*fxConfig*/
+        ctx2[2].onPenetrate.effect.source === "sequencer"
+      ) {
+        if (if_block0) {
+          if_block0.p(ctx2, dirty);
+        } else {
+          if_block0 = create_if_block_18(ctx2);
+          if_block0.c();
+          if_block0.m(t8.parentNode, t8);
+        }
+      } else if (if_block0) {
+        if_block0.d(1);
+        if_block0 = null;
+      }
+      if (dirty[0] & /*fxConfig*/
+      4 && input0_value_value !== (input0_value_value = /*fxConfig*/
+      ctx2[2].onPenetrate.scale) && input0.value !== input0_value_value) {
+        input0.value = input0_value_value;
+      }
+      if (dirty[0] & /*fxConfig*/
+      4 && input1_value_value !== (input1_value_value = /*fxConfig*/
+      ctx2[2].onPenetrate.sound.path) && input1.value !== input1_value_value) {
+        input1.value = input1_value_value;
+      }
+      if (
+        /*fxConfig*/
+        ctx2[2].onPenetrate.sound.path
+      ) {
+        if (if_block1) {
+          if_block1.p(ctx2, dirty);
+        } else {
+          if_block1 = create_if_block_17(ctx2);
+          if_block1.c();
+          if_block1.m(div2, null);
+        }
+      } else if (if_block1) {
+        if_block1.d(1);
+        if_block1 = null;
+      }
+      if (
+        /*fxConfig*/
+        ctx2[2].onPenetrate.sound.path
+      ) {
+        if (if_block2) {
+          if_block2.p(ctx2, dirty);
+        } else {
+          if_block2 = create_if_block_16(ctx2);
+          if_block2.c();
+          if_block2.m(t17.parentNode, t17);
+        }
+      } else if (if_block2) {
+        if_block2.d(1);
+        if_block2 = null;
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(p);
+        detach(t1);
+        detach(div0);
+        detach(t7);
+        detach(t8);
+        detach(div1);
+        detach(t11);
+        detach(div3);
+        detach(t16);
+        detach(t17);
+        detach(button1);
+      }
+      if (if_block0) if_block0.d(detaching);
+      if (if_block1) if_block1.d();
+      if (if_block2) if_block2.d(detaching);
+      mounted = false;
+      run_all(dispose);
+    }
+  };
+}
+function create_if_block_18(ctx) {
+  let div;
+  let label;
+  let t1;
+  let input;
+  let input_value_value;
+  let mounted;
+  let dispose;
+  return {
+    c() {
+      div = element("div");
+      label = element("label");
+      label.textContent = "Path";
+      t1 = space();
+      input = element("input");
+      attr(label, "class", "fx-field-label");
+      attr(input, "type", "text");
+      input.value = input_value_value = /*fxConfig*/
+      ctx[2].onPenetrate.effect.sequencerPath;
+      attr(input, "placeholder", "e.g. jb2a.liquid.splash.red");
+      attr(div, "class", "fx-field-row");
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      append(div, label);
+      append(div, t1);
+      append(div, input);
+      if (!mounted) {
+        dispose = listen(
+          input,
+          "change",
+          /*change_handler_7*/
+          ctx[39]
+        );
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*fxConfig*/
+      4 && input_value_value !== (input_value_value = /*fxConfig*/
+      ctx2[2].onPenetrate.effect.sequencerPath) && input.value !== input_value_value) {
+        input.value = input_value_value;
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+      }
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_if_block_17(ctx) {
+  let button;
+  let mounted;
+  let dispose;
+  return {
+    c() {
+      button = element("button");
+      button.innerHTML = `<i class="fas fa-times"></i>`;
+      attr(button, "class", "fx-btn-small");
+      attr(button, "title", "Clear");
+    },
+    m(target, anchor) {
+      insert(target, button, anchor);
+      if (!mounted) {
+        dispose = listen(
+          button,
+          "click",
+          /*click_handler_10*/
+          ctx[42]
+        );
+        mounted = true;
+      }
+    },
+    p: noop,
+    d(detaching) {
+      if (detaching) {
+        detach(button);
+      }
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_if_block_16(ctx) {
+  let div;
+  let label;
+  let t1;
+  let input;
+  let input_value_value;
+  let t2;
+  let span;
+  let t3_value = Math.round(
+    /*fxConfig*/
+    (ctx[2].onPenetrate.sound.volume ?? 0.8) * 100
+  ) + "";
+  let t3;
+  let t4;
+  let mounted;
+  let dispose;
+  return {
+    c() {
+      div = element("div");
+      label = element("label");
+      label.textContent = "Volume";
+      t1 = space();
+      input = element("input");
+      t2 = space();
+      span = element("span");
+      t3 = text(t3_value);
+      t4 = text("%");
+      attr(label, "class", "fx-field-label");
+      attr(input, "type", "range");
+      attr(input, "min", "0");
+      attr(input, "max", "1");
+      attr(input, "step", "0.05");
+      input.value = input_value_value = /*fxConfig*/
+      ctx[2].onPenetrate.sound.volume;
+      attr(span, "class", "fx-sound-volume-label");
+      attr(div, "class", "fx-field-row");
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      append(div, label);
+      append(div, t1);
+      append(div, input);
+      append(div, t2);
+      append(div, span);
+      append(span, t3);
+      append(span, t4);
+      if (!mounted) {
+        dispose = listen(
+          input,
+          "input",
+          /*input_handler_2*/
+          ctx[43]
+        );
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*fxConfig*/
+      4 && input_value_value !== (input_value_value = /*fxConfig*/
+      ctx2[2].onPenetrate.sound.volume)) {
+        input.value = input_value_value;
+      }
+      if (dirty[0] & /*fxConfig*/
+      4 && t3_value !== (t3_value = Math.round(
+        /*fxConfig*/
+        (ctx2[2].onPenetrate.sound.volume ?? 0.8) * 100
+      ) + "")) set_data(t3, t3_value);
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+      }
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_if_block_1(ctx) {
+  let div0;
+  let label0;
+  let t1;
+  let select0;
+  let option0;
+  let option1;
+  let option2;
+  let select0_value_value;
+  let t5;
+  let t6;
+  let div2;
+  let span;
+  let i;
+  let t7;
+  let t8_value = (
+    /*fxConfig*/
+    ctx[2].aura.mode === "reactive" ? "Flash Effect (on hit)" : "Loop Effect (idle)"
+  );
+  let t8;
+  let t9;
+  let div1;
+  let label1;
+  let t11;
+  let select1;
+  let option3;
+  let t12;
+  let t13_value = !/*sequencerAvailable*/
+  ctx[3] ? " (N/A)" : "";
+  let t13;
+  let option3_disabled_value;
+  let option4;
+  let select1_value_value;
+  let t15;
+  let t16;
+  let t17;
+  let div3;
+  let label2;
+  let t19;
+  let input;
+  let input_value_value;
+  let t20;
+  let t21;
+  let div4;
+  let mounted;
+  let dispose;
+  function select_block_type(ctx2, dirty) {
+    if (
+      /*fxConfig*/
+      (ctx2[2].aura.mode ?? "permanent") === "permanent"
+    ) return create_if_block_12;
+    if (
+      /*fxConfig*/
+      ctx2[2].aura.mode === "rounds"
+    ) return create_if_block_13;
+    if (
+      /*fxConfig*/
+      ctx2[2].aura.mode === "reactive"
+    ) return create_if_block_14;
+  }
+  let current_block_type = select_block_type(ctx);
+  let if_block0 = current_block_type && current_block_type(ctx);
+  let if_block1 = (
+    /*fxConfig*/
+    ctx[2].aura.loop.source === "sequencer" && create_if_block_11(ctx)
+  );
+  let if_block2 = (
+    /*fxConfig*/
+    ctx[2].aura.mode !== "reactive" && create_if_block_6(ctx)
+  );
+  let if_block3 = (
+    /*fxConfig*/
+    ctx[2].aura.mode !== "reactive" && create_if_block_3(ctx)
+  );
+  function select_block_type_1(ctx2, dirty) {
+    if (
+      /*fxConfig*/
+      ctx2[2].aura.mode !== "reactive"
+    ) return create_if_block_2;
+    return create_else_block;
+  }
+  let current_block_type_1 = select_block_type_1(ctx);
+  let if_block4 = current_block_type_1(ctx);
+  return {
+    c() {
+      div0 = element("div");
+      label0 = element("label");
+      label0.textContent = "Mode";
+      t1 = space();
+      select0 = element("select");
+      option0 = element("option");
+      option0.textContent = "Permanent";
+      option1 = element("option");
+      option1.textContent = "Timed (rounds)";
+      option2 = element("option");
+      option2.textContent = "Reactive (on hit only)";
+      t5 = space();
+      if (if_block0) if_block0.c();
+      t6 = space();
+      div2 = element("div");
+      span = element("span");
+      i = element("i");
+      t7 = space();
+      t8 = text(t8_value);
+      t9 = space();
+      div1 = element("div");
+      label1 = element("label");
+      label1.textContent = "Source";
+      t11 = space();
+      select1 = element("select");
+      option3 = element("option");
+      t12 = text("Sequencer DB");
+      t13 = text(t13_value);
+      option4 = element("option");
+      option4.textContent = "Custom File";
+      t15 = space();
+      if (if_block1) if_block1.c();
+      t16 = space();
+      if (if_block2) if_block2.c();
+      t17 = space();
+      div3 = element("div");
+      label2 = element("label");
+      label2.textContent = "Scale";
+      t19 = space();
+      input = element("input");
+      t20 = space();
+      if (if_block3) if_block3.c();
+      t21 = space();
+      div4 = element("div");
+      if_block4.c();
+      attr(label0, "class", "fx-field-label");
+      option0.__value = "permanent";
+      set_input_value(option0, option0.__value);
+      option1.__value = "rounds";
+      set_input_value(option1, option1.__value);
+      option2.__value = "reactive";
+      set_input_value(option2, option2.__value);
+      attr(div0, "class", "fx-field-row");
+      attr(i, "class", "fas fa-repeat");
+      attr(span, "class", "fx-jam-label");
+      attr(label1, "class", "fx-field-label");
+      option3.__value = "sequencer";
+      set_input_value(option3, option3.__value);
+      option3.disabled = option3_disabled_value = !/*sequencerAvailable*/
+      ctx[3];
+      option4.__value = "custom";
+      set_input_value(option4, option4.__value);
+      attr(div1, "class", "fx-field-row");
+      attr(div2, "class", "fx-aura-subsection");
+      attr(label2, "class", "fx-field-label");
+      attr(input, "type", "number");
+      attr(input, "min", "0.1");
+      attr(input, "max", "5");
+      attr(input, "step", "0.1");
+      input.value = input_value_value = /*fxConfig*/
+      ctx[2].aura.scale;
+      attr(div3, "class", "fx-field-row");
+      attr(div4, "class", "fx-test-buttons");
+    },
+    m(target, anchor) {
+      insert(target, div0, anchor);
+      append(div0, label0);
+      append(div0, t1);
+      append(div0, select0);
+      append(select0, option0);
+      append(select0, option1);
+      append(select0, option2);
+      select_option(
+        select0,
+        /*fxConfig*/
+        ctx[2].aura.mode ?? "permanent"
+      );
+      insert(target, t5, anchor);
+      if (if_block0) if_block0.m(target, anchor);
+      insert(target, t6, anchor);
+      insert(target, div2, anchor);
+      append(div2, span);
+      append(span, i);
+      append(span, t7);
+      append(span, t8);
+      append(div2, t9);
+      append(div2, div1);
+      append(div1, label1);
+      append(div1, t11);
+      append(div1, select1);
+      append(select1, option3);
+      append(option3, t12);
+      append(option3, t13);
+      append(select1, option4);
+      select_option(
+        select1,
+        /*fxConfig*/
+        ctx[2].aura.loop.source
+      );
+      append(div2, t15);
+      if (if_block1) if_block1.m(div2, null);
+      insert(target, t16, anchor);
+      if (if_block2) if_block2.m(target, anchor);
+      insert(target, t17, anchor);
+      insert(target, div3, anchor);
+      append(div3, label2);
+      append(div3, t19);
+      append(div3, input);
+      insert(target, t20, anchor);
+      if (if_block3) if_block3.m(target, anchor);
+      insert(target, t21, anchor);
+      insert(target, div4, anchor);
+      if_block4.m(div4, null);
+      if (!mounted) {
+        dispose = [
+          listen(
+            select0,
+            "change",
+            /*change_handler_9*/
+            ctx[45]
+          ),
+          listen(
+            select1,
+            "change",
+            /*change_handler_11*/
+            ctx[47]
+          ),
+          listen(
+            input,
+            "change",
+            /*change_handler_19*/
+            ctx[57]
+          )
+        ];
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*fxConfig*/
+      4 && select0_value_value !== (select0_value_value = /*fxConfig*/
+      ctx2[2].aura.mode ?? "permanent")) {
+        select_option(
+          select0,
+          /*fxConfig*/
+          ctx2[2].aura.mode ?? "permanent"
+        );
+      }
+      if (current_block_type === (current_block_type = select_block_type(ctx2)) && if_block0) {
+        if_block0.p(ctx2, dirty);
+      } else {
+        if (if_block0) if_block0.d(1);
+        if_block0 = current_block_type && current_block_type(ctx2);
+        if (if_block0) {
+          if_block0.c();
+          if_block0.m(t6.parentNode, t6);
+        }
+      }
+      if (dirty[0] & /*fxConfig*/
+      4 && t8_value !== (t8_value = /*fxConfig*/
+      ctx2[2].aura.mode === "reactive" ? "Flash Effect (on hit)" : "Loop Effect (idle)")) set_data(t8, t8_value);
+      if (dirty[0] & /*sequencerAvailable*/
+      8 && t13_value !== (t13_value = !/*sequencerAvailable*/
+      ctx2[3] ? " (N/A)" : "")) set_data(t13, t13_value);
+      if (dirty[0] & /*sequencerAvailable*/
+      8 && option3_disabled_value !== (option3_disabled_value = !/*sequencerAvailable*/
+      ctx2[3])) {
+        option3.disabled = option3_disabled_value;
+      }
+      if (dirty[0] & /*fxConfig*/
+      4 && select1_value_value !== (select1_value_value = /*fxConfig*/
+      ctx2[2].aura.loop.source)) {
+        select_option(
+          select1,
+          /*fxConfig*/
+          ctx2[2].aura.loop.source
+        );
+      }
+      if (
+        /*fxConfig*/
+        ctx2[2].aura.loop.source === "sequencer"
+      ) {
+        if (if_block1) {
+          if_block1.p(ctx2, dirty);
+        } else {
+          if_block1 = create_if_block_11(ctx2);
+          if_block1.c();
+          if_block1.m(div2, null);
+        }
+      } else if (if_block1) {
+        if_block1.d(1);
+        if_block1 = null;
+      }
+      if (
+        /*fxConfig*/
+        ctx2[2].aura.mode !== "reactive"
+      ) {
+        if (if_block2) {
+          if_block2.p(ctx2, dirty);
+        } else {
+          if_block2 = create_if_block_6(ctx2);
+          if_block2.c();
+          if_block2.m(t17.parentNode, t17);
+        }
+      } else if (if_block2) {
+        if_block2.d(1);
+        if_block2 = null;
+      }
+      if (dirty[0] & /*fxConfig*/
+      4 && input_value_value !== (input_value_value = /*fxConfig*/
+      ctx2[2].aura.scale) && input.value !== input_value_value) {
+        input.value = input_value_value;
+      }
+      if (
+        /*fxConfig*/
+        ctx2[2].aura.mode !== "reactive"
+      ) {
+        if (if_block3) {
+          if_block3.p(ctx2, dirty);
+        } else {
+          if_block3 = create_if_block_3(ctx2);
+          if_block3.c();
+          if_block3.m(t21.parentNode, t21);
+        }
+      } else if (if_block3) {
+        if_block3.d(1);
+        if_block3 = null;
+      }
+      if (current_block_type_1 === (current_block_type_1 = select_block_type_1(ctx2)) && if_block4) {
+        if_block4.p(ctx2, dirty);
+      } else {
+        if_block4.d(1);
+        if_block4 = current_block_type_1(ctx2);
+        if (if_block4) {
+          if_block4.c();
+          if_block4.m(div4, null);
+        }
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div0);
+        detach(t5);
+        detach(t6);
+        detach(div2);
+        detach(t16);
+        detach(t17);
+        detach(div3);
+        detach(t20);
+        detach(t21);
+        detach(div4);
+      }
+      if (if_block0) {
+        if_block0.d(detaching);
+      }
+      if (if_block1) if_block1.d();
+      if (if_block2) if_block2.d(detaching);
+      if (if_block3) if_block3.d(detaching);
+      if_block4.d();
+      mounted = false;
+      run_all(dispose);
+    }
+  };
+}
+function create_if_block_14(ctx) {
+  let p;
+  return {
+    c() {
+      p = element("p");
+      p.innerHTML = `<i class="fas fa-info-circle"></i> No persistent visual — shield flashes briefly only when hit`;
+      attr(p, "class", "fx-hint");
+    },
+    m(target, anchor) {
+      insert(target, p, anchor);
+    },
+    p: noop,
+    d(detaching) {
+      if (detaching) {
+        detach(p);
+      }
+    }
+  };
+}
+function create_if_block_13(ctx) {
+  let p;
+  let t1;
+  let div;
+  let label;
+  let t3;
+  let input;
+  let input_value_value;
+  let mounted;
+  let dispose;
+  return {
+    c() {
+      p = element("p");
+      p.innerHTML = `<i class="fas fa-info-circle"></i> Active for a set number of rounds (provider passes duration)`;
+      t1 = space();
+      div = element("div");
+      label = element("label");
+      label.textContent = "Default Rounds";
+      t3 = space();
+      input = element("input");
+      attr(p, "class", "fx-hint");
+      attr(label, "class", "fx-field-label");
+      attr(input, "type", "number");
+      attr(input, "min", "1");
+      attr(input, "max", "99");
+      attr(input, "step", "1");
+      input.value = input_value_value = /*fxConfig*/
+      ctx[2].aura.roundsDuration ?? 3;
+      attr(div, "class", "fx-field-row");
+    },
+    m(target, anchor) {
+      insert(target, p, anchor);
+      insert(target, t1, anchor);
+      insert(target, div, anchor);
+      append(div, label);
+      append(div, t3);
+      append(div, input);
+      if (!mounted) {
+        dispose = listen(
+          input,
+          "change",
+          /*change_handler_10*/
+          ctx[46]
+        );
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*fxConfig*/
+      4 && input_value_value !== (input_value_value = /*fxConfig*/
+      ctx2[2].aura.roundsDuration ?? 3) && input.value !== input_value_value) {
+        input.value = input_value_value;
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(p);
+        detach(t1);
+        detach(div);
+      }
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_if_block_12(ctx) {
+  let p;
+  return {
+    c() {
+      p = element("p");
+      p.innerHTML = `<i class="fas fa-info-circle"></i> Stays on token until manually deactivated or overloaded`;
+      attr(p, "class", "fx-hint");
+    },
+    m(target, anchor) {
+      insert(target, p, anchor);
+    },
+    p: noop,
+    d(detaching) {
+      if (detaching) {
+        detach(p);
+      }
+    }
+  };
+}
+function create_if_block_11(ctx) {
+  let div;
+  let label;
+  let t1;
+  let input;
+  let input_value_value;
+  let mounted;
+  let dispose;
+  return {
+    c() {
+      div = element("div");
+      label = element("label");
+      label.textContent = "Path";
+      t1 = space();
+      input = element("input");
+      attr(label, "class", "fx-field-label");
+      attr(input, "type", "text");
+      input.value = input_value_value = /*fxConfig*/
+      ctx[2].aura.loop.sequencerPath;
+      attr(input, "placeholder", "e.g. jb2a.shield.01.loop.blue");
+      attr(div, "class", "fx-field-row");
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      append(div, label);
+      append(div, t1);
+      append(div, input);
+      if (!mounted) {
+        dispose = listen(
+          input,
+          "change",
+          /*change_handler_12*/
+          ctx[48]
+        );
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*fxConfig*/
+      4 && input_value_value !== (input_value_value = /*fxConfig*/
+      ctx2[2].aura.loop.sequencerPath) && input.value !== input_value_value) {
+        input.value = input_value_value;
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+      }
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_if_block_6(ctx) {
+  let div1;
+  let span0;
+  let t1;
+  let div0;
+  let label0;
+  let t3;
+  let select0;
+  let option0;
+  let t4;
+  let t5_value = !/*sequencerAvailable*/
+  ctx[3] ? " (N/A)" : "";
+  let t5;
+  let option0_disabled_value;
+  let option1;
+  let select0_value_value;
+  let t7;
+  let t8;
+  let div3;
+  let span1;
+  let t10;
+  let div2;
+  let label1;
+  let t12;
+  let select1;
+  let option2;
+  let t13;
+  let t14_value = !/*sequencerAvailable*/
+  ctx[3] ? " (N/A)" : "";
+  let t14;
+  let option2_disabled_value;
+  let option3;
+  let select1_value_value;
+  let t16;
+  let t17;
+  let div7;
+  let span2;
+  let t19;
+  let p;
+  let t21;
+  let div4;
+  let label2;
+  let t23;
+  let select2;
+  let option4;
+  let t24;
+  let t25_value = !/*sequencerAvailable*/
+  ctx[3] ? " (N/A)" : "";
+  let t25;
+  let option4_disabled_value;
+  let option5;
+  let select2_value_value;
+  let t27;
+  let t28;
+  let div6;
+  let label3;
+  let t30;
+  let div5;
+  let input;
+  let input_value_value;
+  let t31;
+  let button;
+  let t32;
+  let mounted;
+  let dispose;
+  let if_block0 = (
+    /*fxConfig*/
+    ctx[2].aura.intro.source === "sequencer" && create_if_block_10(ctx)
+  );
+  let if_block1 = (
+    /*fxConfig*/
+    ctx[2].aura.outro.source === "sequencer" && create_if_block_9(ctx)
+  );
+  let if_block2 = (
+    /*fxConfig*/
+    ctx[2].aura.overloadEffect.source === "sequencer" && create_if_block_8(ctx)
+  );
+  let if_block3 = (
+    /*fxConfig*/
+    ctx[2].aura.overloadSound.path && create_if_block_7(ctx)
+  );
+  return {
+    c() {
+      div1 = element("div");
+      span0 = element("span");
+      span0.innerHTML = `<i class="fas fa-play"></i> Intro Effect (optional)`;
+      t1 = space();
+      div0 = element("div");
+      label0 = element("label");
+      label0.textContent = "Source";
+      t3 = space();
+      select0 = element("select");
+      option0 = element("option");
+      t4 = text("Sequencer DB");
+      t5 = text(t5_value);
+      option1 = element("option");
+      option1.textContent = "Custom File";
+      t7 = space();
+      if (if_block0) if_block0.c();
+      t8 = space();
+      div3 = element("div");
+      span1 = element("span");
+      span1.innerHTML = `<i class="fas fa-stop"></i> Outro Effect (optional)`;
+      t10 = space();
+      div2 = element("div");
+      label1 = element("label");
+      label1.textContent = "Source";
+      t12 = space();
+      select1 = element("select");
+      option2 = element("option");
+      t13 = text("Sequencer DB");
+      t14 = text(t14_value);
+      option3 = element("option");
+      option3.textContent = "Custom File";
+      t16 = space();
+      if (if_block1) if_block1.c();
+      t17 = space();
+      div7 = element("div");
+      span2 = element("span");
+      span2.innerHTML = `<i class="fas fa-explosion"></i> Overload Effect (optional)`;
+      t19 = space();
+      p = element("p");
+      p.innerHTML = `<i class="fas fa-info-circle"></i> Dramatic shield collapse — falls back to outro if not set`;
+      t21 = space();
+      div4 = element("div");
+      label2 = element("label");
+      label2.textContent = "Source";
+      t23 = space();
+      select2 = element("select");
+      option4 = element("option");
+      t24 = text("Sequencer DB");
+      t25 = text(t25_value);
+      option5 = element("option");
+      option5.textContent = "Custom File";
+      t27 = space();
+      if (if_block2) if_block2.c();
+      t28 = space();
+      div6 = element("div");
+      label3 = element("label");
+      label3.textContent = "Sound";
+      t30 = space();
+      div5 = element("div");
+      input = element("input");
+      t31 = space();
+      button = element("button");
+      button.innerHTML = `<i class="fas fa-file"></i>`;
+      t32 = space();
+      if (if_block3) if_block3.c();
+      attr(span0, "class", "fx-jam-label");
+      attr(label0, "class", "fx-field-label");
+      option0.__value = "sequencer";
+      set_input_value(option0, option0.__value);
+      option0.disabled = option0_disabled_value = !/*sequencerAvailable*/
+      ctx[3];
+      option1.__value = "custom";
+      set_input_value(option1, option1.__value);
+      attr(div0, "class", "fx-field-row");
+      attr(div1, "class", "fx-aura-subsection");
+      attr(span1, "class", "fx-jam-label");
+      attr(label1, "class", "fx-field-label");
+      option2.__value = "sequencer";
+      set_input_value(option2, option2.__value);
+      option2.disabled = option2_disabled_value = !/*sequencerAvailable*/
+      ctx[3];
+      option3.__value = "custom";
+      set_input_value(option3, option3.__value);
+      attr(div2, "class", "fx-field-row");
+      attr(div3, "class", "fx-aura-subsection");
+      attr(span2, "class", "fx-jam-label");
+      attr(p, "class", "fx-hint");
+      attr(label2, "class", "fx-field-label");
+      option4.__value = "sequencer";
+      set_input_value(option4, option4.__value);
+      option4.disabled = option4_disabled_value = !/*sequencerAvailable*/
+      ctx[3];
+      option5.__value = "custom";
+      set_input_value(option5, option5.__value);
+      attr(div4, "class", "fx-field-row");
+      attr(label3, "class", "fx-field-label");
+      attr(input, "type", "text");
+      input.value = input_value_value = /*fxConfig*/
+      ctx[2].aura.overloadSound.path;
+      input.readOnly = true;
+      attr(input, "placeholder", "Falls back to deactivate sound");
+      attr(button, "class", "fx-btn-small");
+      attr(div5, "class", "fx-file-picker-row");
+      attr(div6, "class", "fx-field-row");
+      attr(div7, "class", "fx-aura-subsection");
+      set_style(div7, "border-left-color", "var(--ars-danger, #dc3545)");
+    },
+    m(target, anchor) {
+      insert(target, div1, anchor);
+      append(div1, span0);
+      append(div1, t1);
+      append(div1, div0);
+      append(div0, label0);
+      append(div0, t3);
+      append(div0, select0);
+      append(select0, option0);
+      append(option0, t4);
+      append(option0, t5);
+      append(select0, option1);
+      select_option(
+        select0,
+        /*fxConfig*/
+        ctx[2].aura.intro.source
+      );
+      append(div1, t7);
+      if (if_block0) if_block0.m(div1, null);
+      insert(target, t8, anchor);
+      insert(target, div3, anchor);
+      append(div3, span1);
+      append(div3, t10);
+      append(div3, div2);
+      append(div2, label1);
+      append(div2, t12);
+      append(div2, select1);
+      append(select1, option2);
+      append(option2, t13);
+      append(option2, t14);
+      append(select1, option3);
+      select_option(
+        select1,
+        /*fxConfig*/
+        ctx[2].aura.outro.source
+      );
+      append(div3, t16);
+      if (if_block1) if_block1.m(div3, null);
+      insert(target, t17, anchor);
+      insert(target, div7, anchor);
+      append(div7, span2);
+      append(div7, t19);
+      append(div7, p);
+      append(div7, t21);
+      append(div7, div4);
+      append(div4, label2);
+      append(div4, t23);
+      append(div4, select2);
+      append(select2, option4);
+      append(option4, t24);
+      append(option4, t25);
+      append(select2, option5);
+      select_option(
+        select2,
+        /*fxConfig*/
+        ctx[2].aura.overloadEffect.source
+      );
+      append(div7, t27);
+      if (if_block2) if_block2.m(div7, null);
+      append(div7, t28);
+      append(div7, div6);
+      append(div6, label3);
+      append(div6, t30);
+      append(div6, div5);
+      append(div5, input);
+      append(div5, t31);
+      append(div5, button);
+      append(div5, t32);
+      if (if_block3) if_block3.m(div5, null);
+      if (!mounted) {
+        dispose = [
+          listen(
+            select0,
+            "change",
+            /*change_handler_13*/
+            ctx[49]
+          ),
+          listen(
+            select1,
+            "change",
+            /*change_handler_15*/
+            ctx[51]
+          ),
+          listen(
+            select2,
+            "change",
+            /*change_handler_17*/
+            ctx[53]
+          ),
+          listen(
+            button,
+            "click",
+            /*click_handler_12*/
+            ctx[55]
+          )
+        ];
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*sequencerAvailable*/
+      8 && t5_value !== (t5_value = !/*sequencerAvailable*/
+      ctx2[3] ? " (N/A)" : "")) set_data(t5, t5_value);
+      if (dirty[0] & /*sequencerAvailable*/
+      8 && option0_disabled_value !== (option0_disabled_value = !/*sequencerAvailable*/
+      ctx2[3])) {
+        option0.disabled = option0_disabled_value;
+      }
+      if (dirty[0] & /*fxConfig*/
+      4 && select0_value_value !== (select0_value_value = /*fxConfig*/
+      ctx2[2].aura.intro.source)) {
+        select_option(
+          select0,
+          /*fxConfig*/
+          ctx2[2].aura.intro.source
+        );
+      }
+      if (
+        /*fxConfig*/
+        ctx2[2].aura.intro.source === "sequencer"
+      ) {
+        if (if_block0) {
+          if_block0.p(ctx2, dirty);
+        } else {
+          if_block0 = create_if_block_10(ctx2);
+          if_block0.c();
+          if_block0.m(div1, null);
+        }
+      } else if (if_block0) {
+        if_block0.d(1);
+        if_block0 = null;
+      }
+      if (dirty[0] & /*sequencerAvailable*/
+      8 && t14_value !== (t14_value = !/*sequencerAvailable*/
+      ctx2[3] ? " (N/A)" : "")) set_data(t14, t14_value);
+      if (dirty[0] & /*sequencerAvailable*/
+      8 && option2_disabled_value !== (option2_disabled_value = !/*sequencerAvailable*/
+      ctx2[3])) {
+        option2.disabled = option2_disabled_value;
+      }
+      if (dirty[0] & /*fxConfig*/
+      4 && select1_value_value !== (select1_value_value = /*fxConfig*/
+      ctx2[2].aura.outro.source)) {
+        select_option(
+          select1,
+          /*fxConfig*/
+          ctx2[2].aura.outro.source
+        );
+      }
+      if (
+        /*fxConfig*/
+        ctx2[2].aura.outro.source === "sequencer"
+      ) {
+        if (if_block1) {
+          if_block1.p(ctx2, dirty);
+        } else {
+          if_block1 = create_if_block_9(ctx2);
+          if_block1.c();
+          if_block1.m(div3, null);
+        }
+      } else if (if_block1) {
+        if_block1.d(1);
+        if_block1 = null;
+      }
+      if (dirty[0] & /*sequencerAvailable*/
+      8 && t25_value !== (t25_value = !/*sequencerAvailable*/
+      ctx2[3] ? " (N/A)" : "")) set_data(t25, t25_value);
+      if (dirty[0] & /*sequencerAvailable*/
+      8 && option4_disabled_value !== (option4_disabled_value = !/*sequencerAvailable*/
+      ctx2[3])) {
+        option4.disabled = option4_disabled_value;
+      }
+      if (dirty[0] & /*fxConfig*/
+      4 && select2_value_value !== (select2_value_value = /*fxConfig*/
+      ctx2[2].aura.overloadEffect.source)) {
+        select_option(
+          select2,
+          /*fxConfig*/
+          ctx2[2].aura.overloadEffect.source
+        );
+      }
+      if (
+        /*fxConfig*/
+        ctx2[2].aura.overloadEffect.source === "sequencer"
+      ) {
+        if (if_block2) {
+          if_block2.p(ctx2, dirty);
+        } else {
+          if_block2 = create_if_block_8(ctx2);
+          if_block2.c();
+          if_block2.m(div7, t28);
+        }
+      } else if (if_block2) {
+        if_block2.d(1);
+        if_block2 = null;
+      }
+      if (dirty[0] & /*fxConfig*/
+      4 && input_value_value !== (input_value_value = /*fxConfig*/
+      ctx2[2].aura.overloadSound.path) && input.value !== input_value_value) {
+        input.value = input_value_value;
+      }
+      if (
+        /*fxConfig*/
+        ctx2[2].aura.overloadSound.path
+      ) {
+        if (if_block3) {
+          if_block3.p(ctx2, dirty);
+        } else {
+          if_block3 = create_if_block_7(ctx2);
+          if_block3.c();
+          if_block3.m(div5, null);
+        }
+      } else if (if_block3) {
+        if_block3.d(1);
+        if_block3 = null;
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div1);
+        detach(t8);
+        detach(div3);
+        detach(t17);
+        detach(div7);
+      }
+      if (if_block0) if_block0.d();
+      if (if_block1) if_block1.d();
+      if (if_block2) if_block2.d();
+      if (if_block3) if_block3.d();
+      mounted = false;
+      run_all(dispose);
+    }
+  };
+}
+function create_if_block_10(ctx) {
+  let div;
+  let label;
+  let t1;
+  let input;
+  let input_value_value;
+  let mounted;
+  let dispose;
+  return {
+    c() {
+      div = element("div");
+      label = element("label");
+      label.textContent = "Path";
+      t1 = space();
+      input = element("input");
+      attr(label, "class", "fx-field-label");
+      attr(input, "type", "text");
+      input.value = input_value_value = /*fxConfig*/
+      ctx[2].aura.intro.sequencerPath;
+      attr(input, "placeholder", "e.g. jb2a.shield.01.intro.blue");
+      attr(div, "class", "fx-field-row");
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      append(div, label);
+      append(div, t1);
+      append(div, input);
+      if (!mounted) {
+        dispose = listen(
+          input,
+          "change",
+          /*change_handler_14*/
+          ctx[50]
+        );
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*fxConfig*/
+      4 && input_value_value !== (input_value_value = /*fxConfig*/
+      ctx2[2].aura.intro.sequencerPath) && input.value !== input_value_value) {
+        input.value = input_value_value;
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+      }
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_if_block_9(ctx) {
+  let div;
+  let label;
+  let t1;
+  let input;
+  let input_value_value;
+  let mounted;
+  let dispose;
+  return {
+    c() {
+      div = element("div");
+      label = element("label");
+      label.textContent = "Path";
+      t1 = space();
+      input = element("input");
+      attr(label, "class", "fx-field-label");
+      attr(input, "type", "text");
+      input.value = input_value_value = /*fxConfig*/
+      ctx[2].aura.outro.sequencerPath;
+      attr(input, "placeholder", "e.g. jb2a.shield.01.outro_explode.blue");
+      attr(div, "class", "fx-field-row");
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      append(div, label);
+      append(div, t1);
+      append(div, input);
+      if (!mounted) {
+        dispose = listen(
+          input,
+          "change",
+          /*change_handler_16*/
+          ctx[52]
+        );
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*fxConfig*/
+      4 && input_value_value !== (input_value_value = /*fxConfig*/
+      ctx2[2].aura.outro.sequencerPath) && input.value !== input_value_value) {
+        input.value = input_value_value;
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+      }
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_if_block_8(ctx) {
+  let div;
+  let label;
+  let t1;
+  let input;
+  let input_value_value;
+  let mounted;
+  let dispose;
+  return {
+    c() {
+      div = element("div");
+      label = element("label");
+      label.textContent = "Path";
+      t1 = space();
+      input = element("input");
+      attr(label, "class", "fx-field-label");
+      attr(input, "type", "text");
+      input.value = input_value_value = /*fxConfig*/
+      ctx[2].aura.overloadEffect.sequencerPath;
+      attr(input, "placeholder", "e.g. jb2a.explosion.01.orange");
+      attr(div, "class", "fx-field-row");
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      append(div, label);
+      append(div, t1);
+      append(div, input);
+      if (!mounted) {
+        dispose = listen(
+          input,
+          "change",
+          /*change_handler_18*/
+          ctx[54]
+        );
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*fxConfig*/
+      4 && input_value_value !== (input_value_value = /*fxConfig*/
+      ctx2[2].aura.overloadEffect.sequencerPath) && input.value !== input_value_value) {
+        input.value = input_value_value;
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+      }
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_if_block_7(ctx) {
+  let button;
+  let mounted;
+  let dispose;
+  return {
+    c() {
+      button = element("button");
+      button.innerHTML = `<i class="fas fa-times"></i>`;
+      attr(button, "class", "fx-btn-small");
+      attr(button, "title", "Clear");
+    },
+    m(target, anchor) {
+      insert(target, button, anchor);
+      if (!mounted) {
+        dispose = listen(
+          button,
+          "click",
+          /*click_handler_13*/
+          ctx[56]
+        );
+        mounted = true;
+      }
+    },
+    p: noop,
+    d(detaching) {
+      if (detaching) {
+        detach(button);
+      }
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_if_block_3(ctx) {
+  let div1;
+  let label0;
+  let t1;
+  let div0;
+  let input0;
+  let input0_value_value;
+  let t2;
+  let button0;
+  let t3;
+  let t4;
+  let div3;
+  let label1;
+  let t6;
+  let div2;
+  let input1;
+  let input1_value_value;
+  let t7;
+  let button1;
+  let t8;
+  let mounted;
+  let dispose;
+  let if_block0 = (
+    /*fxConfig*/
+    ctx[2].aura.activateSound.path && create_if_block_5(ctx)
+  );
+  let if_block1 = (
+    /*fxConfig*/
+    ctx[2].aura.deactivateSound.path && create_if_block_4(ctx)
+  );
+  return {
+    c() {
+      div1 = element("div");
+      label0 = element("label");
+      label0.textContent = "Activate Sound";
+      t1 = space();
+      div0 = element("div");
+      input0 = element("input");
+      t2 = space();
+      button0 = element("button");
+      button0.innerHTML = `<i class="fas fa-file"></i>`;
+      t3 = space();
+      if (if_block0) if_block0.c();
+      t4 = space();
+      div3 = element("div");
+      label1 = element("label");
+      label1.textContent = "Deactivate Sound";
+      t6 = space();
+      div2 = element("div");
+      input1 = element("input");
+      t7 = space();
+      button1 = element("button");
+      button1.innerHTML = `<i class="fas fa-file"></i>`;
+      t8 = space();
+      if (if_block1) if_block1.c();
+      attr(label0, "class", "fx-field-label");
+      attr(input0, "type", "text");
+      input0.value = input0_value_value = /*fxConfig*/
+      ctx[2].aura.activateSound.path;
+      input0.readOnly = true;
+      attr(input0, "placeholder", "No sound");
+      attr(button0, "class", "fx-btn-small");
+      attr(div0, "class", "fx-file-picker-row");
+      attr(div1, "class", "fx-field-row");
+      attr(label1, "class", "fx-field-label");
+      attr(input1, "type", "text");
+      input1.value = input1_value_value = /*fxConfig*/
+      ctx[2].aura.deactivateSound.path;
+      input1.readOnly = true;
+      attr(input1, "placeholder", "No sound");
+      attr(button1, "class", "fx-btn-small");
+      attr(div2, "class", "fx-file-picker-row");
+      attr(div3, "class", "fx-field-row");
+    },
+    m(target, anchor) {
+      insert(target, div1, anchor);
+      append(div1, label0);
+      append(div1, t1);
+      append(div1, div0);
+      append(div0, input0);
+      append(div0, t2);
+      append(div0, button0);
+      append(div0, t3);
+      if (if_block0) if_block0.m(div0, null);
+      insert(target, t4, anchor);
+      insert(target, div3, anchor);
+      append(div3, label1);
+      append(div3, t6);
+      append(div3, div2);
+      append(div2, input1);
+      append(div2, t7);
+      append(div2, button1);
+      append(div2, t8);
+      if (if_block1) if_block1.m(div2, null);
+      if (!mounted) {
+        dispose = [
+          listen(
+            button0,
+            "click",
+            /*click_handler_14*/
+            ctx[58]
+          ),
+          listen(
+            button1,
+            "click",
+            /*click_handler_16*/
+            ctx[60]
+          )
+        ];
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*fxConfig*/
+      4 && input0_value_value !== (input0_value_value = /*fxConfig*/
+      ctx2[2].aura.activateSound.path) && input0.value !== input0_value_value) {
+        input0.value = input0_value_value;
+      }
+      if (
+        /*fxConfig*/
+        ctx2[2].aura.activateSound.path
+      ) {
+        if (if_block0) {
+          if_block0.p(ctx2, dirty);
+        } else {
+          if_block0 = create_if_block_5(ctx2);
+          if_block0.c();
+          if_block0.m(div0, null);
+        }
+      } else if (if_block0) {
+        if_block0.d(1);
+        if_block0 = null;
+      }
+      if (dirty[0] & /*fxConfig*/
+      4 && input1_value_value !== (input1_value_value = /*fxConfig*/
+      ctx2[2].aura.deactivateSound.path) && input1.value !== input1_value_value) {
+        input1.value = input1_value_value;
+      }
+      if (
+        /*fxConfig*/
+        ctx2[2].aura.deactivateSound.path
+      ) {
+        if (if_block1) {
+          if_block1.p(ctx2, dirty);
+        } else {
+          if_block1 = create_if_block_4(ctx2);
+          if_block1.c();
+          if_block1.m(div2, null);
+        }
+      } else if (if_block1) {
+        if_block1.d(1);
+        if_block1 = null;
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div1);
+        detach(t4);
+        detach(div3);
+      }
+      if (if_block0) if_block0.d();
+      if (if_block1) if_block1.d();
+      mounted = false;
+      run_all(dispose);
+    }
+  };
+}
+function create_if_block_5(ctx) {
+  let button;
+  let mounted;
+  let dispose;
+  return {
+    c() {
+      button = element("button");
+      button.innerHTML = `<i class="fas fa-times"></i>`;
+      attr(button, "class", "fx-btn-small");
+      attr(button, "title", "Clear");
+    },
+    m(target, anchor) {
+      insert(target, button, anchor);
+      if (!mounted) {
+        dispose = listen(
+          button,
+          "click",
+          /*click_handler_15*/
+          ctx[59]
+        );
+        mounted = true;
+      }
+    },
+    p: noop,
+    d(detaching) {
+      if (detaching) {
+        detach(button);
+      }
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_if_block_4(ctx) {
+  let button;
+  let mounted;
+  let dispose;
+  return {
+    c() {
+      button = element("button");
+      button.innerHTML = `<i class="fas fa-times"></i>`;
+      attr(button, "class", "fx-btn-small");
+      attr(button, "title", "Clear");
+    },
+    m(target, anchor) {
+      insert(target, button, anchor);
+      if (!mounted) {
+        dispose = listen(
+          button,
+          "click",
+          /*click_handler_17*/
+          ctx[61]
+        );
+        mounted = true;
+      }
+    },
+    p: noop,
+    d(detaching) {
+      if (detaching) {
+        detach(button);
+      }
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_else_block(ctx) {
+  let button;
+  let mounted;
+  let dispose;
+  return {
+    c() {
+      button = element("button");
+      button.innerHTML = `<i class="fas fa-play"></i> Test Flash`;
+      attr(button, "class", "fx-btn fx-btn-small");
+      attr(button, "title", "Test reactive flash (select a token)");
+    },
+    m(target, anchor) {
+      insert(target, button, anchor);
+      if (!mounted) {
+        dispose = listen(
+          button,
+          "click",
+          /*click_handler_21*/
+          ctx[65]
+        );
+        mounted = true;
+      }
+    },
+    p: noop,
+    d(detaching) {
+      if (detaching) {
+        detach(button);
+      }
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_if_block_2(ctx) {
+  let button0;
+  let t1;
+  let button1;
+  let t3;
+  let button2;
+  let mounted;
+  let dispose;
+  return {
+    c() {
+      button0 = element("button");
+      button0.innerHTML = `<i class="fas fa-play"></i> Activate`;
+      t1 = space();
+      button1 = element("button");
+      button1.innerHTML = `<i class="fas fa-stop"></i> Deactivate`;
+      t3 = space();
+      button2 = element("button");
+      button2.innerHTML = `<i class="fas fa-explosion"></i> Overload`;
+      attr(button0, "class", "fx-btn fx-btn-small");
+      attr(button0, "title", "Test activate (select a token)");
+      attr(button1, "class", "fx-btn fx-btn-small");
+      attr(button1, "title", "Test deactivate (select a token)");
+      attr(button2, "class", "fx-btn fx-btn-small");
+      attr(button2, "title", "Test overload (select a token)");
+    },
+    m(target, anchor) {
+      insert(target, button0, anchor);
+      insert(target, t1, anchor);
+      insert(target, button1, anchor);
+      insert(target, t3, anchor);
+      insert(target, button2, anchor);
+      if (!mounted) {
+        dispose = [
+          listen(
+            button0,
+            "click",
+            /*click_handler_18*/
+            ctx[62]
+          ),
+          listen(
+            button1,
+            "click",
+            /*click_handler_19*/
+            ctx[63]
+          ),
+          listen(
+            button2,
+            "click",
+            /*click_handler_20*/
+            ctx[64]
+          )
+        ];
+        mounted = true;
+      }
+    },
+    p: noop,
+    d(detaching) {
+      if (detaching) {
+        detach(button0);
+        detach(t1);
+        detach(button1);
+        detach(t3);
+        detach(button2);
+      }
+      mounted = false;
+      run_all(dispose);
+    }
+  };
+}
+function create_default_slot$2(ctx) {
+  let main;
+  let section;
+  let label;
+  let span;
+  let t1;
+  let button;
+  let i;
+  let button_title_value;
+  let t2;
+  let mounted;
+  let dispose;
+  let if_block = (
+    /*fxConfig*/
+    ctx[2].enabled && create_if_block$1(ctx)
+  );
+  return {
+    c() {
+      main = element("main");
+      section = element("section");
+      label = element("label");
+      span = element("span");
+      span.textContent = "Enable Defensive FX";
+      t1 = space();
+      button = element("button");
+      i = element("i");
+      t2 = space();
+      if (if_block) if_block.c();
+      attr(span, "class", "fx-toggle-label");
+      attr(i, "class", "fas");
+      toggle_class(
+        i,
+        "fa-toggle-on",
+        /*fxConfig*/
+        ctx[2].enabled
+      );
+      toggle_class(i, "fa-toggle-off", !/*fxConfig*/
+      ctx[2].enabled);
+      attr(button, "class", "fx-toggle-btn");
+      attr(button, "title", button_title_value = /*fxConfig*/
+      ctx[2].enabled ? "Disable" : "Enable");
+      toggle_class(
+        button,
+        "active",
+        /*fxConfig*/
+        ctx[2].enabled
+      );
+      attr(label, "class", "fx-toggle-row");
+      attr(section, "class", "fx-section fx-enable");
+      attr(main, "class", "defensive-fx-shell");
+    },
+    m(target, anchor) {
+      insert(target, main, anchor);
+      append(main, section);
+      append(section, label);
+      append(label, span);
+      append(label, t1);
+      append(label, button);
+      append(button, i);
+      append(main, t2);
+      if (if_block) if_block.m(main, null);
+      if (!mounted) {
+        dispose = listen(
+          button,
+          "click",
+          /*toggleEnabled*/
+          ctx[4]
+        );
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*fxConfig*/
+      4) {
+        toggle_class(
+          i,
+          "fa-toggle-on",
+          /*fxConfig*/
+          ctx2[2].enabled
+        );
+      }
+      if (dirty[0] & /*fxConfig*/
+      4) {
+        toggle_class(i, "fa-toggle-off", !/*fxConfig*/
+        ctx2[2].enabled);
+      }
+      if (dirty[0] & /*fxConfig*/
+      4 && button_title_value !== (button_title_value = /*fxConfig*/
+      ctx2[2].enabled ? "Disable" : "Enable")) {
+        attr(button, "title", button_title_value);
+      }
+      if (dirty[0] & /*fxConfig*/
+      4) {
+        toggle_class(
+          button,
+          "active",
+          /*fxConfig*/
+          ctx2[2].enabled
+        );
+      }
+      if (
+        /*fxConfig*/
+        ctx2[2].enabled
+      ) {
+        if (if_block) {
+          if_block.p(ctx2, dirty);
+        } else {
+          if_block = create_if_block$1(ctx2);
+          if_block.c();
+          if_block.m(main, null);
+        }
+      } else if (if_block) {
+        if_block.d(1);
+        if_block = null;
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(main);
+      }
+      if (if_block) if_block.d();
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_fragment$2(ctx) {
+  let applicationshell;
+  let updating_elementRoot;
+  let current;
+  function applicationshell_elementRoot_binding(value) {
+    ctx[66](value);
+  }
+  let applicationshell_props = {
+    $$slots: { default: [create_default_slot$2] },
+    $$scope: { ctx }
+  };
+  if (
+    /*elementRoot*/
+    ctx[0] !== void 0
+  ) {
+    applicationshell_props.elementRoot = /*elementRoot*/
+    ctx[0];
+  }
+  applicationshell = new ApplicationShell({ props: applicationshell_props });
+  binding_callbacks.push(() => bind(applicationshell, "elementRoot", applicationshell_elementRoot_binding));
+  return {
+    c() {
+      create_component(applicationshell.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(applicationshell, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const applicationshell_changes = {};
+      if (dirty[0] & /*fxConfig, sequencerAvailable*/
+      12 | dirty[2] & /*$$scope*/
+      512) {
+        applicationshell_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      if (!updating_elementRoot && dirty[0] & /*elementRoot*/
+      1) {
+        updating_elementRoot = true;
+        applicationshell_changes.elementRoot = /*elementRoot*/
+        ctx2[0];
+        add_flush_callback(() => updating_elementRoot = false);
+      }
+      applicationshell.$set(applicationshell_changes);
+    },
+    i(local) {
+      if (current) return;
+      transition_in(applicationshell.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(applicationshell.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(applicationshell, detaching);
+    }
+  };
+}
+function instance$2($$self, $$props, $$invalidate) {
+  let doc;
+  let sequencerAvailable;
+  let $tjsDoc, $$unsubscribe_tjsDoc = noop, $$subscribe_tjsDoc = () => ($$unsubscribe_tjsDoc(), $$unsubscribe_tjsDoc = subscribe(tjsDoc, ($$value) => $$invalidate(20, $tjsDoc = $$value)), tjsDoc);
+  $$self.$$.on_destroy.push(() => $$unsubscribe_tjsDoc());
+  let { elementRoot = void 0 } = $$props;
+  let { tjsDoc = null } = $$props;
+  $$subscribe_tjsDoc();
+  const external = getContext("#external");
+  external?.application;
+  const D = {
+    enabled: false,
+    onHit: {
+      enabled: false,
+      effect: {
+        source: "sequencer",
+        sequencerPath: "",
+        customFile: ""
+      },
+      sound: { path: "", volume: 0.8 },
+      scale: 1
+    },
+    onDeflect: {
+      enabled: false,
+      effect: {
+        source: "sequencer",
+        sequencerPath: "",
+        customFile: ""
+      },
+      sound: { path: "", volume: 0.8 },
+      scale: 1
+    },
+    onPenetrate: {
+      enabled: false,
+      effect: {
+        source: "sequencer",
+        sequencerPath: "",
+        customFile: ""
+      },
+      sound: { path: "", volume: 0.8 },
+      scale: 1
+    },
+    aura: {
+      enabled: false,
+      mode: "permanent",
+      roundsDuration: 3,
+      loop: {
+        source: "sequencer",
+        sequencerPath: "",
+        customFile: ""
+      },
+      intro: {
+        source: "sequencer",
+        sequencerPath: "",
+        customFile: ""
+      },
+      outro: {
+        source: "sequencer",
+        sequencerPath: "",
+        customFile: ""
+      },
+      overloadEffect: {
+        source: "sequencer",
+        sequencerPath: "",
+        customFile: ""
+      },
+      activateSound: { path: "", volume: 0.8 },
+      deactivateSound: { path: "", volume: 0.8 },
+      overloadSound: { path: "", volume: 1 },
+      scale: 1.5
+    }
+  };
+  let fxConfig = { ...D };
+  async function saveConfig(config) {
+    if (!doc) return;
+    await doc.setFlag(MODULE_ID, "defensiveFx", config);
+  }
+  async function toggleEnabled() {
+    await saveConfig({ ...fxConfig, enabled: !fxConfig.enabled });
+  }
+  async function toggleSection(key) {
+    const cur = fxConfig[key];
+    await saveConfig({
+      ...fxConfig,
+      [key]: { ...cur, enabled: !cur.enabled }
+    });
+  }
+  async function updateEffect(key, field, value) {
+    const cur = fxConfig[key];
+    await saveConfig({
+      ...fxConfig,
+      [key]: {
+        ...cur,
+        effect: { ...cur.effect, [field]: value }
+      }
+    });
+  }
+  async function updateSound(key, field, value) {
+    const cur = fxConfig[key];
+    await saveConfig({
+      ...fxConfig,
+      [key]: {
+        ...cur,
+        sound: { ...cur.sound, [field]: value }
+      }
+    });
+  }
+  async function updateScale(key, value) {
+    const n = Number(value);
+    if (isNaN(n)) return;
+    await saveConfig({
+      ...fxConfig,
+      [key]: { ...fxConfig[key], scale: n }
+    });
+  }
+  async function toggleAura() {
+    await saveConfig({
+      ...fxConfig,
+      aura: {
+        ...fxConfig.aura,
+        enabled: !fxConfig.aura.enabled
+      }
+    });
+  }
+  async function setAuraField(field, value) {
+    await saveConfig({
+      ...fxConfig,
+      aura: { ...fxConfig.aura, [field]: value }
+    });
+  }
+  async function updateAuraEffect(slot, field, value) {
+    await saveConfig({
+      ...fxConfig,
+      aura: {
+        ...fxConfig.aura,
+        [slot]: { ...fxConfig.aura[slot], [field]: value }
+      }
+    });
+  }
+  async function updateAuraSound(slot, field, value) {
+    await saveConfig({
+      ...fxConfig,
+      aura: {
+        ...fxConfig.aura,
+        [slot]: { ...fxConfig.aura[slot], [field]: value }
+      }
+    });
+  }
+  async function updateAuraScale(value) {
+    const n = Number(value);
+    if (isNaN(n)) return;
+    await saveConfig({
+      ...fxConfig,
+      aura: { ...fxConfig.aura, scale: n }
+    });
+  }
+  function testReactive(type) {
+    if (!doc) return;
+    const token = canvas.tokens?.controlled?.[0];
+    if (!token) {
+      ui.notifications.warn("Select a token to test defensive FX");
+      return;
+    }
+    playDefensiveFx(doc, { type, token }).catch((err) => {
+      console.warn("[ARS] DefensiveFX test failed:", err);
+      ui.notifications.warn("Test failed. Check console.");
+    });
+  }
+  async function copyFxConfig() {
+    const configToCopy = { ...fxConfig };
+    delete configToCopy.enabled;
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(configToCopy, null, 2));
+      ui.notifications.info("Defensive FX config copied to clipboard");
+    } catch {
+      DefensiveFxShell._copiedConfig = configToCopy;
+      ui.notifications.info("Defensive FX config copied");
+    }
+  }
+  async function pasteFxConfig() {
+    let pastedConfig;
+    try {
+      const text2 = await navigator.clipboard.readText();
+      pastedConfig = JSON.parse(text2);
+    } catch {
+      pastedConfig = DefensiveFxShell._copiedConfig;
+    }
+    if (!pastedConfig || typeof pastedConfig !== "object") {
+      ui.notifications.warn("No valid FX config in clipboard");
+      return;
+    }
+    const merged = {
+      ...fxConfig,
+      ...pastedConfig,
+      enabled: fxConfig.enabled
+    };
+    await saveConfig(merged);
+    ui.notifications.info("Defensive FX config pasted");
+  }
+  async function exportFx() {
+    if (!doc) return;
+    const data = exportDefensiveFx(doc);
+    if (!data) {
+      ui.notifications.warn("No defensive FX configured to export");
+      return;
+    }
+    const copied = await copyFxToClipboard(data);
+    if (copied) {
+      ui.notifications.info("Defensive FX exported to clipboard");
+    } else {
+      downloadFxAsFile(data, `defensive-fx-${doc.name}.json`);
+      ui.notifications.info("Defensive FX downloaded as file");
+    }
+  }
+  async function importFx() {
+    let jsonText;
+    try {
+      jsonText = await navigator.clipboard.readText();
+    } catch {
+      ui.notifications.warn("Cannot read clipboard. Try pasting directly.");
+      return;
+    }
+    if (!jsonText?.trim()) {
+      ui.notifications.warn("Clipboard is empty");
+      return;
+    }
+    const result = await importFxToItem(doc, jsonText);
+    if (result.success) {
+      ui.notifications.info(`Imported ${result.type === "allFx" ? "all FX" : "defensive FX"} config`);
+    } else {
+      ui.notifications.warn(`Import failed: ${result.error}`);
+    }
+  }
+  const click_handler = () => toggleSection("onHit");
+  const change_handler = (e) => updateEffect("onHit", "source", e.target.value);
+  const change_handler_1 = (e) => updateEffect("onHit", "sequencerPath", e.target.value);
+  const change_handler_2 = (e) => updateScale("onHit", e.target.value);
+  const click_handler_1 = () => openAudioPicker(
+    (p) => {
+      if (p) updateSound("onHit", "path", p);
+    },
+    fxConfig.onHit.sound.path
+  );
+  const click_handler_2 = () => updateSound("onHit", "path", "");
+  const input_handler = (e) => updateSound("onHit", "volume", Number(e.target.value));
+  const click_handler_3 = () => testReactive("shieldHit");
+  const click_handler_4 = () => toggleSection("onDeflect");
+  const change_handler_3 = (e) => updateEffect("onDeflect", "source", e.target.value);
+  const change_handler_4 = (e) => updateEffect("onDeflect", "sequencerPath", e.target.value);
+  const change_handler_5 = (e) => updateScale("onDeflect", e.target.value);
+  const click_handler_5 = () => openAudioPicker(
+    (p) => {
+      if (p) updateSound("onDeflect", "path", p);
+    },
+    fxConfig.onDeflect.sound.path
+  );
+  const click_handler_6 = () => updateSound("onDeflect", "path", "");
+  const input_handler_1 = (e) => updateSound("onDeflect", "volume", Number(e.target.value));
+  const click_handler_7 = () => testReactive("armorDeflect");
+  const click_handler_8 = () => toggleSection("onPenetrate");
+  const change_handler_6 = (e) => updateEffect("onPenetrate", "source", e.target.value);
+  const change_handler_7 = (e) => updateEffect("onPenetrate", "sequencerPath", e.target.value);
+  const change_handler_8 = (e) => updateScale("onPenetrate", e.target.value);
+  const click_handler_9 = () => openAudioPicker(
+    (p) => {
+      if (p) updateSound("onPenetrate", "path", p);
+    },
+    fxConfig.onPenetrate.sound.path
+  );
+  const click_handler_10 = () => updateSound("onPenetrate", "path", "");
+  const input_handler_2 = (e) => updateSound("onPenetrate", "volume", Number(e.target.value));
+  const click_handler_11 = () => testReactive("armorPenetrate");
+  const change_handler_9 = (e) => setAuraField("mode", e.target.value);
+  const change_handler_10 = (e) => {
+    const n = Number(e.target.value);
+    if (!isNaN(n)) setAuraField("roundsDuration", n);
+  };
+  const change_handler_11 = (e) => updateAuraEffect("loop", "source", e.target.value);
+  const change_handler_12 = (e) => updateAuraEffect("loop", "sequencerPath", e.target.value);
+  const change_handler_13 = (e) => updateAuraEffect("intro", "source", e.target.value);
+  const change_handler_14 = (e) => updateAuraEffect("intro", "sequencerPath", e.target.value);
+  const change_handler_15 = (e) => updateAuraEffect("outro", "source", e.target.value);
+  const change_handler_16 = (e) => updateAuraEffect("outro", "sequencerPath", e.target.value);
+  const change_handler_17 = (e) => updateAuraEffect("overloadEffect", "source", e.target.value);
+  const change_handler_18 = (e) => updateAuraEffect("overloadEffect", "sequencerPath", e.target.value);
+  const click_handler_12 = () => openAudioPicker(
+    (p) => {
+      if (p) updateAuraSound("overloadSound", "path", p);
+    },
+    fxConfig.aura.overloadSound.path
+  );
+  const click_handler_13 = () => updateAuraSound("overloadSound", "path", "");
+  const change_handler_19 = (e) => updateAuraScale(e.target.value);
+  const click_handler_14 = () => openAudioPicker(
+    (p) => {
+      if (p) updateAuraSound("activateSound", "path", p);
+    },
+    fxConfig.aura.activateSound.path
+  );
+  const click_handler_15 = () => updateAuraSound("activateSound", "path", "");
+  const click_handler_16 = () => openAudioPicker(
+    (p) => {
+      if (p) updateAuraSound("deactivateSound", "path", p);
+    },
+    fxConfig.aura.deactivateSound.path
+  );
+  const click_handler_17 = () => updateAuraSound("deactivateSound", "path", "");
+  const click_handler_18 = () => testReactive("auraActivate");
+  const click_handler_19 = () => testReactive("auraDeactivate");
+  const click_handler_20 = () => testReactive("shieldOverload");
+  const click_handler_21 = () => testReactive("shieldHit");
+  function applicationshell_elementRoot_binding(value) {
+    elementRoot = value;
+    $$invalidate(0, elementRoot);
+  }
+  $$self.$$set = ($$props2) => {
+    if ("elementRoot" in $$props2) $$invalidate(0, elementRoot = $$props2.elementRoot);
+    if ("tjsDoc" in $$props2) $$subscribe_tjsDoc($$invalidate(1, tjsDoc = $$props2.tjsDoc));
+  };
+  $$self.$$.update = () => {
+    if ($$self.$$.dirty[0] & /*tjsDoc, $tjsDoc*/
+    1048578) {
+      $$invalidate(19, doc = tjsDoc ? $tjsDoc : null);
+    }
+    if ($$self.$$.dirty[0] & /*doc*/
+    524288) {
+      if (doc) {
+        const s = doc.getFlag(MODULE_ID, "defensiveFx");
+        if (s) {
+          $$invalidate(2, fxConfig = {
+            ...D,
+            ...s,
+            onHit: {
+              ...D.onHit,
+              ...s.onHit ?? {},
+              effect: {
+                ...D.onHit.effect,
+                ...s.onHit?.effect ?? {}
+              },
+              sound: {
+                ...D.onHit.sound,
+                ...s.onHit?.sound ?? {}
+              }
+            },
+            onDeflect: {
+              ...D.onDeflect,
+              ...s.onDeflect ?? {},
+              effect: {
+                ...D.onDeflect.effect,
+                ...s.onDeflect?.effect ?? {}
+              },
+              sound: {
+                ...D.onDeflect.sound,
+                ...s.onDeflect?.sound ?? {}
+              }
+            },
+            onPenetrate: {
+              ...D.onPenetrate,
+              ...s.onPenetrate ?? {},
+              effect: {
+                ...D.onPenetrate.effect,
+                ...s.onPenetrate?.effect ?? {}
+              },
+              sound: {
+                ...D.onPenetrate.sound,
+                ...s.onPenetrate?.sound ?? {}
+              }
+            },
+            aura: {
+              ...D.aura,
+              ...s.aura ?? {},
+              loop: { ...D.aura.loop, ...s.aura?.loop ?? {} },
+              intro: { ...D.aura.intro, ...s.aura?.intro ?? {} },
+              outro: { ...D.aura.outro, ...s.aura?.outro ?? {} },
+              overloadEffect: {
+                ...D.aura.overloadEffect,
+                ...s.aura?.overloadEffect ?? {}
+              },
+              activateSound: {
+                ...D.aura.activateSound,
+                ...s.aura?.activateSound ?? {}
+              },
+              deactivateSound: {
+                ...D.aura.deactivateSound,
+                ...s.aura?.deactivateSound ?? {}
+              },
+              overloadSound: {
+                ...D.aura.overloadSound,
+                ...s.aura?.overloadSound ?? {}
+              }
+            }
+          });
+        } else {
+          $$invalidate(2, fxConfig = { ...D });
+        }
+      }
+    }
+  };
+  $$invalidate(3, sequencerAvailable = typeof Sequencer !== "undefined" && game.modules?.get("sequencer")?.active === true);
+  return [
+    elementRoot,
+    tjsDoc,
+    fxConfig,
+    sequencerAvailable,
+    toggleEnabled,
+    toggleSection,
+    updateEffect,
+    updateSound,
+    updateScale,
+    toggleAura,
+    setAuraField,
+    updateAuraEffect,
+    updateAuraSound,
+    updateAuraScale,
+    testReactive,
+    copyFxConfig,
+    pasteFxConfig,
+    exportFx,
+    importFx,
+    doc,
+    $tjsDoc,
+    click_handler,
+    change_handler,
+    change_handler_1,
+    change_handler_2,
+    click_handler_1,
+    click_handler_2,
+    input_handler,
+    click_handler_3,
+    click_handler_4,
+    change_handler_3,
+    change_handler_4,
+    change_handler_5,
+    click_handler_5,
+    click_handler_6,
+    input_handler_1,
+    click_handler_7,
+    click_handler_8,
+    change_handler_6,
+    change_handler_7,
+    change_handler_8,
+    click_handler_9,
+    click_handler_10,
+    input_handler_2,
+    click_handler_11,
+    change_handler_9,
+    change_handler_10,
+    change_handler_11,
+    change_handler_12,
+    change_handler_13,
+    change_handler_14,
+    change_handler_15,
+    change_handler_16,
+    change_handler_17,
+    change_handler_18,
+    click_handler_12,
+    click_handler_13,
+    change_handler_19,
+    click_handler_14,
+    click_handler_15,
+    click_handler_16,
+    click_handler_17,
+    click_handler_18,
+    click_handler_19,
+    click_handler_20,
+    click_handler_21,
+    applicationshell_elementRoot_binding
+  ];
+}
+class DefensiveFxShell_1 extends SvelteComponent {
+  constructor(options) {
+    super();
+    init(this, options, instance$2, create_fragment$2, safe_not_equal, { elementRoot: 0, tjsDoc: 1 }, null, [-1, -1, -1]);
   }
   get elementRoot() {
     return this.$$.ctx[0];
@@ -28389,6 +39990,172 @@ class PortraitGalleryApp extends SvelteApp {
     return this.#tjsDoc;
   }
 }
+class WeaponFxApp extends SvelteApp {
+  /**
+   * TJSDocument wrapper for reactive document updates
+   * @type {TJSDocument}
+   */
+  #tjsDoc;
+  /**
+   * @param {Item} item - The Item document
+   * @param {object} options - Application options
+   */
+  constructor(item, options = {}) {
+    super({
+      ...options,
+      id: `weapon-fx-app-${item.id}`
+    });
+    this.#tjsDoc = new TJSDocument(item);
+  }
+  /**
+   * Static method to open the app for a given item.
+   * Prevents duplicate windows for the same item.
+   *
+   * @param {Item} item - The item document
+   * @returns {WeaponFxApp}
+   */
+  static open(item) {
+    const existingApp = Object.values(ui.windows).find(
+      (w) => w instanceof WeaponFxApp && w.document?.id === item.id
+    );
+    if (existingApp) {
+      existingApp.render(true, { focus: true });
+      return existingApp;
+    }
+    const app = new this(item);
+    app.render(true);
+    return app;
+  }
+  /**
+   * Default Application options
+   *
+   * @returns {SvelteApp.Options} options - SvelteApp options.
+   */
+  static get defaultOptions() {
+    return deepMerge(super.defaultOptions, {
+      classes: ["antifriz-roleplay-stuff", "weapon-fx-app"],
+      title: "Weapon FX",
+      width: 460,
+      height: 600,
+      resizable: true,
+      minimizable: true,
+      svelte: {
+        class: WeaponFxShell_1,
+        target: document.body,
+        intro: true,
+        props: function() {
+          return {
+            tjsDoc: this.#tjsDoc
+          };
+        }
+      }
+    });
+  }
+  /**
+   * Get the application title
+   * @returns {string}
+   */
+  get title() {
+    return `${this.document?.name ?? "Item"} — Weapon FX`;
+  }
+  /**
+   * Get the document from TJSDocument
+   * @returns {Item|undefined}
+   */
+  get document() {
+    return this.#tjsDoc.get();
+  }
+  /**
+   * Get the TJSDocument store
+   * @returns {TJSDocument}
+   */
+  get tjsDoc() {
+    return this.#tjsDoc;
+  }
+}
+class DefensiveFxApp extends SvelteApp {
+  /**
+   * TJSDocument wrapper for reactive document updates
+   * @type {TJSDocument}
+   */
+  #tjsDoc;
+  /**
+   * @param {Item} item - The Item document
+   * @param {object} options - Application options
+   */
+  constructor(item, options = {}) {
+    super({
+      ...options,
+      id: `defensive-fx-app-${item.id}`
+    });
+    this.#tjsDoc = new TJSDocument(item);
+  }
+  /**
+   * Static method to open the app for a given item.
+   * Prevents duplicate windows for the same item.
+   *
+   * @param {Item} item - The item document
+   * @returns {DefensiveFxApp}
+   */
+  static open(item) {
+    const existingApp = Object.values(ui.windows).find(
+      (w) => w instanceof DefensiveFxApp && w.document?.id === item.id
+    );
+    if (existingApp) {
+      existingApp.render(true, { focus: true });
+      return existingApp;
+    }
+    const app = new this(item);
+    app.render(true);
+    return app;
+  }
+  /**
+   * Default Application options
+   *
+   * @returns {SvelteApp.Options} options - SvelteApp options.
+   */
+  static get defaultOptions() {
+    return deepMerge(super.defaultOptions, {
+      classes: ["antifriz-roleplay-stuff", "defensive-fx-app"],
+      title: "Defensive FX",
+      width: 460,
+      height: 550,
+      resizable: true,
+      minimizable: true,
+      svelte: {
+        class: DefensiveFxShell_1,
+        target: document.body,
+        intro: true,
+        props: function() {
+          return {
+            tjsDoc: this.#tjsDoc
+          };
+        }
+      }
+    });
+  }
+  /**
+   * Get the application title
+   * @returns {string}
+   */
+  get title() {
+    return `${this.document?.name ?? "Item"} — Defensive FX`;
+  }
+  /**
+   * Get the document from TJSDocument
+   * @returns {Item|undefined}
+   */
+  get document() {
+    return this.#tjsDoc.get();
+  }
+  /**
+   * Get the TJSDocument store
+   * @returns {TJSDocument}
+   */
+  get tjsDoc() {
+    return this.#tjsDoc;
+  }
+}
 class MusicCategoriesApp extends SvelteApp {
   /**
    * @param {object} options - Application options
@@ -28487,6 +40254,18 @@ function registerSettings() {
   _registerClientSettings();
 }
 function _registerWorldSettings() {
+  game.settings.register(MODULE_ID, "enableWeaponFx", {
+    name: "Enable Weapon FX",
+    hint: "Enable the Weapon FX subsystem. When active, Item sheets will show a FX button to configure sounds and visual effects for weapons. Requires a provider module or macros to trigger effects during gameplay.",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: false,
+    restricted: true,
+    onChange: () => {
+      Object.values(ui.windows).forEach((w) => w.render?.());
+    }
+  });
   game.settings.register(MODULE_ID, "musicCategories", {
     name: "SETTINGS.musicCategories.Name",
     hint: "SETTINGS.musicCategories.Hint",
@@ -28596,6 +40375,12 @@ function handleSocketMessage(message) {
     case "setVolume":
       handleSetVolume(data);
       break;
+    case "playWeaponFx":
+      handlePlayWeaponFxSocket(data);
+      break;
+    case "playDefensiveFx":
+      handlePlayDefensiveFxSocket(data);
+      break;
   }
 }
 function cleanupBroadcastAudio() {
@@ -28702,6 +40487,11 @@ Hooks.once("init", async function() {
 });
 Hooks.once("ready", async function() {
   registerSocketListeners();
+  const fxEnabled = game.settings.get(MODULE_ID, "enableWeaponFx");
+  if (fxEnabled) {
+    initFxTriggerManager();
+    console.log(`${LOG_PREFIX} | Weapon FX subsystem enabled`);
+  }
   console.log(`${LOG_PREFIX} | Ready`);
 });
 Hooks.on("getActorSheetHeaderButtons", (sheet, buttons) => {

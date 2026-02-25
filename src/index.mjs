@@ -7,7 +7,7 @@ import './styles/antifriz-roleplay-stuff.scss';
 
 import * as hooks from '#hooks';
 import * as utils from '#utils';
-import { constants } from '#config';
+import { constants, MODULE_ID } from '#config';
 
 const LOG_PREFIX = constants.moduleLabel;
 
@@ -17,6 +17,14 @@ Hooks.once('init', async function () {
 
 Hooks.once('ready', async function () {
    hooks.registerSocketListeners();
+
+   // Conditionally initialize Weapon FX subsystem
+   const fxEnabled = game.settings.get(MODULE_ID, 'enableWeaponFx');
+   if (fxEnabled) {
+      utils.initFxTriggerManager();
+      console.log(`${LOG_PREFIX} | Weapon FX subsystem enabled`);
+   }
+
    console.log(`${LOG_PREFIX} | Ready`);
 });
 

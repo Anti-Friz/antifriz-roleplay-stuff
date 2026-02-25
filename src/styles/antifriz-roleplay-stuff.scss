@@ -15,6 +15,42 @@
 @use 'components/categories-shell';
 @use 'components/permission-picker';
 @use 'components/header-buttons-shell';
+@use 'components/weapon-fx-shell';
+
+// FX Dropdown menu (for Item sheet header button)
+.ars-fx-dropdown {
+   display: flex;
+   flex-direction: column;
+   background: var(--color-bg-option, #1a1a2e);
+   border: 1px solid var(--color-border-light-tertiary, #444);
+   border-radius: 4px;
+   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+   min-width: 140px;
+   overflow: hidden;
+}
+
+.ars-fx-dropdown-item {
+   display: flex;
+   align-items: center;
+   gap: 0.5rem;
+   padding: 0.4rem 0.75rem;
+   border: none;
+   background: transparent;
+   color: var(--color-text-primary, #e0e0e0);
+   font-size: 0.75rem;
+   cursor: pointer;
+   white-space: nowrap;
+   text-align: left;
+
+   &:hover {
+      background: var(--color-bg-option-hover, #2a2a4e);
+   }
+
+   i {
+      width: 1rem;
+      text-align: center;
+   }
+}
 
 // Base module styles (applied to all module applications)
 .antifriz-roleplay-stuff {

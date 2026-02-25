@@ -1353,6 +1353,567 @@
   background: var(--ars-border-color);
 }
 
+/**
+ * AntiFriz Roleplay Stuff - Main stylesheet
+ * 
+ * Uses Foundry VTT CSS variables for theme integration.
+ * Follows TyphonJS Runtime Library (TRL) patterns.
+ */
+/**
+ * Styles for WeaponFxShell and related components
+ */
+.antifriz-roleplay-stuff.weapon-fx-app .window-content,
+.antifriz-roleplay-stuff.defensive-fx-app .window-content {
+  padding: 0 !important;
+}
+.antifriz-roleplay-stuff.weapon-fx-app .weapon-fx-shell,
+.antifriz-roleplay-stuff.weapon-fx-app .defensive-fx-shell,
+.antifriz-roleplay-stuff.defensive-fx-app .weapon-fx-shell,
+.antifriz-roleplay-stuff.defensive-fx-app .defensive-fx-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: var(--ars-gap-md);
+  gap: var(--ars-gap-md);
+  overflow-y: auto;
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-section,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-section {
+  background: var(--ars-overlay-background);
+  border: var(--ars-overlay-border);
+  border-radius: var(--ars-border-radius);
+  padding: var(--ars-gap-md);
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-section-title,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-section-title {
+  margin: 0 0 var(--ars-gap-sm) 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ars-text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-enable,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-enable {
+  display: flex;
+  align-items: center;
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-toggle-row,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-toggle-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  cursor: pointer;
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-toggle-label,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-toggle-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ars-text-primary);
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-toggle-btn,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-toggle-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.2rem;
+  color: var(--ars-text-secondary);
+  padding: 0;
+  transition: color var(--ars-transition-fast);
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-toggle-btn.active,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-toggle-btn.active {
+  color: var(--ars-success);
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-toggle-btn:hover,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-toggle-btn:hover {
+  color: var(--ars-accent);
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-type-group,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-type-group {
+  display: flex;
+  gap: var(--ars-gap-xs);
+  flex-wrap: wrap;
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-type-btn,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-type-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--ars-gap-xs);
+  padding: 0.2rem 0.5rem;
+  font-size: 0.75rem;
+  background: var(--ars-bg-btn);
+  border: 1px solid var(--ars-border-color);
+  border-radius: var(--ars-border-radius);
+  color: var(--ars-text-secondary);
+  cursor: pointer;
+  transition: all var(--ars-transition-fast);
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-type-btn.selected,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-type-btn.selected {
+  background: var(--ars-accent);
+  color: #fff;
+  border-color: var(--ars-accent);
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-type-btn:hover:not(.selected),
+.antifriz-roleplay-stuff.defensive-fx-app .fx-type-btn:hover:not(.selected) {
+  background: var(--ars-bg-hover);
+  color: var(--ars-text-primary);
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-type-btn i,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-type-btn i {
+  font-size: 0.7rem;
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-rof-group,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-rof-group {
+  display: flex;
+  gap: var(--ars-gap-xs);
+  margin-bottom: var(--ars-gap-sm);
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-rof-btn,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-rof-btn {
+  flex: 1;
+  padding: 0.2rem 0.4rem;
+  font-size: 0.75rem;
+  background: var(--ars-bg-btn);
+  border: 1px solid var(--ars-border-color);
+  border-radius: var(--ars-border-radius);
+  color: var(--ars-text-secondary);
+  cursor: pointer;
+  transition: all var(--ars-transition-fast);
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-rof-btn.selected,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-rof-btn.selected {
+  background: var(--ars-accent);
+  color: #fff;
+  border-color: var(--ars-accent);
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-rof-btn:hover:not(.selected),
+.antifriz-roleplay-stuff.defensive-fx-app .fx-rof-btn:hover:not(.selected) {
+  background: var(--ars-bg-hover);
+  color: var(--ars-text-primary);
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-rof-details,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-rof-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ars-gap-sm) var(--ars-gap-md);
+  margin-top: var(--ars-gap-sm);
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-inline-field,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-inline-field {
+  display: flex;
+  align-items: center;
+  gap: var(--ars-gap-sm);
+  font-size: 0.75rem;
+  color: var(--ars-text-secondary);
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-inline-field input[type=number],
+.antifriz-roleplay-stuff.defensive-fx-app .fx-inline-field input[type=number] {
+  width: 3.5rem;
+  padding: 0.15rem 0.3rem;
+  font-size: 0.75rem;
+  background: var(--ars-bg-input);
+  border: 1px solid var(--ars-border-color);
+  border-radius: var(--ars-border-radius);
+  color: var(--ars-text-primary);
+  text-align: center;
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-checkbox-field,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-checkbox-field {
+  display: flex;
+  align-items: center;
+  gap: var(--ars-gap-sm);
+  font-size: 0.75rem;
+  color: var(--ars-text-secondary);
+  cursor: pointer;
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-checkbox-field input[type=checkbox],
+.antifriz-roleplay-stuff.defensive-fx-app .fx-checkbox-field input[type=checkbox] {
+  cursor: pointer;
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-hint,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-hint {
+  margin: var(--ars-gap-sm) 0 0 0;
+  font-size: 0.7rem;
+  color: var(--ars-text-secondary);
+  font-style: italic;
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-hint i,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-hint i {
+  margin-right: 0.2rem;
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-warning,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-warning {
+  margin: var(--ars-gap-sm) 0 0 0;
+  font-size: 0.7rem;
+  color: var(--ars-warning);
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-warning i,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-warning i {
+  margin-right: 0.2rem;
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-sound-list,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-sound-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ars-gap-sm);
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-empty-hint,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-empty-hint {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--ars-text-secondary);
+  font-style: italic;
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-sound-entry,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-sound-entry {
+  display: flex;
+  align-items: center;
+  gap: var(--ars-gap-sm);
+  padding: 0.2rem 0.3rem;
+  background: var(--ars-bg-secondary);
+  border-radius: var(--ars-border-radius);
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-sound-preview,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-sound-preview {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--ars-accent);
+  font-size: 0.75rem;
+  padding: 0.1rem;
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-sound-preview:hover,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-sound-preview:hover {
+  color: var(--ars-accent-hover);
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-sound-name,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-sound-name {
+  flex: 1;
+  font-size: 0.75rem;
+  color: var(--ars-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-sound-volume,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-sound-volume {
+  width: 3rem;
+  height: 0.25rem;
+  appearance: none;
+  background: var(--ars-bg-hover);
+  border-radius: 0.125rem;
+  cursor: pointer;
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-sound-volume::-webkit-slider-thumb,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-sound-volume::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 0.625rem;
+  height: 0.625rem;
+  background: var(--ars-accent);
+  border-radius: 50%;
+  cursor: pointer;
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-sound-volume-label,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-sound-volume-label {
+  font-size: 0.65rem;
+  color: var(--ars-text-secondary);
+  width: 2rem;
+  text-align: right;
+  cursor: pointer;
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-sound-volume-label:hover,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-sound-volume-label:hover {
+  color: var(--ars-accent);
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-sound-volume-input,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-sound-volume-input {
+  width: 3rem;
+  font-size: 0.65rem;
+  text-align: center;
+  padding: 0 0.15rem;
+  border: 1px solid var(--ars-accent);
+  border-radius: 2px;
+  background: var(--ars-bg-input, var(--ars-bg-secondary));
+  color: var(--ars-text-primary);
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-sound-add-row,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-sound-add-row {
+  display: flex;
+  gap: 0.3rem;
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-sound-remove,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-sound-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--ars-danger);
+  font-size: 0.7rem;
+  padding: 0.1rem;
+  opacity: 0.6;
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-sound-remove:hover,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-sound-remove:hover {
+  opacity: 1;
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-sound-mode,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-sound-mode {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ars-gap-sm);
+  margin-top: var(--ars-gap-sm);
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-sound-mode .fx-sound-mode-label,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-sound-mode .fx-sound-mode-label {
+  font-size: 0.75rem;
+  color: var(--ars-text-secondary);
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-sound-mode select,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-sound-mode select {
+  font-size: 0.75rem;
+  padding: 0.15rem 0.3rem;
+  background: var(--ars-bg-input);
+  border: 1px solid var(--ars-border-color);
+  border-radius: var(--ars-border-radius);
+  color: var(--ars-text-primary);
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-effect-config,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-effect-config {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ars-gap-sm);
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-effect-header,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-effect-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-effect-header .fx-section-title,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-effect-header .fx-section-title {
+  margin: 0;
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-field-row,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-field-row {
+  display: flex;
+  align-items: center;
+  gap: var(--ars-gap-sm);
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-field-row .fx-field-label,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-field-row .fx-field-label {
+  font-size: 0.75rem;
+  color: var(--ars-text-secondary);
+  min-width: 3rem;
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-field-row input[type=text],
+.antifriz-roleplay-stuff.weapon-fx-app .fx-field-row input[type=number],
+.antifriz-roleplay-stuff.weapon-fx-app .fx-field-row select,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-field-row input[type=text],
+.antifriz-roleplay-stuff.defensive-fx-app .fx-field-row input[type=number],
+.antifriz-roleplay-stuff.defensive-fx-app .fx-field-row select {
+  flex: 1;
+  font-size: 0.75rem;
+  padding: 0.2rem 0.35rem;
+  background: var(--ars-bg-input);
+  border: 1px solid var(--ars-border-color);
+  border-radius: var(--ars-border-radius);
+  color: var(--ars-text-primary);
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-field-row input[type=number],
+.antifriz-roleplay-stuff.defensive-fx-app .fx-field-row input[type=number] {
+  width: 4rem;
+  flex: 0;
+  text-align: center;
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-field-row input[type=color],
+.antifriz-roleplay-stuff.defensive-fx-app .fx-field-row input[type=color] {
+  width: 2rem;
+  height: 1.5rem;
+  padding: 0;
+  border: 1px solid var(--ars-border-color);
+  border-radius: var(--ars-border-radius);
+  cursor: pointer;
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-file-picker-row,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-file-picker-row {
+  display: flex;
+  flex: 1;
+  gap: var(--ars-gap-xs);
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-file-picker-row input,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-file-picker-row input {
+  flex: 1;
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-btn,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ars-gap-sm);
+  padding: 0.3rem 0.6rem;
+  font-size: 0.75rem;
+  background: var(--ars-bg-btn);
+  border: 1px solid var(--ars-border-color);
+  border-radius: var(--ars-border-radius);
+  color: var(--ars-text-primary);
+  cursor: pointer;
+  transition: all var(--ars-transition-fast);
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-btn:hover,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-btn:hover {
+  background: var(--ars-bg-hover);
+  border-color: var(--ars-accent);
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-btn i,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-btn i {
+  font-size: 0.7rem;
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-btn-add,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-btn-add {
+  align-self: flex-start;
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-btn-small,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-btn-small {
+  padding: 0.2rem 0.4rem;
+  font-size: 0.7rem;
+  background: var(--ars-bg-btn);
+  border: 1px solid var(--ars-border-color);
+  border-radius: var(--ars-border-radius);
+  color: var(--ars-text-primary);
+  cursor: pointer;
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-btn-small:hover,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-btn-small:hover {
+  background: var(--ars-bg-hover);
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-jam-subsection,
+.antifriz-roleplay-stuff.weapon-fx-app .fx-aura-subsection,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-jam-subsection,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-aura-subsection {
+  padding: 0.4rem;
+  margin-bottom: 0.4rem;
+  background: var(--ars-bg-secondary);
+  border-radius: var(--ars-border-radius);
+  border-left: 2px solid var(--ars-border-color);
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-jam-subsection:last-child,
+.antifriz-roleplay-stuff.weapon-fx-app .fx-aura-subsection:last-child,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-jam-subsection:last-child,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-aura-subsection:last-child {
+  margin-bottom: 0;
+  border-left-color: var(--ars-danger, #dc3545);
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-jam-label,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-jam-label {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--ars-text-secondary);
+  margin-bottom: 0.3rem;
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-jam-label i,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-jam-label i {
+  margin-right: 0.25rem;
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-test-buttons,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-test-buttons {
+  display: flex;
+  gap: var(--ars-gap-sm);
+  justify-content: center;
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-actions-row,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-actions-row {
+  display: flex;
+  gap: var(--ars-gap-sm);
+  justify-content: center;
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-actions-row .fx-btn-small.active,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-actions-row .fx-btn-small.active {
+  background: var(--ars-accent);
+  color: var(--ars-bg-primary);
+  border-color: var(--ars-accent);
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-presets-panel .fx-preset-category,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-presets-panel .fx-preset-category {
+  margin-bottom: 0.5rem;
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-presets-panel .fx-preset-category-title,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-presets-panel .fx-preset-category-title {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--ars-accent);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 0.3rem 0;
+  padding-bottom: 0.15rem;
+  border-bottom: 1px solid var(--ars-border-color);
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-presets-panel .fx-preset-grid,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-presets-panel .fx-preset-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-presets-panel .fx-preset-btn,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-presets-panel .fx-preset-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.65rem;
+  background: var(--ars-bg-secondary);
+  border: 1px solid var(--ars-border-color);
+  border-radius: var(--ars-border-radius);
+  color: var(--ars-text-primary);
+  cursor: pointer;
+  transition: all var(--ars-transition-fast);
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-presets-panel .fx-preset-btn:hover,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-presets-panel .fx-preset-btn:hover {
+  background: var(--ars-accent);
+  color: var(--ars-bg-primary);
+  border-color: var(--ars-accent);
+}
+.antifriz-roleplay-stuff.weapon-fx-app .fx-presets-panel .fx-preset-btn i,
+.antifriz-roleplay-stuff.defensive-fx-app .fx-presets-panel .fx-preset-btn i {
+  font-size: 0.6rem;
+  opacity: 0.7;
+}
+
+.ars-fx-dropdown {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg-option, #1a1a2e);
+  border: 1px solid var(--color-border-light-tertiary, #444);
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  min-width: 140px;
+  overflow: hidden;
+}
+
+.ars-fx-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  border: none;
+  background: transparent;
+  color: var(--color-text-primary, #e0e0e0);
+  font-size: 0.75rem;
+  cursor: pointer;
+  white-space: nowrap;
+  text-align: left;
+}
+.ars-fx-dropdown-item:hover {
+  background: var(--color-bg-option-hover, #2a2a4e);
+}
+.ars-fx-dropdown-item i {
+  width: 1rem;
+  text-align: center;
+}
+
 .antifriz-roleplay-stuff {
   --tjs-default-outline-focus-visible: 2px solid var(--color-text-hyperlink, #7c3aed);
   --tjs-app-content-padding: 0.5rem;

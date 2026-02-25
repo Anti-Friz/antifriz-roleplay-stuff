@@ -21,6 +21,20 @@ export function registerSettings() {
  * @private
  */
 function _registerWorldSettings() {
+   // Weapon FX subsystem master switch (GM only)
+   game.settings.register(MODULE_ID, 'enableWeaponFx', {
+      name: 'Enable Weapon FX',
+      hint: 'Enable the Weapon FX subsystem. When active, Item sheets will show a FX button to configure sounds and visual effects for weapons. Requires a provider module or macros to trigger effects during gameplay.',
+      scope: 'world',
+      config: true,
+      type: Boolean,
+      default: false,
+      restricted: true,
+      onChange: () => {
+         Object.values(ui.windows).forEach(w => w.render?.());
+      }
+   });
+
    // Music categories (world setting, GM only)
    game.settings.register(MODULE_ID, 'musicCategories', {
       name: 'SETTINGS.musicCategories.Name',

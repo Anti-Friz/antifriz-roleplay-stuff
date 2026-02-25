@@ -1,4 +1,5 @@
 import { MODULE_ID } from '#config';
+import { handlePlayWeaponFxSocket, handlePlayDefensiveFxSocket } from '#utils';
 
 /**
  * Audio element for receiving broadcast music
@@ -49,6 +50,12 @@ function handleSocketMessage(message) {
          break;
       case 'setVolume':
          handleSetVolume(data);
+         break;
+      case 'playWeaponFx':
+         handlePlayWeaponFxSocket(data);
+         break;
+      case 'playDefensiveFx':
+         handlePlayDefensiveFxSocket(data);
          break;
    }
 }
