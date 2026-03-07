@@ -230,12 +230,11 @@ async function _playReactiveEffect(reactiveConfig, token, attacker) {
 
    const seq = new Sequence({ moduleName: MODULE_LABEL });
 
-   // Sound
+   // Sound — no .atLocation() on sounds (undocumented Sequencer API, breaks .volume() control)
    if (reactiveConfig.sound?.path) {
       seq.sound()
          .file(reactiveConfig.sound.path)
-         .volume(reactiveConfig.sound.volume ?? 0.8)
-         .atLocation(token);
+         .volume(reactiveConfig.sound.volume ?? 0.8);
    }
 
    // Visual effect
@@ -278,8 +277,7 @@ async function _playAuraActivate(auraConfig, token, item) {
    if (auraConfig.activateSound?.path) {
       seq.sound()
          .file(auraConfig.activateSound.path)
-         .volume(auraConfig.activateSound.volume ?? 0.8)
-         .atLocation(token);
+         .volume(auraConfig.activateSound.volume ?? 0.8);
    }
 
    // Intro effect (play once, then chain into loop)
@@ -337,8 +335,7 @@ async function _playAuraDeactivate(auraConfig, token, item) {
    if (auraConfig.deactivateSound?.path) {
       seq.sound()
          .file(auraConfig.deactivateSound.path)
-         .volume(auraConfig.deactivateSound.volume ?? 0.8)
-         .atLocation(token);
+         .volume(auraConfig.deactivateSound.volume ?? 0.8);
    }
 
    // Outro effect
@@ -410,8 +407,7 @@ async function _playShieldOverload(auraConfig, token, item) {
    if (overloadSnd?.path) {
       seq.sound()
          .file(overloadSnd.path)
-         .volume(overloadSnd.volume ?? 1.0)
-         .atLocation(token);
+         .volume(overloadSnd.volume ?? 1.0);
    }
 
    // Overload visual (falls back to outro)

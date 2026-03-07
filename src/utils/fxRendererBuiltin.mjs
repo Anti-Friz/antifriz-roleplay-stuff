@@ -157,6 +157,7 @@ function _playShotSound(config, shotIndex, pickedSoundIndices) {
 
    if (config.soundMode === 'all') {
       // Play ALL sounds simultaneously
+      debug('FxRendererBuiltin | Sound mode: all — playing', config.sounds.length, 'sounds');
       for (const s of config.sounds) {
          const audio = new Audio(s.path);
          audio.volume = s.volume ?? 0.8;
@@ -177,6 +178,7 @@ function _playShotSound(config, shotIndex, pickedSoundIndices) {
    const sound = config.sounds[soundIndex];
    if (!sound) return;
 
+   debug('FxRendererBuiltin | Sound mode:', config.soundMode, '— picked:', sound.name ?? sound.path);
    const audio = new Audio(sound.path);
    audio.volume = sound.volume ?? 0.8;
    audio.play().catch(err => console.warn('[ARS] WeaponFX sound failed:', err));

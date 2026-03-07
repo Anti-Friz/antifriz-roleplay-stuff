@@ -275,6 +275,7 @@ async function _playSoundsOnly(config, shotEvents, sourceToken) {
       }
 
       if (config.soundMode === 'all') {
+         debug('WeaponFxService | Sound mode: all — playing', config.sounds.length, 'sounds');
          for (const s of config.sounds) {
             const audio = new Audio(s.path);
             audio.volume = s.volume ?? 0.8;
@@ -283,6 +284,7 @@ async function _playSoundsOnly(config, shotEvents, sourceToken) {
       } else {
          const { sound } = pickSound(config.sounds, config.soundMode);
          if (sound) {
+            debug('WeaponFxService | Sound mode:', config.soundMode, '— picked:', sound.name ?? sound.path);
             const audio = new Audio(sound.path);
             audio.volume = sound.volume ?? 0.8;
             audio.play().catch(err => console.warn('[ARS] WeaponFX sound failed:', err));

@@ -83,6 +83,50 @@ export function destroyFxTriggerManager() {
 // ==========================================
 
 /**
+ * Determine if the current user is the "primary trigger" for FX on this item.
+ * Prevents duplicate FX when provider hooks fire on ALL connected clients
+ * (each client would create its own Sequencer sequence / builtin playback,
+ *  causing N sounds to play simultaneously instead of one).
+ *
+ * Priority:
+ * 1. User has the actor's token controlled → primary (handles macros where GM controls a player's token)
+ * 2. Non-GM user who owns the actor → primary
+ * 3. GM when no active player owner exists → primary (NPCs, offline players)
+ *
+ * @param {Item} item - The item being used
+ * @returns {boolean}
+ */
+function _isPrimaryTrigger(item) {
+   const actor = item?.parent;
+   if (!actor) return true;
+
+   // If the user has the actor's token currently controlled (selected), they are the trigger.
+   // This covers macros where a GM selects a player's token and fires manually.
+   const controlled = canvas.tokens?.controlled ?? [];
+   if (controlled.length > 0) {
+      const actorTokens = actor.getActiveTokens?.(true) ?? [];
+      if (actorTokens.some(t => controlled.some(c => c.id === t.id))) {
+         return true;
+      }
+   }
+
+   // Non-GM user who owns the actor is always the primary trigger
+   if (!game.user.isGM && actor.isOwner) return true;
+
+   // GM triggers only when no active player owner is online
+   // (if the owning player is connected, their client handles the trigger
+   //  and Sequencer / socket broadcast delivers FX to everyone else)
+   if (game.user.isGM) {
+      const hasActivePlayerOwner = game.users.some(
+         u => u.active && !u.isGM && actor.testUserPermission(u, 'OWNER')
+      );
+      return !hasActivePlayerOwner;
+   }
+
+   return false;
+}
+
+/**
  * API: Play weapon FX for an item.
  * @param {Item} item - The item to play FX for
  * @param {object} [options] - See weaponFxService.playWeaponFx for options
@@ -91,6 +135,10 @@ export function destroyFxTriggerManager() {
 async function _apiPlayWeaponFx(item, options = {}) {
    if (!game.settings.get(MODULE_ID, 'enableWeaponFx')) {
       debug('FxTriggerManager | Subsystem disabled, ignoring playWeaponFx call');
+      return;
+   }
+   if (!_isPrimaryTrigger(item)) {
+      debug('FxTriggerManager | Skipping FX — deferring to primary owner client');
       return;
    }
    return playWeaponFx(item, options);
@@ -105,6 +153,10 @@ async function _apiPlayWeaponFx(item, options = {}) {
 async function _apiPlayDefensiveFx(item, event = {}) {
    if (!game.settings.get(MODULE_ID, 'enableWeaponFx')) {
       debug('FxTriggerManager | Subsystem disabled, ignoring playDefensiveFx call');
+      return;
+   }
+   if (!_isPrimaryTrigger(item)) {
+      debug('FxTriggerManager | Skipping defensive FX — deferring to primary owner client');
       return;
    }
    return playDefensiveFx(item, event);

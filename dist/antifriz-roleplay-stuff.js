@@ -22802,8 +22802,7 @@ async function playWithSequencer(config, sourceToken, shotEvents) {
       const isCatastrophic = event.catastrophic === true;
       const jamSnd = isCatastrophic ? config.jam?.catastrophicSound ?? config.jam?.sound : config.jam?.sound;
       if (jamSnd?.path) {
-        const jamSection = seq.sound().file(jamSnd.path).volume(jamSnd.volume ?? 0.8);
-        if (sourceToken) jamSection.atLocation(sourceToken);
+        seq.sound().file(jamSnd.path).volume(jamSnd.volume ?? 0.8);
       }
       if (isCatastrophic && config.jam?.catastrophicEffect?.enabled && sourceToken) {
         const effectFile = resolveEffectFile(config.jam.catastrophicEffect);
@@ -22820,15 +22819,15 @@ async function playWithSequencer(config, sourceToken, shotEvents) {
     }
     playableShotIndex++;
     if (config.soundMode === "all") {
+      debug("FxRendererSequencer | Sound mode: all — playing", config.sounds.length, "sounds");
       for (const s of config.sounds) {
-        const soundSection = seq.sound().file(s.path).volume(s.volume ?? 0.8);
-        if (sourceToken) soundSection.atLocation(sourceToken);
+        seq.sound().file(s.path).volume(s.volume ?? 0.8);
       }
     } else {
       const { sound } = pickSound(config.sounds, config.soundMode);
       if (sound) {
-        const soundSection = seq.sound().file(sound.path).volume(sound.volume ?? 0.8);
-        if (sourceToken) soundSection.atLocation(sourceToken);
+        debug("FxRendererSequencer | Sound mode:", config.soundMode, "— picked:", sound.name ?? sound.path);
+        seq.sound().file(sound.path).volume(sound.volume ?? 0.8);
       }
     }
     const projectileTarget = event.type === "stray" ? event.strayTarget : event.target;
@@ -23002,6 +23001,7 @@ async function playWithBuiltin(config, sourceToken, shotEvents, pickedSoundIndic
 function _playShotSound(config, shotIndex, pickedSoundIndices) {
   if (!config.sounds?.length) return;
   if (config.soundMode === "all") {
+    debug("FxRendererBuiltin | Sound mode: all — playing", config.sounds.length, "sounds");
     for (const s of config.sounds) {
       const audio2 = new Audio(s.path);
       audio2.volume = s.volume ?? 0.8;
@@ -23019,6 +23019,7 @@ function _playShotSound(config, shotIndex, pickedSoundIndices) {
   }
   const sound = config.sounds[soundIndex];
   if (!sound) return;
+  debug("FxRendererBuiltin | Sound mode:", config.soundMode, "— picked:", sound.name ?? sound.path);
   const audio = new Audio(sound.path);
   audio.volume = sound.volume ?? 0.8;
   audio.play().catch((err) => console.warn("[ARS] WeaponFX sound failed:", err));
@@ -23641,6 +23642,7 @@ async function _playSoundsOnly(config, shotEvents, sourceToken) {
       await _wait(finalDelay);
     }
     if (config.soundMode === "all") {
+      debug("WeaponFxService | Sound mode: all — playing", config.sounds.length, "sounds");
       for (const s of config.sounds) {
         const audio = new Audio(s.path);
         audio.volume = s.volume ?? 0.8;
@@ -23649,6 +23651,7 @@ async function _playSoundsOnly(config, shotEvents, sourceToken) {
     } else {
       const { sound } = pickSound(config.sounds, config.soundMode);
       if (sound) {
+        debug("WeaponFxService | Sound mode:", config.soundMode, "— picked:", sound.name ?? sound.path);
         const audio = new Audio(sound.path);
         audio.volume = sound.volume ?? 0.8;
         audio.play().catch((err) => console.warn("[ARS] WeaponFX sound failed:", err));
@@ -23817,7 +23820,7 @@ async function _playReactiveEffect(reactiveConfig, token, attacker) {
   if (!reactiveConfig?.enabled) return;
   const seq = new Sequence({ moduleName: MODULE_LABEL });
   if (reactiveConfig.sound?.path) {
-    seq.sound().file(reactiveConfig.sound.path).volume(reactiveConfig.sound.volume ?? 0.8).atLocation(token);
+    seq.sound().file(reactiveConfig.sound.path).volume(reactiveConfig.sound.volume ?? 0.8);
   }
   const file = _resolveFile(reactiveConfig.effect);
   if (file) {
@@ -23833,7 +23836,7 @@ async function _playAuraActivate(auraConfig, token, item) {
   const auraName = `ars-aura-${token.id}-${item.id}`;
   const seq = new Sequence({ moduleName: MODULE_LABEL });
   if (auraConfig.activateSound?.path) {
-    seq.sound().file(auraConfig.activateSound.path).volume(auraConfig.activateSound.volume ?? 0.8).atLocation(token);
+    seq.sound().file(auraConfig.activateSound.path).volume(auraConfig.activateSound.volume ?? 0.8);
   }
   const introFile = _resolveFile(auraConfig.intro);
   if (introFile) {
@@ -23856,7 +23859,7 @@ async function _playAuraDeactivate(auraConfig, token, item) {
   }
   const seq = new Sequence({ moduleName: MODULE_LABEL });
   if (auraConfig.deactivateSound?.path) {
-    seq.sound().file(auraConfig.deactivateSound.path).volume(auraConfig.deactivateSound.volume ?? 0.8).atLocation(token);
+    seq.sound().file(auraConfig.deactivateSound.path).volume(auraConfig.deactivateSound.volume ?? 0.8);
   }
   const outroFile = _resolveFile(auraConfig.outro);
   if (outroFile) {
@@ -23886,7 +23889,7 @@ async function _playShieldOverload(auraConfig, token, item) {
   const seq = new Sequence({ moduleName: MODULE_LABEL });
   const overloadSnd = auraConfig.overloadSound?.path ? auraConfig.overloadSound : auraConfig.deactivateSound;
   if (overloadSnd?.path) {
-    seq.sound().file(overloadSnd.path).volume(overloadSnd.volume ?? 1).atLocation(token);
+    seq.sound().file(overloadSnd.path).volume(overloadSnd.volume ?? 1);
   }
   const overloadFile = _resolveFile(auraConfig.overloadEffect) || _resolveFile(auraConfig.outro);
   if (overloadFile) {
@@ -23983,9 +23986,32 @@ function initFxTriggerManager() {
   debug("FxTriggerManager | Initialized, firing registerProviders hook");
   Hooks.callAll(`${MODULE_ID}.registerProviders`, moduleData?.api);
 }
+function _isPrimaryTrigger(item) {
+  const actor = item?.parent;
+  if (!actor) return true;
+  const controlled = canvas.tokens?.controlled ?? [];
+  if (controlled.length > 0) {
+    const actorTokens = actor.getActiveTokens?.(true) ?? [];
+    if (actorTokens.some((t) => controlled.some((c) => c.id === t.id))) {
+      return true;
+    }
+  }
+  if (!game.user.isGM && actor.isOwner) return true;
+  if (game.user.isGM) {
+    const hasActivePlayerOwner = game.users.some(
+      (u) => u.active && !u.isGM && actor.testUserPermission(u, "OWNER")
+    );
+    return !hasActivePlayerOwner;
+  }
+  return false;
+}
 async function _apiPlayWeaponFx(item, options = {}) {
   if (!game.settings.get(MODULE_ID, "enableWeaponFx")) {
     debug("FxTriggerManager | Subsystem disabled, ignoring playWeaponFx call");
+    return;
+  }
+  if (!_isPrimaryTrigger(item)) {
+    debug("FxTriggerManager | Skipping FX — deferring to primary owner client");
     return;
   }
   return playWeaponFx(item, options);
@@ -23993,6 +24019,10 @@ async function _apiPlayWeaponFx(item, options = {}) {
 async function _apiPlayDefensiveFx(item, event = {}) {
   if (!game.settings.get(MODULE_ID, "enableWeaponFx")) {
     debug("FxTriggerManager | Subsystem disabled, ignoring playDefensiveFx call");
+    return;
+  }
+  if (!_isPrimaryTrigger(item)) {
+    debug("FxTriggerManager | Skipping defensive FX — deferring to primary owner client");
     return;
   }
   return playDefensiveFx(item, event);

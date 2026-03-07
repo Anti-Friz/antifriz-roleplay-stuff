@@ -137,11 +137,13 @@ export async function playWithSequencer(config, sourceToken, shotEvents) {
             : config.jam?.sound;
 
          if (jamSnd?.path) {
-            const jamSection = seq.sound()
-               .file(jamSnd.path)
-               .volume(jamSnd.volume ?? 0.8);
-            if (sourceToken) jamSection.atLocation(sourceToken);
-         }
+             // Note: .atLocation() is NOT used on .sound() sections — it's undocumented
+             // for sounds in Sequencer and converts to Foundry positional audio, which
+             // overrides .volume() control (volume becomes distance-based).
+             seq.sound()
+                .file(jamSnd.path)
+                .volume(jamSnd.volume ?? 0.8);
+          }
 
          // Catastrophic: play explosion effect at source token
          if (isCatastrophic && config.jam?.catastrophicEffect?.enabled && sourceToken) {
@@ -172,19 +174,19 @@ export async function playWithSequencer(config, sourceToken, shotEvents) {
       // === Sound (pick per shot) ===
       if (config.soundMode === 'all') {
          // Play ALL sounds simultaneously
+         debug('FxRendererSequencer | Sound mode: all — playing', config.sounds.length, 'sounds');
          for (const s of config.sounds) {
-            const soundSection = seq.sound()
+            seq.sound()
                .file(s.path)
                .volume(s.volume ?? 0.8);
-            if (sourceToken) soundSection.atLocation(sourceToken);
          }
       } else {
          const { sound } = pickSound(config.sounds, config.soundMode);
          if (sound) {
-            const soundSection = seq.sound()
+            debug('FxRendererSequencer | Sound mode:', config.soundMode, '— picked:', sound.name ?? sound.path);
+            seq.sound()
                .file(sound.path)
                .volume(sound.volume ?? 0.8);
-            if (sourceToken) soundSection.atLocation(sourceToken);
          }
       }
 
