@@ -3,9 +3,19 @@
 ## Project Overview
 This is a Foundry VTT module built with:
 - **TyphonJS Runtime Library (TRL)** for Svelte integration
-- **Svelte 4** for reactive UI components  
+- **Svelte 4** for reactive UI components
 - **Vite** for bundling
 - **ES Modules** (ESM) architecture
+
+## General Foundry API Routing
+
+For broad requests that may not name a specific file, route manually to the user-level Foundry V13 skills in `~/.copilot/skills/`:
+- Use `c:\Users\Yaroslav\source\repos\Test_AI_thigs\MDs\RPG_RULES\FFG\FOUNDRY\foundryAPI\AGENT_INDEX.md` as the quick map and `api.md` in that folder for public/protected/private/internal API rules.
+- Requests involving broad Foundry API lookup, namespaces, signatures, or public/private status: load `foundry-v13-api-lookup`.
+- Requests involving Documents, DataModels, TypeDataModels, embedded documents, flags, UUIDs, or compendiums: load `foundry-v13-documents-datamodels`.
+- Requests involving hooks, lifecycle events, render hooks, AppV2 header hooks, document hooks, or canvas hooks: load `foundry-v13-hooks`.
+- Requests involving ApplicationV2, DocumentSheetV2, DialogV2, FilePicker, ImagePopout, TextEditor, ContextMenu, or Foundry UI: load `foundry-v13-applications-ui`.
+- If a request also involves TRL/Svelte integration, load the relevant `trl-*` skill after confirming the Foundry API surface.
 
 ## Path Aliases (jsconfig.json)
 The project uses path aliases via `jsconfig.json`:
@@ -48,12 +58,12 @@ import { TJSDocument } from '#runtime/svelte/store/fvtt/document';
 
 export class MyApp extends SvelteApp {
    #tjsDoc;
-   
+
    constructor(actor, options = {}) {
       super(options);
       this.#tjsDoc = new TJSDocument(actor);
    }
-   
+
    static open(actor) {
       // Prevent duplicate windows
       const existingApp = Object.values(ui.windows).find(
@@ -63,12 +73,12 @@ export class MyApp extends SvelteApp {
          existingApp.render(true, { focus: true });
          return existingApp;
       }
-      
+
       const app = new this(actor);
       app.render(true);
       return app;
    }
-   
+
    static get defaultOptions() {
       return deepMerge(super.defaultOptions, {
          id: 'my-app-{id}',
@@ -81,7 +91,7 @@ export class MyApp extends SvelteApp {
          }
       });
    }
-   
+
    get actor() {
       return this.#tjsDoc.get();
    }
@@ -97,17 +107,17 @@ Required exports for TRL ApplicationShell:
    import { getContext } from 'svelte';
    import { ApplicationShell } from '#runtime/svelte/component/application';
    import { MODULE_ID } from '#config';
-   
+
    export let elementRoot = void 0;
    export let tjsDoc = null;
-   
+
    // Access application context
    const external = getContext('#external');
    const application = external?.application;
-   
+
    // Reactive actor from TJSDocument store
    $: actor = tjsDoc ? $tjsDoc : null;
-   
+
    // Use MODULE_ID constant for flags
    $: data = actor?.getFlag(MODULE_ID, 'flagKey') ?? {};
 </script>
@@ -139,7 +149,7 @@ Use namespaced APIs for v13:
 // FilePicker
 new foundry.applications.apps.FilePicker.implementation({ ... })
 
-// ImagePopout  
+// ImagePopout
 new foundry.applications.apps.ImagePopout({ src, window: { title } })
 
 // Random ID
