@@ -57,6 +57,40 @@ export function normalizePermission(permission) {
 }
 
 /**
+ * Create a stable key for comparing permission identity.
+ * @param {string|object} permission - Permission value
+ * @returns {string}
+ */
+export function getPermissionKey(permission) {
+   const normalized = normalizePermission(permission);
+   if (normalized.type !== PERMISSION_TYPES.CUSTOM) return normalized.type;
+
+   const users = [...normalized.users].sort();
+   return `${PERMISSION_TYPES.CUSTOM}:${users.join(',')}`;
+}
+
+/**
+ * Get display priority for resolving overlapping visible active images.
+ * @param {string|object} permission - Permission value
+ * @returns {number}
+ */
+export function getPermissionPriority(permission) {
+   const normalized = normalizePermission(permission);
+
+   switch (normalized.type) {
+      case PERMISSION_TYPES.CUSTOM:
+         return 40;
+      case PERMISSION_TYPES.OWNER:
+         return 30;
+      case PERMISSION_TYPES.GM:
+         return 20;
+      case PERMISSION_TYPES.ALL:
+      default:
+         return 10;
+   }
+}
+
+/**
  * Check if a user can see content based on permission
  * GM always sees everything!
  * 

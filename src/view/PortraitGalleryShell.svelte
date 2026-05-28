@@ -9,7 +9,7 @@
 import { getContext, onMount } from 'svelte';
 import { ApplicationShell } from '#runtime/svelte/component/application';
 import { MODULE_ID } from '#config';
-import { canUserSee, normalizePermission, getPermissionLabel, getPermissionIcon, PERMISSION_TYPES, openImagePicker, getFilenameFromPath, isCustomImage, getImageName } from '#utils';
+import { canUserSee, normalizePermission, getPermissionLabel, getPermissionIcon, PERMISSION_TYPES, openImagePicker, isCustomImage, getImageName, notifyWarn, getActiveGalleryItems, getPerceivedImage, findActiveOwnershipConflict } from '#utils';
 import PermissionPicker from './components/PermissionPicker.svelte';
    
    // Required for TRL ApplicationShell
@@ -37,6 +37,8 @@ import PermissionPicker from './components/PermissionPicker.svelte';
    // Reactive image paths
    $: currentImg = doc?.img ?? DEFAULT_IMG;
    $: currentToken = isActor ? (doc?.prototypeToken?.texture?.src ?? currentImg) : null;
+   $: perceivedImg = doc ? (getPerceivedImage(doc, 'portraits', game.user) ?? DEFAULT_IMG) : currentImg;
+   $: perceivedToken = isActor && doc ? (getPerceivedImage(doc, 'tokens', game.user) ?? DEFAULT_IMG) : currentToken;
    
    // UI State - Items only have 'images' tab
    let activeTab = 'portraits';
@@ -50,6 +52,7 @@ import PermissionPicker from './components/PermissionPicker.svelte';
    $: portraits = savedData.portraits ?? [];
    $: tokens = savedData.tokens ?? [];
    $: currentList = activeTab === 'portraits' ? portraits : tokens;
+   $: activeVisibleItems = doc ? getActiveGalleryItems(doc, activeTab, { user: game.user }) : [];
    
    // Filter list based on search AND ownership permissions
    $: filteredList = currentList.filter(item => {
@@ -88,6 +91,7 @@ import PermissionPicker from './components/PermissionPicker.svelte';
                path: imgPath,
                name: getImageName(imgPath),
                ownership: 'all',
+               active: false,
                addedAt: Date.now()
             });
             hasChanges = true;
@@ -105,6 +109,7 @@ import PermissionPicker from './components/PermissionPicker.svelte';
                   path: tokenPath,
                   name: getImageName(tokenPath),
                   ownership: 'all',
+                  active: false,
                   addedAt: Date.now()
                });
                hasChanges = true;
@@ -157,14 +162,61 @@ import PermissionPicker from './components/PermissionPicker.svelte';
          path: imagePath,
          name: name || imagePath.split('/').pop().replace(/\.[^/.]+$/, ''),
          ownership,
+         active: false,
          addedAt: Date.now()
       });
       
       await doc.setFlag(MODULE_ID, 'gallery', { ...data, [category]: list });
    }
+
+   function getCategoryLabel(category) {
+      if (isItem) return 'image';
+      return category === 'portraits' ? 'portrait' : 'token';
+   }
+
+   function warnActiveOwnershipConflict(conflict, ownership, category) {
+      const categoryLabel = getCategoryLabel(category);
+      const ownershipLabel = getPermissionLabel(ownership);
+      const conflictName = conflict?.name ?? conflict?.path ?? 'another image';
+      notifyWarn(`Only one active ${categoryLabel} can use "${ownershipLabel}" visibility. Disable "${conflictName}" first.`);
+   }
+
+   async function toggleActiveImage(item, category) {
+      const data = doc.getFlag(MODULE_ID, 'gallery') ?? { portraits: [], tokens: [] };
+      const list = data[category] ?? [];
+      const target = list.find(entry => entry.path === item.path);
+      if (!target) return;
+
+      const shouldActivate = target.active !== true;
+      if (shouldActivate) {
+         const conflict = findActiveOwnershipConflict(list, target.ownership, target.path);
+         if (conflict) {
+            warnActiveOwnershipConflict(conflict, target.ownership, category);
+            return;
+         }
+      }
+
+      const updatedList = list.map(entry => entry.path === target.path
+         ? { ...entry, active: shouldActivate }
+         : entry
+      );
+
+      await doc.setFlag(MODULE_ID, 'gallery', { ...data, [category]: updatedList });
+   }
    
    async function updateImageOwnership(imagePath, category, ownership) {
       const data = doc.getFlag(MODULE_ID, 'gallery') ?? { portraits: [], tokens: [] };
+      const sourceList = data[category] ?? [];
+      const target = sourceList.find(item => item.path === imagePath);
+
+      if (target?.active) {
+         const conflict = findActiveOwnershipConflict(sourceList, ownership, imagePath);
+         if (conflict) {
+            warnActiveOwnershipConflict(conflict, ownership, category);
+            return;
+         }
+      }
+
       const list = (data[category] ?? []).map(item => 
          item.path === imagePath ? { ...item, ownership } : item
       );
@@ -192,6 +244,14 @@ import PermissionPicker from './components/PermissionPicker.svelte';
       
       const item = fromList.find(p => p.path === imagePath);
       if (!item || toList.some(p => p.path === imagePath)) return;
+
+      if (item.active) {
+         const conflict = findActiveOwnershipConflict(toList, item.ownership);
+         if (conflict) {
+            warnActiveOwnershipConflict(conflict, item.ownership, toCategory);
+            return;
+         }
+      }
       
       const newFromList = fromList.filter(p => p.path !== imagePath);
       toList.push(item);
@@ -231,10 +291,10 @@ import PermissionPicker from './components/PermissionPicker.svelte';
             type="button"
             class="portrait-preview" 
             class:active={activeTab === 'portraits'}
-            on:click={() => showImagePopout(currentImg, 'Image')}
+            on:click={() => showImagePopout(perceivedImg, 'Image')}
             title="Click to view full size"
          >
-            <img src={currentImg} alt="" role="presentation" />
+            <img src={perceivedImg} alt="" role="presentation" />
             <span class="preview-label">{isItem ? 'Image' : 'Portrait'}</span>
          </button>
          {#if isActor}
@@ -242,12 +302,37 @@ import PermissionPicker from './components/PermissionPicker.svelte';
                type="button"
                class="portrait-preview token" 
                class:active={activeTab === 'tokens'}
-               on:click={() => showImagePopout(currentToken, 'Token')}
+               on:click={() => showImagePopout(perceivedToken, 'Token')}
                title="Click to view full size"
             >
-               <img src={currentToken} alt="" role="presentation" />
+               <img src={perceivedToken} alt="" role="presentation" />
                <span class="preview-label">Token</span>
             </button>
+         {/if}
+      </div>
+
+      <div class="active-preview-strip">
+         <span class="active-preview-label">Active</span>
+         {#if activeVisibleItems.length === 0}
+            <span class="active-preview-empty">None</span>
+         {:else}
+            <div class="active-preview-list">
+               {#each activeVisibleItems as item (item.path)}
+                  {@const activePermission = normalizePermission(item.ownership)}
+                  <button
+                     type="button"
+                     class="active-preview-thumb"
+                     class:token={activeTab === 'tokens'}
+                     on:click={() => showImagePopout(item.path, item.name)}
+                     title={item.name ? `${item.name} - ${getPermissionLabel(item.ownership)}` : getPermissionLabel(item.ownership)}
+                  >
+                     <img src={item.path} alt="" role="presentation" />
+                     {#if isGM && activePermission.type !== PERMISSION_TYPES.ALL}
+                        <i class="fas {getPermissionIcon(item.ownership)} active-preview-permission"></i>
+                     {/if}
+                  </button>
+               {/each}
+            </div>
          {/if}
       </div>
          
@@ -305,10 +390,12 @@ import PermissionPicker from './components/PermissionPicker.svelte';
                   {@const isCurrentPortrait = activeTab === 'portraits' && currentImg === item.path}
                   {@const isCurrentToken = activeTab === 'tokens' && currentToken === item.path}
                   {@const isCurrent = isCurrentPortrait || isCurrentToken}
+                  {@const isActive = item.active === true}
                   {@const itemPermission = normalizePermission(item.ownership)}
                   <div 
                      class="image-card"
                      class:is-current={isCurrent}
+                     class:is-active={isActive}
                      on:click={(e) => handleImageClick(e, item)}
                      on:keydown={(e) => e.key === 'Enter' && handleImageClick(e, item)}
                      role="button"
@@ -318,8 +405,14 @@ import PermissionPicker from './components/PermissionPicker.svelte';
                      <img src={item.path} alt={item.name} loading="lazy" />
                      
                      {#if isCurrent}
-                        <div class="status-badge">
+                        <div class="status-badge" title="Current document image">
                            <i class="fas fa-check"></i>
+                        </div>
+                     {/if}
+
+                     {#if isActive}
+                        <div class="status-badge active-visibility" title="Active visibility variant">
+                           <i class="fas fa-eye"></i>
                         </div>
                      {/if}
                      
@@ -340,6 +433,14 @@ import PermissionPicker from './components/PermissionPicker.svelte';
                               on:click|stopPropagation={() => activeTab === 'portraits' ? togglePortrait(item.path) : toggleToken(item.path)}
                            >
                               <i class="fas fa-{isCurrent ? 'times' : 'check'}"></i>
+                           </button>
+                           <button 
+                              type="button" 
+                              title={isActive ? "Disable active visibility" : "Enable active visibility"}
+                              class:active={isActive}
+                              on:click|stopPropagation={() => toggleActiveImage(item, activeTab)}
+                           >
+                              <i class="fas fa-{isActive ? 'eye-slash' : 'eye'}"></i>
                            </button>
                            {#if isActor}
                               <button 

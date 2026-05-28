@@ -19,6 +19,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: var(--ars-gap-md);
     padding: var(--ars-gap-md);
     background: var(--ars-overlay-background);
     border-bottom: var(--ars-overlay-border);
@@ -27,6 +28,80 @@
   .current-portraits {
     display: flex;
     gap: var(--ars-gap-md);
+    flex-shrink: 0;
+  }
+
+  .active-preview-strip {
+    display: flex;
+    align-items: center;
+    gap: var(--ars-gap-sm);
+    min-width: 0;
+    flex: 1;
+    padding-left: var(--ars-gap-md);
+    border-left: var(--ars-overlay-border);
+  }
+
+  .active-preview-label {
+    flex-shrink: 0;
+    font-size: 0.625rem;
+    text-transform: uppercase;
+    color: var(--ars-text-secondary);
+  }
+
+  .active-preview-empty {
+    color: var(--ars-text-secondary);
+    font-size: 0.6875rem;
+    font-style: italic;
+  }
+
+  .active-preview-list {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    min-width: 0;
+    overflow-x: auto;
+    padding-bottom: 0.125rem;
+  }
+
+  .active-preview-thumb {
+    position: relative;
+    flex: 0 0 auto;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    border: 1px solid var(--ars-accent);
+    border-radius: var(--ars-border-radius);
+    background: var(--ars-bg-secondary);
+    overflow: hidden;
+    cursor: pointer;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border: none !important;
+      margin: 0 !important;
+    }
+
+    &.token,
+    &.token img {
+      border-radius: 50%;
+    }
+  }
+
+  .active-preview-permission {
+    position: absolute;
+    right: 0.0625rem;
+    bottom: 0.0625rem;
+    width: 0.875rem;
+    height: 0.875rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.75);
+    color: var(--ars-accent);
+    font-size: 0.4375rem;
   }
 
   .portrait-preview {
@@ -87,6 +162,7 @@
     display: flex;
     align-items: center;
     gap: var(--ars-gap-sm);
+    flex-shrink: 0;
     padding: 0.5rem 1rem;
     background: linear-gradient(135deg, var(--ars-accent) 0%, var(--ars-accent-hover) 100%);
     border: 1px solid var(--ars-accent);
@@ -223,6 +299,14 @@
       border-color: var(--ars-success);
     }
 
+    &.is-active {
+      border-color: var(--ars-accent);
+    }
+
+    &.is-current.is-active {
+      box-shadow: 0 0 0 1px var(--ars-success), 0 0 0 3px rgba(124, 58, 237, 0.35);
+    }
+
     img {
       width: 100%;
       height: 100%;
@@ -244,6 +328,12 @@
     color: white;
     font-size: 0.625rem;
     z-index: 2;
+
+    &.active-visibility {
+      top: auto;
+      bottom: 0.25rem;
+      background: var(--ars-accent);
+    }
   }
 
   .ownership-badge {
@@ -285,6 +375,7 @@
 
   .image-actions {
     display: flex;
+    flex-wrap: wrap;
     gap: 0.25rem;
 
     button {
@@ -296,6 +387,9 @@
       color: white;
       cursor: pointer;
       font-size: 0.625rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       transition: background var(--ars-transition-fast);
 
       &:hover {

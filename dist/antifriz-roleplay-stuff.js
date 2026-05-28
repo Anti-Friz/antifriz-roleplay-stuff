@@ -16081,7 +16081,7 @@ function get_each_context$7(ctx, list, i) {
   child_ctx[40] = list[i];
   return child_ctx;
 }
-function get_each_context_1$6(ctx, list, i) {
+function get_each_context_1$7(ctx, list, i) {
   const child_ctx = ctx.slice();
   child_ctx[40] = list[i];
   return child_ctx;
@@ -16180,7 +16180,7 @@ function create_if_block$9(ctx) {
     }
   };
 }
-function create_each_block_1$6(ctx) {
+function create_each_block_1$7(ctx) {
   let switch_instance;
   let switch_instance_anchor;
   let current;
@@ -16390,7 +16390,7 @@ function create_key_block(ctx) {
   );
   let each_blocks_1 = [];
   for (let i = 0; i < each_value_1.length; i += 1) {
-    each_blocks_1[i] = create_each_block_1$6(get_each_context_1$6(ctx, each_value_1, i));
+    each_blocks_1[i] = create_each_block_1$7(get_each_context_1$7(ctx, each_value_1, i));
   }
   const out = (i) => transition_out(each_blocks_1[i], 1, 1, () => {
     each_blocks_1[i] = null;
@@ -16516,12 +16516,12 @@ function create_key_block(ctx) {
         );
         let i;
         for (i = 0; i < each_value_1.length; i += 1) {
-          const child_ctx = get_each_context_1$6(ctx2, each_value_1, i);
+          const child_ctx = get_each_context_1$7(ctx2, each_value_1, i);
           if (each_blocks_1[i]) {
             each_blocks_1[i].p(child_ctx, dirty);
             transition_in(each_blocks_1[i], 1);
           } else {
-            each_blocks_1[i] = create_each_block_1$6(child_ctx);
+            each_blocks_1[i] = create_each_block_1$7(child_ctx);
             each_blocks_1[i].c();
             transition_in(each_blocks_1[i], 1);
             each_blocks_1[i].m(header, t3);
@@ -22578,6 +22578,26 @@ function normalizePermission(permission) {
   }
   return { type: PERMISSION_TYPES.ALL, users: [] };
 }
+function getPermissionKey(permission) {
+  const normalized = normalizePermission(permission);
+  if (normalized.type !== PERMISSION_TYPES.CUSTOM) return normalized.type;
+  const users = [...normalized.users].sort();
+  return `${PERMISSION_TYPES.CUSTOM}:${users.join(",")}`;
+}
+function getPermissionPriority(permission) {
+  const normalized = normalizePermission(permission);
+  switch (normalized.type) {
+    case PERMISSION_TYPES.CUSTOM:
+      return 40;
+    case PERMISSION_TYPES.OWNER:
+      return 30;
+    case PERMISSION_TYPES.GM:
+      return 20;
+    case PERMISSION_TYPES.ALL:
+    default:
+      return 10;
+  }
+}
 function canUserSee(permission, user = game.user, document2 = null) {
   if (user.isGM) return true;
   const normalized = normalizePermission(permission);
@@ -22690,6 +22710,10 @@ function emitSocket(type, data) {
     data
   });
 }
+const GALLERY_CATEGORIES = Object.freeze({
+  PORTRAITS: "portraits",
+  TOKENS: "tokens"
+});
 function isDefaultImage(imagePath) {
   if (!imagePath) return true;
   if (DEFAULT_IMAGES.includes(imagePath)) return true;
@@ -22702,6 +22726,51 @@ function isCustomImage(imagePath) {
 function getImageName(path) {
   if (!path) return "";
   return path.split("/").pop()?.replace(/\.[^/.]+$/, "") ?? "";
+}
+function getCurrentDocumentImage(document2, category = GALLERY_CATEGORIES.PORTRAITS) {
+  if (!document2) return null;
+  if (category === GALLERY_CATEGORIES.TOKENS && document2.documentName === "Actor") {
+    return document2.prototypeToken?.texture?.src ?? document2.img ?? null;
+  }
+  return document2.img ?? null;
+}
+function getGalleryData(document2) {
+  return document2?.getFlag?.(MODULE_ID, "gallery") ?? { portraits: [], tokens: [] };
+}
+function getGalleryCategoryItems(document2, category) {
+  const data = getGalleryData(document2);
+  const items = data?.[category];
+  return Array.isArray(items) ? items : [];
+}
+function findActiveOwnershipConflict(items, ownership, excludePath = null) {
+  const permissionKey = getPermissionKey(ownership);
+  return (items ?? []).find((item) => {
+    if (!item?.active) return false;
+    if (excludePath && item.path === excludePath) return false;
+    return getPermissionKey(item.ownership) === permissionKey;
+  }) ?? null;
+}
+function getActiveGalleryItems(document2, category, options = {}) {
+  const user = options.user ?? globalThis.game?.user;
+  const includeHidden = options.includeHidden ?? false;
+  const items = getGalleryCategoryItems(document2, category);
+  return items.filter((item) => item?.active === true).filter((item) => includeHidden || (user ? canUserSee(item.ownership, user, document2) : false)).sort(compareActiveGalleryItems);
+}
+function getPerceivedImages(document2, category, user = globalThis.game?.user) {
+  return getActiveGalleryItems(document2, category, { user });
+}
+function getPerceivedImage(document2, category, user = globalThis.game?.user) {
+  const images = getPerceivedImages(document2, category, user);
+  if (images[0]?.path) return images[0].path;
+  const currentImage = getCurrentDocumentImage(document2, category);
+  const currentGalleryItem = getGalleryCategoryItems(document2, category).find((item) => item.path === currentImage);
+  if (currentGalleryItem && user && !canUserSee(currentGalleryItem.ownership, user, document2)) return null;
+  return currentImage;
+}
+function compareActiveGalleryItems(left, right) {
+  const priorityDifference = getPermissionPriority(right.ownership) - getPermissionPriority(left.ownership);
+  if (priorityDifference !== 0) return priorityDifference;
+  return (Number(right.addedAt) || 0) - (Number(left.addedAt) || 0);
 }
 function resolveTargets(context) {
   const { sourceToken, item, explicitTargets, providerGetTargets, systemContext } = context;
@@ -24207,7 +24276,7 @@ function _validateDefensiveFxConfig(config) {
   if (typeof config !== "object" || config === null) return false;
   return config.onHit !== void 0 || config.onDeflect !== void 0 || config.onPenetrate !== void 0 || config.aura !== void 0;
 }
-function get_each_context_1$5(ctx, list, i) {
+function get_each_context_1$6(ctx, list, i) {
   const child_ctx = ctx.slice();
   child_ctx[28] = list[i];
   return child_ctx;
@@ -24533,7 +24602,7 @@ function create_else_block_1$3(ctx) {
   );
   let each_blocks = [];
   for (let i = 0; i < each_value_1.length; i += 1) {
-    each_blocks[i] = create_each_block_1$5(get_each_context_1$5(ctx, each_value_1, i));
+    each_blocks[i] = create_each_block_1$6(get_each_context_1$6(ctx, each_value_1, i));
   }
   return {
     c() {
@@ -24559,11 +24628,11 @@ function create_else_block_1$3(ctx) {
         );
         let i;
         for (i = 0; i < each_value_1.length; i += 1) {
-          const child_ctx = get_each_context_1$5(ctx2, each_value_1, i);
+          const child_ctx = get_each_context_1$6(ctx2, each_value_1, i);
           if (each_blocks[i]) {
             each_blocks[i].p(child_ctx, dirty);
           } else {
-            each_blocks[i] = create_each_block_1$5(child_ctx);
+            each_blocks[i] = create_each_block_1$6(child_ctx);
             each_blocks[i].c();
             each_blocks[i].m(each_1_anchor.parentNode, each_1_anchor);
           }
@@ -24619,7 +24688,7 @@ function create_if_block_4$6(ctx) {
     }
   };
 }
-function create_each_block_1$5(ctx) {
+function create_each_block_1$6(ctx) {
   let label;
   let input;
   let input_checked_value;
@@ -25158,7 +25227,7 @@ function get_each_context$5(ctx, list, i) {
   child_ctx[59] = list[i];
   return child_ctx;
 }
-function get_each_context_1$4(ctx, list, i) {
+function get_each_context_1$5(ctx, list, i) {
   const child_ctx = ctx.slice();
   child_ctx[62] = list[i];
   const constants_0 = (
@@ -25198,7 +25267,7 @@ function get_each_context_3$1(ctx, list, i) {
   child_ctx[72] = list[i];
   return child_ctx;
 }
-function create_if_block_8$3(ctx) {
+function create_if_block_8$4(ctx) {
   let div0;
   let i0;
   let t0;
@@ -25218,7 +25287,7 @@ function create_if_block_8$3(ctx) {
   );
   let if_block1 = (
     /*broadcastMenuOpen*/
-    ctx[14] && create_if_block_9$2(ctx)
+    ctx[14] && create_if_block_9$3(ctx)
   );
   return {
     c() {
@@ -25335,7 +25404,7 @@ function create_if_block_8$3(ctx) {
         if (if_block1) {
           if_block1.p(ctx2, dirty);
         } else {
-          if_block1 = create_if_block_9$2(ctx2);
+          if_block1 = create_if_block_9$3(ctx2);
           if_block1.c();
           if_block1.m(div1, null);
         }
@@ -25397,7 +25466,7 @@ function create_if_block_11$2(ctx) {
     }
   };
 }
-function create_if_block_9$2(ctx) {
+function create_if_block_9$3(ctx) {
   let div1;
   let button0;
   let t1;
@@ -25414,7 +25483,7 @@ function create_if_block_9$2(ctx) {
   for (let i = 0; i < each_value_3.length; i += 1) {
     each_blocks[i] = create_each_block_3$1(get_each_context_3$1(ctx, each_value_3, i));
   }
-  let if_block = show_if && create_if_block_10$2();
+  let if_block = show_if && create_if_block_10$3();
   return {
     c() {
       div1 = element("div");
@@ -25599,7 +25668,7 @@ function create_each_block_3$1(ctx) {
     }
   };
 }
-function create_if_block_10$2(ctx) {
+function create_if_block_10$3(ctx) {
   let span;
   return {
     c() {
@@ -26123,7 +26192,7 @@ function create_if_block_2$5(ctx) {
     }
   };
 }
-function create_each_block_1$4(key_1, ctx) {
+function create_each_block_1$5(key_1, ctx) {
   let div2;
   let button0;
   let i0;
@@ -26496,9 +26565,9 @@ function create_each_block$5(ctx) {
     ctx2[62].id
   );
   for (let i2 = 0; i2 < each_value_1.length; i2 += 1) {
-    let child_ctx = get_each_context_1$4(ctx, each_value_1, i2);
+    let child_ctx = get_each_context_1$5(ctx, each_value_1, i2);
     let key = get_key(child_ctx);
-    each_1_lookup.set(key, each_blocks[i2] = create_each_block_1$4(key, child_ctx));
+    each_1_lookup.set(key, each_blocks[i2] = create_each_block_1$5(key, child_ctx));
   }
   return {
     c() {
@@ -26548,7 +26617,7 @@ function create_each_block$5(ctx) {
           ctx2[59].tracks
         );
         group_outros();
-        each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx2, each_value_1, each_1_lookup, div, outro_and_destroy_block, create_each_block_1$4, t3, get_each_context_1$4);
+        each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx2, each_value_1, each_1_lookup, div, outro_and_destroy_block, create_each_block_1$5, t3, get_each_context_1$5);
         check_outros();
       }
     },
@@ -26660,7 +26729,7 @@ function create_default_slot$5(ctx) {
   let dispose;
   let if_block0 = (
     /*isGM*/
-    ctx[19] && create_if_block_8$3(ctx)
+    ctx[19] && create_if_block_8$4(ctx)
   );
   let if_block1 = (
     /*currentTrack*/
@@ -26779,7 +26848,7 @@ function create_default_slot$5(ctx) {
         if (if_block0) {
           if_block0.p(ctx2, dirty);
         } else {
-          if_block0 = create_if_block_8$3(ctx2);
+          if_block0 = create_if_block_8$4(ctx2);
           if_block0.c();
           if_block0.m(div1, t6);
         }
@@ -27298,35 +27367,50 @@ class CharacterMusicShell extends SvelteComponent {
 }
 function get_each_context$4(ctx, list, i) {
   const child_ctx = ctx.slice();
-  child_ctx[40] = list[i];
+  child_ctx[48] = list[i];
   const constants_0 = (
     /*activeTab*/
     child_ctx[2] === "portraits" && /*currentImg*/
-    child_ctx[5] === /*item*/
-    child_ctx[40].path
+    child_ctx[6] === /*item*/
+    child_ctx[48].path
   );
-  child_ctx[41] = constants_0;
+  child_ctx[49] = constants_0;
   const constants_1 = (
     /*activeTab*/
     child_ctx[2] === "tokens" && /*currentToken*/
-    child_ctx[9] === /*item*/
-    child_ctx[40].path
+    child_ctx[5] === /*item*/
+    child_ctx[48].path
   );
-  child_ctx[42] = constants_1;
+  child_ctx[50] = constants_1;
   const constants_2 = (
     /*isCurrentPortrait*/
-    child_ctx[41] || /*isCurrentToken*/
-    child_ctx[42]
+    child_ctx[49] || /*isCurrentToken*/
+    child_ctx[50]
   );
-  child_ctx[43] = constants_2;
-  const constants_3 = normalizePermission(
+  child_ctx[51] = constants_2;
+  const constants_3 = (
     /*item*/
-    child_ctx[40].ownership
+    child_ctx[48].active === true
   );
-  child_ctx[44] = constants_3;
+  child_ctx[52] = constants_3;
+  const constants_4 = normalizePermission(
+    /*item*/
+    child_ctx[48].ownership
+  );
+  child_ctx[53] = constants_4;
   return child_ctx;
 }
-function create_if_block_7$3(ctx) {
+function get_each_context_1$4(ctx, list, i) {
+  const child_ctx = ctx.slice();
+  child_ctx[48] = list[i];
+  const constants_0 = normalizePermission(
+    /*item*/
+    child_ctx[48].ownership
+  );
+  child_ctx[56] = constants_0;
+  return child_ctx;
+}
+function create_if_block_10$2(ctx) {
   let button;
   let img;
   let img_src_value;
@@ -27341,8 +27425,8 @@ function create_if_block_7$3(ctx) {
       t0 = space();
       span = element("span");
       span.textContent = "Token";
-      if (!src_url_equal(img.src, img_src_value = /*currentToken*/
-      ctx[9])) attr(img, "src", img_src_value);
+      if (!src_url_equal(img.src, img_src_value = /*perceivedToken*/
+      ctx[12])) attr(img, "src", img_src_value);
       attr(img, "alt", "");
       attr(img, "role", "presentation");
       attr(span, "class", "preview-label");
@@ -27366,15 +27450,15 @@ function create_if_block_7$3(ctx) {
           button,
           "click",
           /*click_handler_2*/
-          ctx[25]
+          ctx[29]
         );
         mounted = true;
       }
     },
     p(ctx2, dirty) {
-      if (dirty[0] & /*currentToken*/
-      512 && !src_url_equal(img.src, img_src_value = /*currentToken*/
-      ctx2[9])) {
+      if (dirty[0] & /*perceivedToken*/
+      4096 && !src_url_equal(img.src, img_src_value = /*perceivedToken*/
+      ctx2[12])) {
         attr(img, "src", img_src_value);
       }
       if (dirty[0] & /*activeTab*/
@@ -27391,6 +27475,229 @@ function create_if_block_7$3(ctx) {
       if (detaching) {
         detach(button);
       }
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_else_block_2$1(ctx) {
+  let div;
+  let each_blocks = [];
+  let each_1_lookup = /* @__PURE__ */ new Map();
+  let each_value_1 = ensure_array_like(
+    /*activeVisibleItems*/
+    ctx[11]
+  );
+  const get_key = (ctx2) => (
+    /*item*/
+    ctx2[48].path
+  );
+  for (let i = 0; i < each_value_1.length; i += 1) {
+    let child_ctx = get_each_context_1$4(ctx, each_value_1, i);
+    let key = get_key(child_ctx);
+    each_1_lookup.set(key, each_blocks[i] = create_each_block_1$4(key, child_ctx));
+  }
+  return {
+    c() {
+      div = element("div");
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        each_blocks[i].c();
+      }
+      attr(div, "class", "active-preview-list");
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        if (each_blocks[i]) {
+          each_blocks[i].m(div, null);
+        }
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*activeVisibleItems, activeTab, isGM*/
+      18436) {
+        each_value_1 = ensure_array_like(
+          /*activeVisibleItems*/
+          ctx2[11]
+        );
+        each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx2, each_value_1, each_1_lookup, div, destroy_block, create_each_block_1$4, null, get_each_context_1$4);
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+      }
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        each_blocks[i].d();
+      }
+    }
+  };
+}
+function create_if_block_8$3(ctx) {
+  let span;
+  return {
+    c() {
+      span = element("span");
+      span.textContent = "None";
+      attr(span, "class", "active-preview-empty");
+    },
+    m(target, anchor) {
+      insert(target, span, anchor);
+    },
+    p: noop,
+    d(detaching) {
+      if (detaching) {
+        detach(span);
+      }
+    }
+  };
+}
+function create_if_block_9$2(ctx) {
+  let i;
+  let i_class_value;
+  return {
+    c() {
+      i = element("i");
+      attr(i, "class", i_class_value = "fas " + getPermissionIcon(
+        /*item*/
+        ctx[48].ownership
+      ) + " active-preview-permission");
+    },
+    m(target, anchor) {
+      insert(target, i, anchor);
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*activeVisibleItems*/
+      2048 && i_class_value !== (i_class_value = "fas " + getPermissionIcon(
+        /*item*/
+        ctx2[48].ownership
+      ) + " active-preview-permission")) {
+        attr(i, "class", i_class_value);
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(i);
+      }
+    }
+  };
+}
+function create_each_block_1$4(key_1, ctx) {
+  let button;
+  let img;
+  let img_src_value;
+  let t0;
+  let t1;
+  let button_title_value;
+  let mounted;
+  let dispose;
+  let if_block = (
+    /*isGM*/
+    ctx[14] && /*activePermission*/
+    ctx[56].type !== PERMISSION_TYPES.ALL && create_if_block_9$2(ctx)
+  );
+  function click_handler_3() {
+    return (
+      /*click_handler_3*/
+      ctx[30](
+        /*item*/
+        ctx[48]
+      )
+    );
+  }
+  return {
+    key: key_1,
+    first: null,
+    c() {
+      button = element("button");
+      img = element("img");
+      t0 = space();
+      if (if_block) if_block.c();
+      t1 = space();
+      if (!src_url_equal(img.src, img_src_value = /*item*/
+      ctx[48].path)) attr(img, "src", img_src_value);
+      attr(img, "alt", "");
+      attr(img, "role", "presentation");
+      attr(button, "type", "button");
+      attr(button, "class", "active-preview-thumb");
+      attr(button, "title", button_title_value = /*item*/
+      ctx[48].name ? `${/*item*/
+      ctx[48].name} - ${getPermissionLabel(
+        /*item*/
+        ctx[48].ownership
+      )}` : getPermissionLabel(
+        /*item*/
+        ctx[48].ownership
+      ));
+      toggle_class(
+        button,
+        "token",
+        /*activeTab*/
+        ctx[2] === "tokens"
+      );
+      this.first = button;
+    },
+    m(target, anchor) {
+      insert(target, button, anchor);
+      append(button, img);
+      append(button, t0);
+      if (if_block) if_block.m(button, null);
+      append(button, t1);
+      if (!mounted) {
+        dispose = listen(button, "click", click_handler_3);
+        mounted = true;
+      }
+    },
+    p(new_ctx, dirty) {
+      ctx = new_ctx;
+      if (dirty[0] & /*activeVisibleItems*/
+      2048 && !src_url_equal(img.src, img_src_value = /*item*/
+      ctx[48].path)) {
+        attr(img, "src", img_src_value);
+      }
+      if (
+        /*isGM*/
+        ctx[14] && /*activePermission*/
+        ctx[56].type !== PERMISSION_TYPES.ALL
+      ) {
+        if (if_block) {
+          if_block.p(ctx, dirty);
+        } else {
+          if_block = create_if_block_9$2(ctx);
+          if_block.c();
+          if_block.m(button, t1);
+        }
+      } else if (if_block) {
+        if_block.d(1);
+        if_block = null;
+      }
+      if (dirty[0] & /*activeVisibleItems*/
+      2048 && button_title_value !== (button_title_value = /*item*/
+      ctx[48].name ? `${/*item*/
+      ctx[48].name} - ${getPermissionLabel(
+        /*item*/
+        ctx[48].ownership
+      )}` : getPermissionLabel(
+        /*item*/
+        ctx[48].ownership
+      ))) {
+        attr(button, "title", button_title_value);
+      }
+      if (dirty[0] & /*activeTab*/
+      4) {
+        toggle_class(
+          button,
+          "token",
+          /*activeTab*/
+          ctx[2] === "tokens"
+        );
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(button);
+      }
+      if (if_block) if_block.d();
       mounted = false;
       dispose();
     }
@@ -27421,7 +27728,7 @@ function create_else_block_1$1(ctx) {
     }
   };
 }
-function create_if_block_6$3(ctx) {
+function create_if_block_7$3(ctx) {
   let t;
   return {
     c() {
@@ -27438,14 +27745,14 @@ function create_if_block_6$3(ctx) {
     }
   };
 }
-function create_if_block_5$3(ctx) {
+function create_if_block_6$3(ctx) {
   let nav;
   let button0;
   let i0;
   let t0;
   let t1_value = (
     /*portraits*/
-    ctx[7].length + ""
+    ctx[9].length + ""
   );
   let t1;
   let t2;
@@ -27455,7 +27762,7 @@ function create_if_block_5$3(ctx) {
   let t4;
   let t5_value = (
     /*tokens*/
-    ctx[6].length + ""
+    ctx[8].length + ""
   );
   let t5;
   let t6;
@@ -27511,14 +27818,14 @@ function create_if_block_5$3(ctx) {
           listen(
             button0,
             "click",
-            /*click_handler_3*/
-            ctx[27]
+            /*click_handler_4*/
+            ctx[32]
           ),
           listen(
             button1,
             "click",
-            /*click_handler_4*/
-            ctx[28]
+            /*click_handler_5*/
+            ctx[33]
           )
         ];
         mounted = true;
@@ -27526,8 +27833,8 @@ function create_if_block_5$3(ctx) {
     },
     p(ctx2, dirty) {
       if (dirty[0] & /*portraits*/
-      128 && t1_value !== (t1_value = /*portraits*/
-      ctx2[7].length + "")) set_data(t1, t1_value);
+      512 && t1_value !== (t1_value = /*portraits*/
+      ctx2[9].length + "")) set_data(t1, t1_value);
       if (dirty[0] & /*activeTab*/
       4) {
         toggle_class(
@@ -27538,8 +27845,8 @@ function create_if_block_5$3(ctx) {
         );
       }
       if (dirty[0] & /*tokens*/
-      64 && t5_value !== (t5_value = /*tokens*/
-      ctx2[6].length + "")) set_data(t5, t5_value);
+      256 && t5_value !== (t5_value = /*tokens*/
+      ctx2[8].length + "")) set_data(t5, t5_value);
       if (dirty[0] & /*activeTab*/
       4) {
         toggle_class(
@@ -27570,7 +27877,7 @@ function create_else_block$2(ctx) {
   );
   const get_key = (ctx2) => (
     /*item*/
-    ctx2[40].path
+    ctx2[48].path
   );
   for (let i = 0; i < each_value.length; i += 1) {
     let child_ctx = get_each_context$4(ctx, each_value, i);
@@ -27594,8 +27901,8 @@ function create_else_block$2(ctx) {
       current = true;
     },
     p(ctx2, dirty) {
-      if (dirty[0] & /*activeTab, currentImg, filteredList, currentToken, removeFromCategory, updateImageOwnership, isGM, moveToCategory, isActor, isItem, togglePortrait, toggleToken*/
-      130868) {
+      if (dirty[0] & /*activeTab, currentImg, filteredList, currentToken, removeFromCategory, updateImageOwnership, isGM, moveToCategory, isActor, toggleActiveImage, isItem, togglePortrait, toggleToken*/
+      2082036) {
         each_value = ensure_array_like(
           /*filteredList*/
           ctx2[10]
@@ -27636,7 +27943,7 @@ function create_if_block$5(ctx) {
   let t1;
   let t2_value = (
     /*isItem*/
-    (ctx[8] ? "images" : (
+    (ctx[7] ? "images" : (
       /*activeTab*/
       ctx[2]
     )) + ""
@@ -27648,7 +27955,7 @@ function create_if_block$5(ctx) {
   let t5;
   let t6_value = (
     /*isItem*/
-    ctx[8] ? "Image" : (
+    ctx[7] ? "Image" : (
       /*activeTab*/
       ctx[2] === "portraits" ? "Portrait" : "Token"
     )
@@ -27689,14 +27996,14 @@ function create_if_block$5(ctx) {
     },
     p(ctx2, dirty) {
       if (dirty[0] & /*isItem, activeTab*/
-      260 && t2_value !== (t2_value = /*isItem*/
-      (ctx2[8] ? "images" : (
+      132 && t2_value !== (t2_value = /*isItem*/
+      (ctx2[7] ? "images" : (
         /*activeTab*/
         ctx2[2]
       )) + "")) set_data(t2, t2_value);
       if (dirty[0] & /*isItem, activeTab*/
-      260 && t6_value !== (t6_value = /*isItem*/
-      ctx2[8] ? "Image" : (
+      132 && t6_value !== (t6_value = /*isItem*/
+      ctx2[7] ? "Image" : (
         /*activeTab*/
         ctx2[2] === "portraits" ? "Portrait" : "Token"
       ))) set_data(t6, t6_value);
@@ -27710,13 +28017,33 @@ function create_if_block$5(ctx) {
     }
   };
 }
-function create_if_block_4$4(ctx) {
+function create_if_block_5$3(ctx) {
   let div;
   return {
     c() {
       div = element("div");
       div.innerHTML = `<i class="fas fa-check"></i>`;
       attr(div, "class", "status-badge");
+      attr(div, "title", "Current document image");
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+      }
+    }
+  };
+}
+function create_if_block_4$4(ctx) {
+  let div;
+  return {
+    c() {
+      div = element("div");
+      div.innerHTML = `<i class="fas fa-eye"></i>`;
+      attr(div, "class", "status-badge active-visibility");
+      attr(div, "title", "Active visibility variant");
     },
     m(target, anchor) {
       insert(target, div, anchor);
@@ -27739,12 +28066,12 @@ function create_if_block_3$4(ctx) {
       i = element("i");
       attr(i, "class", i_class_value = "fas " + getPermissionIcon(
         /*item*/
-        ctx[40].ownership
+        ctx[48].ownership
       ));
       attr(div, "class", "ownership-badge");
       attr(div, "title", div_title_value = "Visibility: " + getPermissionLabel(
         /*item*/
-        ctx[40].ownership
+        ctx[48].ownership
       ));
     },
     m(target, anchor) {
@@ -27755,14 +28082,14 @@ function create_if_block_3$4(ctx) {
       if (dirty[0] & /*filteredList*/
       1024 && i_class_value !== (i_class_value = "fas " + getPermissionIcon(
         /*item*/
-        ctx2[40].ownership
+        ctx2[48].ownership
       ))) {
         attr(i, "class", i_class_value);
       }
       if (dirty[0] & /*filteredList*/
       1024 && div_title_value !== (div_title_value = "Visibility: " + getPermissionLabel(
         /*item*/
-        ctx2[40].ownership
+        ctx2[48].ownership
       ))) {
         attr(div, "title", div_title_value);
       }
@@ -27780,12 +28107,12 @@ function create_if_block_2$4(ctx) {
   let button_title_value;
   let mounted;
   let dispose;
-  function click_handler_6() {
+  function click_handler_8() {
     return (
-      /*click_handler_6*/
-      ctx[30](
+      /*click_handler_8*/
+      ctx[36](
         /*item*/
-        ctx[40]
+        ctx[48]
       )
     );
   }
@@ -27802,7 +28129,7 @@ function create_if_block_2$4(ctx) {
       insert(target, button, anchor);
       append(button, i);
       if (!mounted) {
-        dispose = listen(button, "click", stop_propagation(click_handler_6));
+        dispose = listen(button, "click", stop_propagation(click_handler_8));
         mounted = true;
       }
     },
@@ -27832,9 +28159,9 @@ function create_if_block_1$4(ctx) {
   function change_handler(...args) {
     return (
       /*change_handler*/
-      ctx[31](
+      ctx[37](
         /*item*/
-        ctx[40],
+        ctx[48],
         ...args
       )
     );
@@ -27843,7 +28170,7 @@ function create_if_block_1$4(ctx) {
     props: {
       value: (
         /*item*/
-        ctx[40].ownership
+        ctx[48].ownership
       ),
       compact: true
     }
@@ -27863,11 +28190,11 @@ function create_if_block_1$4(ctx) {
         dispose = [
           listen(div, "click", stop_propagation(
             /*click_handler*/
-            ctx[22]
+            ctx[26]
           )),
           listen(div, "keydown", stop_propagation(
             /*keydown_handler*/
-            ctx[23]
+            ctx[27]
           ))
         ];
         mounted = true;
@@ -27878,7 +28205,7 @@ function create_if_block_1$4(ctx) {
       const permissionpicker_changes = {};
       if (dirty[0] & /*filteredList*/
       1024) permissionpicker_changes.value = /*item*/
-      ctx[40].ownership;
+      ctx[48].ownership;
       permissionpicker.$set(permissionpicker_changes);
     },
     i(local) {
@@ -27908,68 +28235,87 @@ function create_each_block$4(key_1, ctx) {
   let t0;
   let t1;
   let t2;
+  let t3;
   let div1;
   let span;
-  let t3_value = (
+  let t4_value = (
     /*item*/
-    ctx[40].name + ""
+    ctx[48].name + ""
   );
-  let t3;
   let t4;
+  let t5;
   let div0;
   let button0;
   let i0;
   let i0_class_value;
   let button0_title_value;
-  let t5;
   let t6;
-  let t7;
   let button1;
+  let i1;
+  let i1_class_value;
+  let button1_title_value;
+  let t7;
   let t8;
+  let t9;
+  let button2;
+  let t10;
   let current;
   let mounted;
   let dispose;
   let if_block0 = (
     /*isCurrent*/
-    ctx[43] && create_if_block_4$4()
+    ctx[51] && create_if_block_5$3()
   );
   let if_block1 = (
-    /*isGM*/
-    ctx[11] && /*itemPermission*/
-    ctx[44].type !== PERMISSION_TYPES.ALL && create_if_block_3$4(ctx)
+    /*isActive*/
+    ctx[52] && create_if_block_4$4()
   );
-  function click_handler_5() {
+  let if_block2 = (
+    /*isGM*/
+    ctx[14] && /*itemPermission*/
+    ctx[53].type !== PERMISSION_TYPES.ALL && create_if_block_3$4(ctx)
+  );
+  function click_handler_6() {
     return (
-      /*click_handler_5*/
-      ctx[29](
+      /*click_handler_6*/
+      ctx[34](
         /*item*/
-        ctx[40]
+        ctx[48]
       )
     );
   }
-  let if_block2 = (
-    /*isActor*/
-    ctx[4] && create_if_block_2$4(ctx)
-  );
-  let if_block3 = (
-    /*isGM*/
-    ctx[11] && create_if_block_1$4(ctx)
-  );
   function click_handler_7() {
     return (
       /*click_handler_7*/
-      ctx[32](
+      ctx[35](
         /*item*/
-        ctx[40]
+        ctx[48]
       )
     );
   }
-  function click_handler_8(...args) {
+  let if_block3 = (
+    /*isActor*/
+    ctx[4] && create_if_block_2$4(ctx)
+  );
+  let if_block4 = (
+    /*isGM*/
+    ctx[14] && create_if_block_1$4(ctx)
+  );
+  function click_handler_9() {
     return (
-      /*click_handler_8*/
-      ctx[33](
+      /*click_handler_9*/
+      ctx[38](
         /*item*/
-        ctx[40],
+        ctx[48]
+      )
+    );
+  }
+  function click_handler_10(...args) {
+    return (
+      /*click_handler_10*/
+      ctx[39](
+        /*item*/
+        ctx[48],
         ...args
       )
     );
@@ -27977,9 +28323,9 @@ function create_each_block$4(key_1, ctx) {
   function keydown_handler_1(...args) {
     return (
       /*keydown_handler_1*/
-      ctx[34](
+      ctx[40](
         /*item*/
-        ctx[40],
+        ctx[48],
         ...args
       )
     );
@@ -27995,34 +28341,39 @@ function create_each_block$4(key_1, ctx) {
       t1 = space();
       if (if_block1) if_block1.c();
       t2 = space();
+      if (if_block2) if_block2.c();
+      t3 = space();
       div1 = element("div");
       span = element("span");
-      t3 = text(t3_value);
-      t4 = space();
+      t4 = text(t4_value);
+      t5 = space();
       div0 = element("div");
       button0 = element("button");
       i0 = element("i");
-      t5 = space();
-      if (if_block2) if_block2.c();
       t6 = space();
-      if (if_block3) if_block3.c();
-      t7 = space();
       button1 = element("button");
-      button1.innerHTML = `<i class="fas fa-trash"></i>`;
+      i1 = element("i");
+      t7 = space();
+      if (if_block3) if_block3.c();
       t8 = space();
+      if (if_block4) if_block4.c();
+      t9 = space();
+      button2 = element("button");
+      button2.innerHTML = `<i class="fas fa-trash"></i>`;
+      t10 = space();
       if (!src_url_equal(img.src, img_src_value = /*item*/
-      ctx[40].path)) attr(img, "src", img_src_value);
+      ctx[48].path)) attr(img, "src", img_src_value);
       attr(img, "alt", img_alt_value = /*item*/
-      ctx[40].name);
+      ctx[48].name);
       attr(img, "loading", "lazy");
       attr(span, "class", "image-name");
       attr(i0, "class", i0_class_value = "fas fa-" + /*isCurrent*/
-      (ctx[43] ? "times" : "check"));
+      (ctx[51] ? "times" : "check"));
       attr(button0, "type", "button");
       attr(button0, "title", button0_title_value = /*isCurrent*/
-      ctx[43] ? "Reset to default" : (
+      ctx[51] ? "Reset to default" : (
         /*isItem*/
-        ctx[8] ? "Set as Image" : (
+        ctx[7] ? "Set as Image" : (
           /*activeTab*/
           ctx[2] === "portraits" ? "Set as Portrait" : "Set as Token"
         )
@@ -28031,11 +28382,22 @@ function create_each_block$4(key_1, ctx) {
         button0,
         "active",
         /*isCurrent*/
-        ctx[43]
+        ctx[51]
       );
+      attr(i1, "class", i1_class_value = "fas fa-" + /*isActive*/
+      (ctx[52] ? "eye-slash" : "eye"));
       attr(button1, "type", "button");
-      attr(button1, "class", "remove");
-      attr(button1, "title", "Remove from gallery");
+      attr(button1, "title", button1_title_value = /*isActive*/
+      ctx[52] ? "Disable active visibility" : "Enable active visibility");
+      toggle_class(
+        button1,
+        "active",
+        /*isActive*/
+        ctx[52]
+      );
+      attr(button2, "type", "button");
+      attr(button2, "class", "remove");
+      attr(button2, "title", "Remove from gallery");
       attr(div0, "class", "image-actions");
       attr(div1, "class", "image-overlay");
       attr(div2, "class", "image-card");
@@ -28046,7 +28408,13 @@ function create_each_block$4(key_1, ctx) {
         div2,
         "is-current",
         /*isCurrent*/
-        ctx[43]
+        ctx[51]
+      );
+      toggle_class(
+        div2,
+        "is-active",
+        /*isActive*/
+        ctx[52]
       );
       this.first = div2;
     },
@@ -28058,26 +28426,32 @@ function create_each_block$4(key_1, ctx) {
       append(div2, t1);
       if (if_block1) if_block1.m(div2, null);
       append(div2, t2);
+      if (if_block2) if_block2.m(div2, null);
+      append(div2, t3);
       append(div2, div1);
       append(div1, span);
-      append(span, t3);
-      append(div1, t4);
+      append(span, t4);
+      append(div1, t5);
       append(div1, div0);
       append(div0, button0);
       append(button0, i0);
-      append(div0, t5);
-      if (if_block2) if_block2.m(div0, null);
       append(div0, t6);
-      if (if_block3) if_block3.m(div0, null);
-      append(div0, t7);
       append(div0, button1);
-      append(div2, t8);
+      append(button1, i1);
+      append(div0, t7);
+      if (if_block3) if_block3.m(div0, null);
+      append(div0, t8);
+      if (if_block4) if_block4.m(div0, null);
+      append(div0, t9);
+      append(div0, button2);
+      append(div2, t10);
       current = true;
       if (!mounted) {
         dispose = [
-          listen(button0, "click", stop_propagation(click_handler_5)),
+          listen(button0, "click", stop_propagation(click_handler_6)),
           listen(button1, "click", stop_propagation(click_handler_7)),
-          listen(div2, "click", click_handler_8),
+          listen(button2, "click", stop_propagation(click_handler_9)),
+          listen(div2, "click", click_handler_10),
           listen(div2, "keydown", keydown_handler_1)
         ];
         mounted = true;
@@ -28087,21 +28461,21 @@ function create_each_block$4(key_1, ctx) {
       ctx = new_ctx;
       if (!current || dirty[0] & /*filteredList*/
       1024 && !src_url_equal(img.src, img_src_value = /*item*/
-      ctx[40].path)) {
+      ctx[48].path)) {
         attr(img, "src", img_src_value);
       }
       if (!current || dirty[0] & /*filteredList*/
       1024 && img_alt_value !== (img_alt_value = /*item*/
-      ctx[40].name)) {
+      ctx[48].name)) {
         attr(img, "alt", img_alt_value);
       }
       if (
         /*isCurrent*/
-        ctx[43]
+        ctx[51]
       ) {
         if (if_block0) ;
         else {
-          if_block0 = create_if_block_4$4();
+          if_block0 = create_if_block_5$3();
           if_block0.c();
           if_block0.m(div2, t1);
         }
@@ -28110,14 +28484,12 @@ function create_each_block$4(key_1, ctx) {
         if_block0 = null;
       }
       if (
-        /*isGM*/
-        ctx[11] && /*itemPermission*/
-        ctx[44].type !== PERMISSION_TYPES.ALL
+        /*isActive*/
+        ctx[52]
       ) {
-        if (if_block1) {
-          if_block1.p(ctx, dirty);
-        } else {
-          if_block1 = create_if_block_3$4(ctx);
+        if (if_block1) ;
+        else {
+          if_block1 = create_if_block_4$4();
           if_block1.c();
           if_block1.m(div2, t2);
         }
@@ -28125,19 +28497,35 @@ function create_each_block$4(key_1, ctx) {
         if_block1.d(1);
         if_block1 = null;
       }
+      if (
+        /*isGM*/
+        ctx[14] && /*itemPermission*/
+        ctx[53].type !== PERMISSION_TYPES.ALL
+      ) {
+        if (if_block2) {
+          if_block2.p(ctx, dirty);
+        } else {
+          if_block2 = create_if_block_3$4(ctx);
+          if_block2.c();
+          if_block2.m(div2, t3);
+        }
+      } else if (if_block2) {
+        if_block2.d(1);
+        if_block2 = null;
+      }
       if ((!current || dirty[0] & /*filteredList*/
-      1024) && t3_value !== (t3_value = /*item*/
-      ctx[40].name + "")) set_data(t3, t3_value);
+      1024) && t4_value !== (t4_value = /*item*/
+      ctx[48].name + "")) set_data(t4, t4_value);
       if (!current || dirty[0] & /*activeTab, currentImg, filteredList, currentToken*/
-      1572 && i0_class_value !== (i0_class_value = "fas fa-" + /*isCurrent*/
-      (ctx[43] ? "times" : "check"))) {
+      1124 && i0_class_value !== (i0_class_value = "fas fa-" + /*isCurrent*/
+      (ctx[51] ? "times" : "check"))) {
         attr(i0, "class", i0_class_value);
       }
       if (!current || dirty[0] & /*activeTab, currentImg, filteredList, currentToken, isItem*/
-      1828 && button0_title_value !== (button0_title_value = /*isCurrent*/
-      ctx[43] ? "Reset to default" : (
+      1252 && button0_title_value !== (button0_title_value = /*isCurrent*/
+      ctx[51] ? "Reset to default" : (
         /*isItem*/
-        ctx[8] ? "Set as Image" : (
+        ctx[7] ? "Set as Image" : (
           /*activeTab*/
           ctx[2] === "portraits" ? "Set as Portrait" : "Set as Token"
         )
@@ -28145,69 +28533,97 @@ function create_each_block$4(key_1, ctx) {
         attr(button0, "title", button0_title_value);
       }
       if (!current || dirty[0] & /*activeTab, currentImg, filteredList, currentToken*/
-      1572) {
+      1124) {
         toggle_class(
           button0,
           "active",
           /*isCurrent*/
-          ctx[43]
+          ctx[51]
+        );
+      }
+      if (!current || dirty[0] & /*filteredList*/
+      1024 && i1_class_value !== (i1_class_value = "fas fa-" + /*isActive*/
+      (ctx[52] ? "eye-slash" : "eye"))) {
+        attr(i1, "class", i1_class_value);
+      }
+      if (!current || dirty[0] & /*filteredList*/
+      1024 && button1_title_value !== (button1_title_value = /*isActive*/
+      ctx[52] ? "Disable active visibility" : "Enable active visibility")) {
+        attr(button1, "title", button1_title_value);
+      }
+      if (!current || dirty[0] & /*filteredList*/
+      1024) {
+        toggle_class(
+          button1,
+          "active",
+          /*isActive*/
+          ctx[52]
         );
       }
       if (
         /*isActor*/
         ctx[4]
       ) {
-        if (if_block2) {
-          if_block2.p(ctx, dirty);
+        if (if_block3) {
+          if_block3.p(ctx, dirty);
         } else {
-          if_block2 = create_if_block_2$4(ctx);
-          if_block2.c();
-          if_block2.m(div0, t6);
+          if_block3 = create_if_block_2$4(ctx);
+          if_block3.c();
+          if_block3.m(div0, t8);
         }
-      } else if (if_block2) {
-        if_block2.d(1);
-        if_block2 = null;
+      } else if (if_block3) {
+        if_block3.d(1);
+        if_block3 = null;
       }
       if (
         /*isGM*/
-        ctx[11]
+        ctx[14]
       ) {
-        if (if_block3) {
-          if_block3.p(ctx, dirty);
+        if (if_block4) {
+          if_block4.p(ctx, dirty);
           if (dirty[0] & /*isGM*/
-          2048) {
-            transition_in(if_block3, 1);
+          16384) {
+            transition_in(if_block4, 1);
           }
         } else {
-          if_block3 = create_if_block_1$4(ctx);
-          if_block3.c();
-          transition_in(if_block3, 1);
-          if_block3.m(div0, t7);
+          if_block4 = create_if_block_1$4(ctx);
+          if_block4.c();
+          transition_in(if_block4, 1);
+          if_block4.m(div0, t9);
         }
-      } else if (if_block3) {
+      } else if (if_block4) {
         group_outros();
-        transition_out(if_block3, 1, 1, () => {
-          if_block3 = null;
+        transition_out(if_block4, 1, 1, () => {
+          if_block4 = null;
         });
         check_outros();
       }
       if (!current || dirty[0] & /*activeTab, currentImg, filteredList, currentToken*/
-      1572) {
+      1124) {
         toggle_class(
           div2,
           "is-current",
           /*isCurrent*/
-          ctx[43]
+          ctx[51]
+        );
+      }
+      if (!current || dirty[0] & /*filteredList*/
+      1024) {
+        toggle_class(
+          div2,
+          "is-active",
+          /*isActive*/
+          ctx[52]
         );
       }
     },
     i(local) {
       if (current) return;
-      transition_in(if_block3);
+      transition_in(if_block4);
       current = true;
     },
     o(local) {
-      transition_out(if_block3);
+      transition_out(if_block4);
       current = false;
     },
     d(detaching) {
@@ -28218,6 +28634,7 @@ function create_each_block$4(key_1, ctx) {
       if (if_block1) if_block1.d();
       if (if_block2) if_block2.d();
       if (if_block3) if_block3.d();
+      if (if_block4) if_block4.d();
       mounted = false;
       run_all(dispose);
     }
@@ -28231,59 +28648,72 @@ function create_default_slot$4(ctx) {
   let img;
   let img_src_value;
   let t0;
-  let span;
+  let span0;
   let t1_value = (
     /*isItem*/
-    ctx[8] ? "Image" : "Portrait"
+    ctx[7] ? "Image" : "Portrait"
   );
   let t1;
   let t2;
   let t3;
+  let div1;
+  let span1;
+  let t5;
+  let t6;
   let button1;
   let i0;
-  let t4;
-  let t5;
-  let div1;
-  let i1;
-  let t6;
-  let input;
   let t7;
   let t8;
-  let section;
   let div2;
+  let i1;
+  let t9;
+  let input;
+  let t10;
+  let t11;
+  let section;
+  let div3;
   let current_block_type_index;
-  let if_block3;
+  let if_block4;
   let current;
   let mounted;
   let dispose;
   let if_block0 = (
     /*isActor*/
-    ctx[4] && create_if_block_7$3(ctx)
+    ctx[4] && create_if_block_10$2(ctx)
   );
   function select_block_type(ctx2, dirty) {
     if (
-      /*isItem*/
-      ctx2[8]
-    ) return create_if_block_6$3;
-    return create_else_block_1$1;
+      /*activeVisibleItems*/
+      ctx2[11].length === 0
+    ) return create_if_block_8$3;
+    return create_else_block_2$1;
   }
   let current_block_type = select_block_type(ctx);
   let if_block1 = current_block_type(ctx);
-  let if_block2 = (
+  function select_block_type_1(ctx2, dirty) {
+    if (
+      /*isItem*/
+      ctx2[7]
+    ) return create_if_block_7$3;
+    return create_else_block_1$1;
+  }
+  let current_block_type_1 = select_block_type_1(ctx);
+  let if_block2 = current_block_type_1(ctx);
+  let if_block3 = (
     /*isActor*/
-    ctx[4] && create_if_block_5$3(ctx)
+    ctx[4] && create_if_block_6$3(ctx)
   );
   const if_block_creators = [create_if_block$5, create_else_block$2];
   const if_blocks = [];
-  function select_block_type_1(ctx2, dirty) {
+  function select_block_type_2(ctx2, dirty) {
     if (
       /*filteredList*/
       ctx2[10].length === 0
     ) return 0;
     return 1;
   }
-  current_block_type_index = select_block_type_1(ctx);
-  if_block3 = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx);
+  current_block_type_index = select_block_type_2(ctx);
+  if_block4 = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx);
   return {
     c() {
       main = element("main");
@@ -28292,31 +28722,37 @@ function create_default_slot$4(ctx) {
       button0 = element("button");
       img = element("img");
       t0 = space();
-      span = element("span");
+      span0 = element("span");
       t1 = text(t1_value);
       t2 = space();
       if (if_block0) if_block0.c();
       t3 = space();
+      div1 = element("div");
+      span1 = element("span");
+      span1.textContent = "Active";
+      t5 = space();
+      if_block1.c();
+      t6 = space();
       button1 = element("button");
       i0 = element("i");
-      t4 = space();
-      if_block1.c();
-      t5 = space();
-      div1 = element("div");
-      i1 = element("i");
-      t6 = space();
-      input = element("input");
       t7 = space();
-      if (if_block2) if_block2.c();
+      if_block2.c();
       t8 = space();
-      section = element("section");
       div2 = element("div");
-      if_block3.c();
-      if (!src_url_equal(img.src, img_src_value = /*currentImg*/
-      ctx[5])) attr(img, "src", img_src_value);
+      i1 = element("i");
+      t9 = space();
+      input = element("input");
+      t10 = space();
+      if (if_block3) if_block3.c();
+      t11 = space();
+      section = element("section");
+      div3 = element("div");
+      if_block4.c();
+      if (!src_url_equal(img.src, img_src_value = /*perceivedImg*/
+      ctx[13])) attr(img, "src", img_src_value);
       attr(img, "alt", "");
       attr(img, "role", "presentation");
-      attr(span, "class", "preview-label");
+      attr(span0, "class", "preview-label");
       attr(button0, "type", "button");
       attr(button0, "class", "portrait-preview");
       attr(button0, "title", "Click to view full size");
@@ -28327,6 +28763,8 @@ function create_default_slot$4(ctx) {
         ctx[2] === "portraits"
       );
       attr(div0, "class", "current-portraits");
+      attr(span1, "class", "active-preview-label");
+      attr(div1, "class", "active-preview-strip");
       attr(i0, "class", "fas fa-folder-open");
       attr(button1, "type", "button");
       attr(button1, "class", "browse-btn");
@@ -28334,8 +28772,8 @@ function create_default_slot$4(ctx) {
       attr(i1, "class", "fas fa-search");
       attr(input, "type", "search");
       attr(input, "placeholder", "Search...");
-      attr(div1, "class", "search-bar");
-      attr(div2, "class", "image-grid");
+      attr(div2, "class", "search-bar");
+      attr(div3, "class", "image-grid");
       attr(section, "class", "gallery-content");
       attr(main, "class", "gallery-shell");
     },
@@ -28346,31 +28784,36 @@ function create_default_slot$4(ctx) {
       append(div0, button0);
       append(button0, img);
       append(button0, t0);
-      append(button0, span);
-      append(span, t1);
+      append(button0, span0);
+      append(span0, t1);
       append(div0, t2);
       if (if_block0) if_block0.m(div0, null);
       append(header, t3);
+      append(header, div1);
+      append(div1, span1);
+      append(div1, t5);
+      if_block1.m(div1, null);
+      append(header, t6);
       append(header, button1);
       append(button1, i0);
-      append(button1, t4);
-      if_block1.m(button1, null);
-      append(main, t5);
-      append(main, div1);
-      append(div1, i1);
-      append(div1, t6);
-      append(div1, input);
+      append(button1, t7);
+      if_block2.m(button1, null);
+      append(main, t8);
+      append(main, div2);
+      append(div2, i1);
+      append(div2, t9);
+      append(div2, input);
       set_input_value(
         input,
         /*searchFilter*/
         ctx[3]
       );
-      append(main, t7);
-      if (if_block2) if_block2.m(main, null);
-      append(main, t8);
+      append(main, t10);
+      if (if_block3) if_block3.m(main, null);
+      append(main, t11);
       append(main, section);
-      append(section, div2);
-      if_blocks[current_block_type_index].m(div2, null);
+      append(section, div3);
+      if_blocks[current_block_type_index].m(div3, null);
       current = true;
       if (!mounted) {
         dispose = [
@@ -28378,33 +28821,33 @@ function create_default_slot$4(ctx) {
             button0,
             "click",
             /*click_handler_1*/
-            ctx[24]
+            ctx[28]
           ),
           listen(
             button1,
             "click",
             /*browseForImage*/
-            ctx[17]
+            ctx[21]
           ),
           listen(
             input,
             "input",
             /*input_input_handler*/
-            ctx[26]
+            ctx[31]
           )
         ];
         mounted = true;
       }
     },
     p(ctx2, dirty) {
-      if (!current || dirty[0] & /*currentImg*/
-      32 && !src_url_equal(img.src, img_src_value = /*currentImg*/
-      ctx2[5])) {
+      if (!current || dirty[0] & /*perceivedImg*/
+      8192 && !src_url_equal(img.src, img_src_value = /*perceivedImg*/
+      ctx2[13])) {
         attr(img, "src", img_src_value);
       }
       if ((!current || dirty[0] & /*isItem*/
-      256) && t1_value !== (t1_value = /*isItem*/
-      ctx2[8] ? "Image" : "Portrait")) set_data(t1, t1_value);
+      128) && t1_value !== (t1_value = /*isItem*/
+      ctx2[7] ? "Image" : "Portrait")) set_data(t1, t1_value);
       if (!current || dirty[0] & /*activeTab*/
       4) {
         toggle_class(
@@ -28421,7 +28864,7 @@ function create_default_slot$4(ctx) {
         if (if_block0) {
           if_block0.p(ctx2, dirty);
         } else {
-          if_block0 = create_if_block_7$3(ctx2);
+          if_block0 = create_if_block_10$2(ctx2);
           if_block0.c();
           if_block0.m(div0, null);
         }
@@ -28436,7 +28879,17 @@ function create_default_slot$4(ctx) {
         if_block1 = current_block_type(ctx2);
         if (if_block1) {
           if_block1.c();
-          if_block1.m(button1, null);
+          if_block1.m(div1, null);
+        }
+      }
+      if (current_block_type_1 === (current_block_type_1 = select_block_type_1(ctx2)) && if_block2) {
+        if_block2.p(ctx2, dirty);
+      } else {
+        if_block2.d(1);
+        if_block2 = current_block_type_1(ctx2);
+        if (if_block2) {
+          if_block2.c();
+          if_block2.m(button1, null);
         }
       }
       if (dirty[0] & /*searchFilter*/
@@ -28452,19 +28905,19 @@ function create_default_slot$4(ctx) {
         /*isActor*/
         ctx2[4]
       ) {
-        if (if_block2) {
-          if_block2.p(ctx2, dirty);
+        if (if_block3) {
+          if_block3.p(ctx2, dirty);
         } else {
-          if_block2 = create_if_block_5$3(ctx2);
-          if_block2.c();
-          if_block2.m(main, t8);
+          if_block3 = create_if_block_6$3(ctx2);
+          if_block3.c();
+          if_block3.m(main, t11);
         }
-      } else if (if_block2) {
-        if_block2.d(1);
-        if_block2 = null;
+      } else if (if_block3) {
+        if_block3.d(1);
+        if_block3 = null;
       }
       let previous_block_index = current_block_type_index;
-      current_block_type_index = select_block_type_1(ctx2);
+      current_block_type_index = select_block_type_2(ctx2);
       if (current_block_type_index === previous_block_index) {
         if_blocks[current_block_type_index].p(ctx2, dirty);
       } else {
@@ -28473,24 +28926,24 @@ function create_default_slot$4(ctx) {
           if_blocks[previous_block_index] = null;
         });
         check_outros();
-        if_block3 = if_blocks[current_block_type_index];
-        if (!if_block3) {
-          if_block3 = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx2);
-          if_block3.c();
+        if_block4 = if_blocks[current_block_type_index];
+        if (!if_block4) {
+          if_block4 = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx2);
+          if_block4.c();
         } else {
-          if_block3.p(ctx2, dirty);
+          if_block4.p(ctx2, dirty);
         }
-        transition_in(if_block3, 1);
-        if_block3.m(div2, null);
+        transition_in(if_block4, 1);
+        if_block4.m(div3, null);
       }
     },
     i(local) {
       if (current) return;
-      transition_in(if_block3);
+      transition_in(if_block4);
       current = true;
     },
     o(local) {
-      transition_out(if_block3);
+      transition_out(if_block4);
       current = false;
     },
     d(detaching) {
@@ -28499,7 +28952,8 @@ function create_default_slot$4(ctx) {
       }
       if (if_block0) if_block0.d();
       if_block1.d();
-      if (if_block2) if_block2.d();
+      if_block2.d();
+      if (if_block3) if_block3.d();
       if_blocks[current_block_type_index].d();
       mounted = false;
       run_all(dispose);
@@ -28511,7 +28965,7 @@ function create_fragment$6(ctx) {
   let updating_elementRoot;
   let current;
   function applicationshell_elementRoot_binding(value) {
-    ctx[35](value);
+    ctx[41](value);
   }
   let applicationshell_props = {
     $$slots: { default: [create_default_slot$4] },
@@ -28536,9 +28990,9 @@ function create_fragment$6(ctx) {
     },
     p(ctx2, dirty) {
       const applicationshell_changes = {};
-      if (dirty[0] & /*isItem, activeTab, filteredList, currentImg, currentToken, isGM, isActor, tokens, portraits, searchFilter*/
-      4092 | dirty[1] & /*$$scope*/
-      65536) {
+      if (dirty[0] & /*isItem, activeTab, filteredList, currentImg, currentToken, isGM, isActor, tokens, portraits, searchFilter, activeVisibleItems, perceivedToken, perceivedImg*/
+      32764 | dirty[1] & /*$$scope*/
+      268435456) {
         applicationshell_changes.$$scope = { dirty, ctx: ctx2 };
       }
       if (!updating_elementRoot && dirty[0] & /*elementRoot*/
@@ -28578,12 +29032,15 @@ function instance$6($$self, $$props, $$invalidate) {
   let isGM;
   let currentImg;
   let currentToken;
+  let perceivedImg;
+  let perceivedToken;
   let savedData;
   let portraits;
   let tokens;
   let currentList;
+  let activeVisibleItems;
   let filteredList;
-  let $tjsDoc, $$unsubscribe_tjsDoc = noop, $$subscribe_tjsDoc = () => ($$unsubscribe_tjsDoc(), $$unsubscribe_tjsDoc = subscribe(tjsDoc, ($$value) => $$invalidate(21, $tjsDoc = $$value)), tjsDoc);
+  let $tjsDoc, $$unsubscribe_tjsDoc = noop, $$subscribe_tjsDoc = () => ($$unsubscribe_tjsDoc(), $$unsubscribe_tjsDoc = subscribe(tjsDoc, ($$value) => $$invalidate(25, $tjsDoc = $$value)), tjsDoc);
   $$self.$$.on_destroy.push(() => $$unsubscribe_tjsDoc());
   let { elementRoot = void 0 } = $$props;
   let { tjsDoc = null } = $$props;
@@ -28605,6 +29062,7 @@ function instance$6($$self, $$props, $$invalidate) {
           path: imgPath,
           name: getImageName(imgPath),
           ownership: "all",
+          active: false,
           addedAt: Date.now()
         });
         hasChanges = true;
@@ -28620,6 +29078,7 @@ function instance$6($$self, $$props, $$invalidate) {
             path: tokenPath,
             name: getImageName(tokenPath),
             ownership: "all",
+            active: false,
             addedAt: Date.now()
           });
           hasChanges = true;
@@ -28650,12 +29109,48 @@ function instance$6($$self, $$props, $$invalidate) {
       path: imagePath,
       name: name || imagePath.split("/").pop().replace(/\.[^/.]+$/, ""),
       ownership,
+      active: false,
       addedAt: Date.now()
     });
     await doc.setFlag(MODULE_ID, "gallery", { ...data, [category]: list });
   }
+  function getCategoryLabel(category) {
+    if (isItem) return "image";
+    return category === "portraits" ? "portrait" : "token";
+  }
+  function warnActiveOwnershipConflict(conflict, ownership, category) {
+    const categoryLabel = getCategoryLabel(category);
+    const ownershipLabel = getPermissionLabel(ownership);
+    const conflictName = conflict?.name ?? conflict?.path ?? "another image";
+    notifyWarn(`Only one active ${categoryLabel} can use "${ownershipLabel}" visibility. Disable "${conflictName}" first.`);
+  }
+  async function toggleActiveImage(item, category) {
+    const data = doc.getFlag(MODULE_ID, "gallery") ?? { portraits: [], tokens: [] };
+    const list = data[category] ?? [];
+    const target = list.find((entry) => entry.path === item.path);
+    if (!target) return;
+    const shouldActivate = target.active !== true;
+    if (shouldActivate) {
+      const conflict = findActiveOwnershipConflict(list, target.ownership, target.path);
+      if (conflict) {
+        warnActiveOwnershipConflict(conflict, target.ownership, category);
+        return;
+      }
+    }
+    const updatedList = list.map((entry) => entry.path === target.path ? { ...entry, active: shouldActivate } : entry);
+    await doc.setFlag(MODULE_ID, "gallery", { ...data, [category]: updatedList });
+  }
   async function updateImageOwnership(imagePath, category, ownership) {
     const data = doc.getFlag(MODULE_ID, "gallery") ?? { portraits: [], tokens: [] };
+    const sourceList = data[category] ?? [];
+    const target = sourceList.find((item) => item.path === imagePath);
+    if (target?.active) {
+      const conflict = findActiveOwnershipConflict(sourceList, ownership, imagePath);
+      if (conflict) {
+        warnActiveOwnershipConflict(conflict, ownership, category);
+        return;
+      }
+    }
     const list = (data[category] ?? []).map((item) => item.path === imagePath ? { ...item, ownership } : item);
     await doc.setFlag(MODULE_ID, "gallery", { ...data, [category]: list });
   }
@@ -28678,6 +29173,13 @@ function instance$6($$self, $$props, $$invalidate) {
     const toList = data[toCategory] ?? [];
     const item = fromList.find((p) => p.path === imagePath);
     if (!item || toList.some((p) => p.path === imagePath)) return;
+    if (item.active) {
+      const conflict = findActiveOwnershipConflict(toList, item.ownership);
+      if (conflict) {
+        warnActiveOwnershipConflict(conflict, item.ownership, toCategory);
+        return;
+      }
+    }
     const newFromList = fromList.filter((p) => p.path !== imagePath);
     toList.push(item);
     await doc.setFlag(MODULE_ID, "gallery", {
@@ -28707,19 +29209,21 @@ function instance$6($$self, $$props, $$invalidate) {
   function keydown_handler2(event) {
     bubble.call(this, $$self, event);
   }
-  const click_handler_1 = () => showImagePopout(currentImg, "Image");
-  const click_handler_2 = () => showImagePopout(currentToken, "Token");
+  const click_handler_1 = () => showImagePopout(perceivedImg, "Image");
+  const click_handler_2 = () => showImagePopout(perceivedToken, "Token");
+  const click_handler_3 = (item) => showImagePopout(item.path, item.name);
   function input_input_handler() {
     searchFilter = this.value;
     $$invalidate(3, searchFilter);
   }
-  const click_handler_3 = () => $$invalidate(2, activeTab = "portraits");
-  const click_handler_4 = () => $$invalidate(2, activeTab = "tokens");
-  const click_handler_5 = (item) => activeTab === "portraits" ? togglePortrait(item.path) : toggleToken(item.path);
-  const click_handler_6 = (item) => moveToCategory(item.path, activeTab, activeTab === "portraits" ? "tokens" : "portraits");
+  const click_handler_4 = () => $$invalidate(2, activeTab = "portraits");
+  const click_handler_5 = () => $$invalidate(2, activeTab = "tokens");
+  const click_handler_6 = (item) => activeTab === "portraits" ? togglePortrait(item.path) : toggleToken(item.path);
+  const click_handler_7 = (item) => toggleActiveImage(item, activeTab);
+  const click_handler_8 = (item) => moveToCategory(item.path, activeTab, activeTab === "portraits" ? "tokens" : "portraits");
   const change_handler = (item, e) => updateImageOwnership(item.path, activeTab, e.detail);
-  const click_handler_7 = (item) => removeFromCategory(item.path, activeTab);
-  const click_handler_8 = (item, e) => handleImageClick(e, item);
+  const click_handler_9 = (item) => removeFromCategory(item.path, activeTab);
+  const click_handler_10 = (item, e) => handleImageClick(e, item);
   const keydown_handler_1 = (item, e) => e.key === "Enter" && handleImageClick(e, item);
   function applicationshell_elementRoot_binding(value) {
     elementRoot = value;
@@ -28731,47 +29235,59 @@ function instance$6($$self, $$props, $$invalidate) {
   };
   $$self.$$.update = () => {
     if ($$self.$$.dirty[0] & /*tjsDoc, $tjsDoc*/
-    2097154) {
-      $$invalidate(18, doc = tjsDoc ? $tjsDoc : null);
+    33554434) {
+      $$invalidate(22, doc = tjsDoc ? $tjsDoc : null);
     }
     if ($$self.$$.dirty[0] & /*doc*/
-    262144) {
+    4194304) {
       $$invalidate(4, isActor = doc?.documentName === "Actor");
     }
     if ($$self.$$.dirty[0] & /*doc*/
-    262144) {
-      $$invalidate(8, isItem = doc?.documentName === "Item");
+    4194304) {
+      $$invalidate(7, isItem = doc?.documentName === "Item");
     }
     if ($$self.$$.dirty[0] & /*doc*/
-    262144) {
-      $$invalidate(5, currentImg = doc?.img ?? DEFAULT_IMG);
+    4194304) {
+      $$invalidate(6, currentImg = doc?.img ?? DEFAULT_IMG);
     }
     if ($$self.$$.dirty[0] & /*isActor, doc, currentImg*/
-    262192) {
-      $$invalidate(9, currentToken = isActor ? doc?.prototypeToken?.texture?.src ?? currentImg : null);
+    4194384) {
+      $$invalidate(5, currentToken = isActor ? doc?.prototypeToken?.texture?.src ?? currentImg : null);
+    }
+    if ($$self.$$.dirty[0] & /*doc, currentImg*/
+    4194368) {
+      $$invalidate(13, perceivedImg = doc ? getPerceivedImage(doc, "portraits", game.user) ?? DEFAULT_IMG : currentImg);
+    }
+    if ($$self.$$.dirty[0] & /*isActor, doc, currentToken*/
+    4194352) {
+      $$invalidate(12, perceivedToken = isActor && doc ? getPerceivedImage(doc, "tokens", game.user) ?? DEFAULT_IMG : currentToken);
     }
     if ($$self.$$.dirty[0] & /*isItem*/
-    256) {
+    128) {
       if (isItem) $$invalidate(2, activeTab = "portraits");
     }
     if ($$self.$$.dirty[0] & /*doc*/
-    262144) {
-      $$invalidate(20, savedData = doc?.getFlag(MODULE_ID, "gallery") ?? { portraits: [], tokens: [] });
+    4194304) {
+      $$invalidate(24, savedData = doc?.getFlag(MODULE_ID, "gallery") ?? { portraits: [], tokens: [] });
     }
     if ($$self.$$.dirty[0] & /*savedData*/
-    1048576) {
-      $$invalidate(7, portraits = savedData.portraits ?? []);
+    16777216) {
+      $$invalidate(9, portraits = savedData.portraits ?? []);
     }
     if ($$self.$$.dirty[0] & /*savedData*/
-    1048576) {
-      $$invalidate(6, tokens = savedData.tokens ?? []);
+    16777216) {
+      $$invalidate(8, tokens = savedData.tokens ?? []);
     }
     if ($$self.$$.dirty[0] & /*activeTab, portraits, tokens*/
-    196) {
-      $$invalidate(19, currentList = activeTab === "portraits" ? portraits : tokens);
+    772) {
+      $$invalidate(23, currentList = activeTab === "portraits" ? portraits : tokens);
+    }
+    if ($$self.$$.dirty[0] & /*doc, activeTab*/
+    4194308) {
+      $$invalidate(11, activeVisibleItems = doc ? getActiveGalleryItems(doc, activeTab, { user: game.user }) : []);
     }
     if ($$self.$$.dirty[0] & /*currentList, searchFilter, doc*/
-    786440) {
+    12582920) {
       $$invalidate(10, filteredList = currentList.filter((item) => {
         const matchesSearch = !searchFilter || item.name?.toLowerCase().includes(searchFilter.toLowerCase()) || item.path?.toLowerCase().includes(searchFilter.toLowerCase());
         if (!matchesSearch) return false;
@@ -28779,22 +29295,26 @@ function instance$6($$self, $$props, $$invalidate) {
       }));
     }
   };
-  $$invalidate(11, isGM = game.user.isGM);
+  $$invalidate(14, isGM = game.user.isGM);
   return [
     elementRoot,
     tjsDoc,
     activeTab,
     searchFilter,
     isActor,
+    currentToken,
     currentImg,
+    isItem,
     tokens,
     portraits,
-    isItem,
-    currentToken,
     filteredList,
+    activeVisibleItems,
+    perceivedToken,
+    perceivedImg,
     isGM,
     togglePortrait,
     toggleToken,
+    toggleActiveImage,
     updateImageOwnership,
     removeFromCategory,
     moveToCategory,
@@ -28807,14 +29327,16 @@ function instance$6($$self, $$props, $$invalidate) {
     keydown_handler2,
     click_handler_1,
     click_handler_2,
-    input_input_handler,
     click_handler_3,
+    input_input_handler,
     click_handler_4,
     click_handler_5,
     click_handler_6,
-    change_handler,
     click_handler_7,
     click_handler_8,
+    change_handler,
+    click_handler_9,
+    click_handler_10,
     keydown_handler_1,
     applicationshell_elementRoot_binding
   ];
