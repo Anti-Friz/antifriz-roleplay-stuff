@@ -427,9 +427,8 @@ FodyWeavers.xsd
 *.msm
 *.msp
 
-
 #custom
 /DOCS
-.vite-cache/
+.vite-cache/*
 /module.zip
 /dist
