@@ -4,7 +4,7 @@
  */
 
 import { DEFAULT_IMAGES, MODULE_ID } from '#config';
-import { canUserSee, getPermissionKey, getPermissionPriority } from './permissions.mjs';
+import { canUserPerceive, canUserSee, getPermissionKey, getPermissionPriority } from './permissions.mjs';
 
 /**
  * Gallery category ids.
@@ -113,16 +113,18 @@ export function findActiveOwnershipConflict(items, ownership, excludePath = null
  * @param {object} [options] - Lookup options
  * @param {User} [options.user] - User to evaluate visibility for
  * @param {boolean} [options.includeHidden=false] - Include images hidden from the user
+ * @param {boolean} [options.perceived=false] - Use viewer-facing visibility instead of GM management visibility
  * @returns {object[]}
  */
 export function getActiveGalleryItems(document, category, options = {}) {
    const user = options.user ?? globalThis.game?.user;
    const includeHidden = options.includeHidden ?? false;
+   const visibilityTest = options.perceived ? canUserPerceive : canUserSee;
    const items = getGalleryCategoryItems(document, category);
 
    return items
       .filter(item => item?.active === true)
-      .filter(item => includeHidden || (user ? canUserSee(item.ownership, user, document) : false))
+      .filter(item => includeHidden || (user ? visibilityTest(item.ownership, user, document) : false))
       .sort(compareActiveGalleryItems);
 }
 
@@ -134,7 +136,7 @@ export function getActiveGalleryItems(document, category, options = {}) {
  * @returns {object[]}
  */
 export function getPerceivedImages(document, category, user = globalThis.game?.user) {
-   return getActiveGalleryItems(document, category, { user });
+   return getActiveGalleryItems(document, category, { user, perceived: true });
 }
 
 /**
@@ -150,7 +152,7 @@ export function getPerceivedImage(document, category, user = globalThis.game?.us
 
    const currentImage = getCurrentDocumentImage(document, category);
    const currentGalleryItem = getGalleryCategoryItems(document, category).find(item => item.path === currentImage);
-   if (currentGalleryItem && user && !canUserSee(currentGalleryItem.ownership, user, document)) return null;
+   if (currentGalleryItem && user && !canUserPerceive(currentGalleryItem.ownership, user, document)) return null;
 
    return currentImage;
 }

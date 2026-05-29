@@ -22598,22 +22598,36 @@ function getPermissionPriority(permission) {
       return 10;
   }
 }
+function canUserPerceive(permission, user = game.user, document2 = null) {
+  return canUserAccess(permission, user, document2, { gmOverride: false });
+}
 function canUserSee(permission, user = game.user, document2 = null) {
-  if (user.isGM) return true;
+  return canUserAccess(permission, user, document2, { gmOverride: true });
+}
+function canUserAccess(permission, user = game.user, document2 = null, options = {}) {
+  const gmOverride = options.gmOverride ?? true;
+  if (gmOverride && user.isGM) return true;
   const normalized = normalizePermission(permission);
   switch (normalized.type) {
     case PERMISSION_TYPES.ALL:
       return true;
     case PERMISSION_TYPES.GM:
-      return false;
+      return user.isGM;
     case PERMISSION_TYPES.OWNER:
       if (!document2) return false;
-      return document2.testUserPermission?.(user, "OWNER") ?? false;
+      return hasExplicitOwnerPermission(document2, user) || gmOverride && (document2.testUserPermission?.(user, "OWNER") ?? false);
     case PERMISSION_TYPES.CUSTOM:
       return normalized.users.includes(user.id);
     default:
       return true;
   }
+}
+function hasExplicitOwnerPermission(document2, user) {
+  const ownerLevel = globalThis.CONST?.DOCUMENT_OWNERSHIP_LEVELS?.OWNER;
+  if (typeof document2.getUserLevel === "function" && Number.isFinite(ownerLevel)) {
+    return document2.getUserLevel(user) >= ownerLevel;
+  }
+  return document2.testUserPermission?.(user, "OWNER") ?? false;
 }
 function getOnlinePlayers() {
   return game.users.filter((u) => u.active && !u.isGM);
@@ -22753,18 +22767,19 @@ function findActiveOwnershipConflict(items, ownership, excludePath = null) {
 function getActiveGalleryItems(document2, category, options = {}) {
   const user = options.user ?? globalThis.game?.user;
   const includeHidden = options.includeHidden ?? false;
+  const visibilityTest = options.perceived ? canUserPerceive : canUserSee;
   const items = getGalleryCategoryItems(document2, category);
-  return items.filter((item) => item?.active === true).filter((item) => includeHidden || (user ? canUserSee(item.ownership, user, document2) : false)).sort(compareActiveGalleryItems);
+  return items.filter((item) => item?.active === true).filter((item) => includeHidden || (user ? visibilityTest(item.ownership, user, document2) : false)).sort(compareActiveGalleryItems);
 }
 function getPerceivedImages(document2, category, user = globalThis.game?.user) {
-  return getActiveGalleryItems(document2, category, { user });
+  return getActiveGalleryItems(document2, category, { user, perceived: true });
 }
 function getPerceivedImage(document2, category, user = globalThis.game?.user) {
   const images = getPerceivedImages(document2, category, user);
   if (images[0]?.path) return images[0].path;
   const currentImage = getCurrentDocumentImage(document2, category);
   const currentGalleryItem = getGalleryCategoryItems(document2, category).find((item) => item.path === currentImage);
-  if (currentGalleryItem && user && !canUserSee(currentGalleryItem.ownership, user, document2)) return null;
+  if (currentGalleryItem && user && !canUserPerceive(currentGalleryItem.ownership, user, document2)) return null;
   return currentImage;
 }
 function compareActiveGalleryItems(left, right) {
@@ -41033,9 +41048,237 @@ function handleSetVolume(data) {
     broadcastAudio.volume = volume;
   }
 }
+const DEFAULT_PORTRAIT = "icons/svg/mystery-man.svg";
+const tokenTextureState = /* @__PURE__ */ new WeakMap();
+let hooksRegistered = false;
+function registerPerceivedImageHooks() {
+  if (hooksRegistered) return;
+  hooksRegistered = true;
+  Hooks.on("canvasReady", refreshPerceivedTokenImages);
+  Hooks.on("drawToken", applyPerceivedTokenImage);
+  Hooks.on("refreshToken", applyPerceivedTokenImage);
+  Hooks.on("updateToken", (tokenDocument) => applyPerceivedTokenImage(tokenDocument.object));
+  Hooks.on("updateActor", (actor) => refreshPerceivedActorImages(actor));
+  Hooks.on("renderActorSheet", applyPerceivedActorSheetPortrait);
+  Hooks.on("renderDocumentSheetV2", applyPerceivedActorSheetPortrait);
+  Hooks.on("renderActorDirectory", applyPerceivedActorDirectoryPortraits);
+  Hooks.on("renderApplicationV2", applyPerceivedActorDirectoryPortraitsFromApplicationV2);
+}
+function refreshPerceivedTokenImages() {
+  if (!canvas?.ready) return;
+  for (const token of canvas.tokens?.placeables ?? []) {
+    applyPerceivedTokenImage(token);
+  }
+}
+async function applyPerceivedTokenImage(token) {
+  const actor = token?.actor;
+  if (!actor || !token.mesh) return;
+  const perceivedSrc = getPerceivedImage(actor, GALLERY_CATEGORIES.TOKENS, game.user) ?? DEFAULT_PORTRAIT;
+  const tokenSrc = token.document?.texture?.src ?? actor.img ?? DEFAULT_PORTRAIT;
+  const state = tokenTextureState.get(token);
+  if (state?.appliedSrc === perceivedSrc && token.mesh.texture === state.texture) return;
+  if (state?.pendingSrc === perceivedSrc) return;
+  const requestId = (state?.requestId ?? 0) + 1;
+  tokenTextureState.set(token, {
+    ...state,
+    pendingSrc: perceivedSrc,
+    requestId
+  });
+  const texture = await loadTextureForDisplay(perceivedSrc, tokenSrc);
+  const latestState = tokenTextureState.get(token);
+  if (latestState?.requestId !== requestId) return;
+  if (!texture) {
+    tokenTextureState.set(token, {
+      ...latestState,
+      pendingSrc: null
+    });
+    return;
+  }
+  token.texture = texture;
+  token.mesh.texture = texture;
+  tokenTextureState.set(token, {
+    appliedSrc: perceivedSrc,
+    documentSrc: tokenSrc,
+    pendingSrc: null,
+    requestId,
+    texture
+  });
+}
+function refreshPerceivedActorImages(actor) {
+  if (!actor) return;
+  if (canvas?.ready) {
+    for (const token of canvas.tokens?.placeables ?? []) {
+      if (token.actor?.id === actor.id) applyPerceivedTokenImage(token);
+    }
+  }
+  refreshOpenActorSheetPortraits(actor);
+  refreshActorDirectoryPortraits(actor);
+}
+function applyPerceivedActorSheetPortrait(app, html) {
+  const actor = getApplicationActor(app);
+  if (!actor) return;
+  const root = getRenderRoot(app, html);
+  if (!root) return;
+  const perceivedSrc = getPerceivedImage(actor, GALLERY_CATEGORIES.PORTRAITS, game.user) ?? DEFAULT_PORTRAIT;
+  patchActorPortraitImages(root, actor, perceivedSrc);
+}
+function applyPerceivedActorDirectoryPortraits(app, html) {
+  const root = getRenderRoot(app, html);
+  if (!root) return;
+  patchActorDirectoryPortraits(root);
+}
+function applyPerceivedActorDirectoryPortraitsFromApplicationV2(app, html) {
+  if (!isActorDirectoryApplication(app)) return;
+  applyPerceivedActorDirectoryPortraits(app, html);
+}
+function refreshOpenActorSheetPortraits(actor) {
+  for (const app of Object.values(ui.windows ?? {})) {
+    const appActor = getApplicationActor(app);
+    if (appActor?.id !== actor.id) continue;
+    applyPerceivedActorSheetPortrait(app);
+  }
+}
+function refreshActorDirectoryPortraits(actor = null) {
+  for (const root of getActorDirectoryRoots()) {
+    patchActorDirectoryPortraits(root, actor);
+  }
+  globalThis.requestAnimationFrame?.(() => {
+    for (const root of getActorDirectoryRoots()) {
+      patchActorDirectoryPortraits(root, actor);
+    }
+  });
+}
+async function loadTextureForDisplay(src, fallback) {
+  try {
+    const asset = await foundry.canvas.loadTexture(src, { fallback: fallback || DEFAULT_PORTRAIT });
+    return resolveTexture(asset);
+  } catch (error) {
+    console.warn("Antifriz Roleplay Stuff | Failed to load perceived token image", src, error);
+    return null;
+  }
+}
+function resolveTexture(asset) {
+  if (!asset) return null;
+  if (asset.baseTexture) return asset;
+  if (asset.texture?.baseTexture) return asset.texture;
+  if (asset.textures) return Object.values(asset.textures)[0] ?? null;
+  return null;
+}
+function getApplicationActor(app) {
+  const document2 = app?.document ?? app?.actor ?? app?.object;
+  return document2?.documentName === "Actor" ? document2 : null;
+}
+function isActorDirectoryApplication(app) {
+  return app?.constructor?.name === "ActorDirectory" || app?.documentName === "Actor" && app?.collection === game.actors || app?.tabName === "actors";
+}
+function getRenderRoot(app, html) {
+  if (html instanceof HTMLElement) return html;
+  if (html?.[0] instanceof HTMLElement) return html[0];
+  if (app?.element instanceof HTMLElement) return app.element;
+  if (app?.element?.[0] instanceof HTMLElement) return app.element[0];
+  return null;
+}
+function patchActorPortraitImages(root, actor, perceivedSrc) {
+  const forcedSelectors = [
+    'img[data-edit="img"]',
+    'img[name="img"]',
+    'img[data-action="editImage"]'
+  ];
+  const matchingSelectors = [
+    "img.profile-img",
+    "img.actor-img",
+    "img.character-img",
+    "img.character-image",
+    ".profile img",
+    ".portrait img",
+    ".character-portrait img",
+    ".sheet-header img"
+  ];
+  const portraitImages = /* @__PURE__ */ new Set();
+  for (const selector of forcedSelectors) {
+    root.querySelectorAll(selector).forEach((image) => portraitImages.add(image));
+  }
+  for (const selector of matchingSelectors) {
+    root.querySelectorAll(selector).forEach((image) => {
+      if (isActorPortraitImage(image, actor.img)) portraitImages.add(image);
+    });
+  }
+  for (const image of portraitImages) {
+    patchImageSource(image, perceivedSrc);
+  }
+}
+function patchActorDirectoryPortraits(root, onlyActor = null) {
+  for (const entry of getActorDirectoryEntries(root)) {
+    const actor = getActorFromDirectoryEntry(entry);
+    if (!actor || onlyActor && actor.id !== onlyActor.id) continue;
+    const perceivedSrc = getPerceivedImage(actor, GALLERY_CATEGORIES.PORTRAITS, game.user) ?? DEFAULT_PORTRAIT;
+    for (const image of getDirectoryEntryImages(entry)) {
+      patchImageSource(image, perceivedSrc);
+    }
+  }
+}
+function getActorDirectoryEntries(root) {
+  const selector = "[data-document-id], [data-entry-id], [data-uuid], [data-document-uuid], [data-actor-id]";
+  return Array.from(root.querySelectorAll(selector)).filter((entry) => getActorFromDirectoryEntry(entry));
+}
+function getDirectoryEntryImages(entry) {
+  const entrySelector = "[data-document-id], [data-entry-id], [data-uuid], [data-document-uuid], [data-actor-id]";
+  return Array.from(entry.querySelectorAll("img")).filter((image) => image.closest(entrySelector) === entry);
+}
+function getActorFromDirectoryEntry(entry) {
+  const uuid = entry.dataset.uuid ?? entry.dataset.documentUuid ?? "";
+  const uuidParts = uuid.split(".");
+  const uuidId = uuidParts[0] === "Actor" ? uuidParts[1] : null;
+  const idCandidates = [
+    entry.dataset.actorId,
+    entry.dataset.documentId,
+    entry.dataset.entryId,
+    uuidId
+  ];
+  for (const id of idCandidates) {
+    const actor = id ? game.actors?.get(id) : null;
+    if (actor) return actor;
+  }
+  return null;
+}
+function getActorDirectoryRoots() {
+  const roots = /* @__PURE__ */ new Set();
+  const actorsTab = ui.sidebar?.tabs?.actors;
+  const actorTabRoot = getRenderRoot(actorsTab);
+  if (actorTabRoot) roots.add(actorTabRoot);
+  document.querySelectorAll('#actors, [data-tab="actors"], .actor-directory, .actors-directory').forEach((root) => {
+    if (root instanceof HTMLElement) roots.add(root);
+  });
+  return Array.from(roots);
+}
+function isActorPortraitImage(image, actorImg) {
+  const currentSrc = image.getAttribute("src") ?? image.src ?? "";
+  const originalSrc = image.dataset.arsOriginalPortraitSrc ?? currentSrc;
+  return areSameImagePath(currentSrc, actorImg) || areSameImagePath(originalSrc, actorImg);
+}
+function patchImageSource(image, perceivedSrc) {
+  if (!image.dataset.arsOriginalPortraitSrc) {
+    image.dataset.arsOriginalPortraitSrc = image.getAttribute("src") ?? image.src ?? "";
+  }
+  image.setAttribute("src", perceivedSrc);
+  image.removeAttribute("srcset");
+}
+function areSameImagePath(left, right) {
+  return normalizeImagePath(left) === normalizeImagePath(right);
+}
+function normalizeImagePath(src) {
+  if (!src) return "";
+  try {
+    const url = new URL(src, globalThis.location?.href);
+    return decodeURIComponent(url.pathname).replace(/^\/+/, "").split("?")[0].split("#")[0];
+  } catch {
+    return decodeURIComponent(src).replace(/^\/+/, "").split("?")[0].split("#")[0];
+  }
+}
 const LOG_PREFIX = constants.moduleLabel;
 Hooks.once("init", async function() {
   registerSettings();
+  registerPerceivedImageHooks();
 });
 Hooks.once("ready", async function() {
   registerSocketListeners();

@@ -5,3 +5,4 @@
 
 export * from './settings.mjs';
 export * from './socket.mjs';
+export * from './perceivedImages.mjs';

@@ -13,6 +13,7 @@ const LOG_PREFIX = constants.moduleLabel;
 
 Hooks.once('init', async function () {
    hooks.registerSettings();
+   hooks.registerPerceivedImageHooks();
 });
 
 Hooks.once('ready', async function () {

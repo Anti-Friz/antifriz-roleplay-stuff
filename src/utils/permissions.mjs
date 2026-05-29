@@ -91,6 +91,19 @@ export function getPermissionPriority(permission) {
 }
 
 /**
+ * Check if a user can perceive content as their own viewer-facing variant.
+ * Unlike canUserSee, this does not let GMs match every permission bucket.
+ *
+ * @param {object} permission - Permission object or string
+ * @param {User} user - Foundry User object (defaults to current user)
+ * @param {Document} [document] - Optional document for owner check
+ * @returns {boolean}
+ */
+export function canUserPerceive(permission, user = game.user, document = null) {
+   return canUserAccess(permission, user, document, { gmOverride: false });
+}
+
+/**
  * Check if a user can see content based on permission
  * GM always sees everything!
  * 
@@ -100,8 +113,23 @@ export function getPermissionPriority(permission) {
  * @returns {boolean}
  */
 export function canUserSee(permission, user = game.user, document = null) {
+   return canUserAccess(permission, user, document, { gmOverride: true });
+}
+
+/**
+ * Check user access for module visibility permissions.
+ * @param {object} permission - Permission object or string
+ * @param {User} user - Foundry User object
+ * @param {Document} document - Optional document for owner check
+ * @param {object} options - Access options
+ * @param {boolean} options.gmOverride - Whether GM should match all permissions
+ * @returns {boolean}
+ */
+function canUserAccess(permission, user = game.user, document = null, options = {}) {
+   const gmOverride = options.gmOverride ?? true;
+
    // GM always sees everything
-   if (user.isGM) return true;
+   if (gmOverride && user.isGM) return true;
    
    const normalized = normalizePermission(permission);
    
@@ -110,11 +138,11 @@ export function canUserSee(permission, user = game.user, document = null) {
          return true;
          
       case PERMISSION_TYPES.GM:
-         return false; // GM check already done above
+         return user.isGM;
          
       case PERMISSION_TYPES.OWNER:
          if (!document) return false;
-         return document.testUserPermission?.(user, 'OWNER') ?? false;
+         return hasExplicitOwnerPermission(document, user) || (gmOverride && (document.testUserPermission?.(user, 'OWNER') ?? false));
          
       case PERMISSION_TYPES.CUSTOM:
          return normalized.users.includes(user.id);
@@ -122,6 +150,21 @@ export function canUserSee(permission, user = game.user, document = null) {
       default:
          return true;
    }
+}
+
+/**
+ * Check explicit document OWNER permission without the GM role shortcut.
+ * @param {Document} document - Foundry document
+ * @param {User} user - Foundry User object
+ * @returns {boolean}
+ */
+function hasExplicitOwnerPermission(document, user) {
+   const ownerLevel = globalThis.CONST?.DOCUMENT_OWNERSHIP_LEVELS?.OWNER;
+   if (typeof document.getUserLevel === 'function' && Number.isFinite(ownerLevel)) {
+      return document.getUserLevel(user) >= ownerLevel;
+   }
+
+   return document.testUserPermission?.(user, 'OWNER') ?? false;
 }
 
 /**

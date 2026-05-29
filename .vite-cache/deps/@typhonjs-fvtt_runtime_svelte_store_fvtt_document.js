@@ -1,12 +1,8 @@
-import "./chunk-X7HCJ7ZS.js";
 import {
   Hashing,
   Strings,
   isMinimalWritableStore
 } from "./chunk-3FJTWSRM.js";
-import {
-  writable
-} from "./chunk-M2FRMPL5.js";
 import {
   hasPrototype,
   isIterable,
@@ -14,6 +10,10 @@ import {
   isPlainObject,
   safeAccess
 } from "./chunk-KPMOB2R4.js";
+import {
+  writable
+} from "./chunk-M2FRMPL5.js";
+import "./chunk-X7HCJ7ZS.js";
 import {
   get_store_value,
   tick
