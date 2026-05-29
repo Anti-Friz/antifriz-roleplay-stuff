@@ -18,7 +18,7 @@
    import { ApplicationShell } from '#runtime/svelte/component/application';
    import { MODULE_ID } from '#config';
    import { WEAPON_FX_PRESETS, getPresetCategories, getPresetsByCategory } from '#config';
-   import { openAudioPicker, getFilenameFromPath, playWeaponFx, exportWeaponFx, importFxToItem, copyFxToClipboard, downloadFxAsFile } from '#utils';
+   import { openAudioPicker, openImageVideoPicker, getFilenameFromPath, playWeaponFx, exportWeaponFx, importFxToItem, copyFxToClipboard, downloadFxAsFile } from '#utils';
    import FxSoundList from './components/FxSoundList.svelte';
    import FxEffectConfig from './components/FxEffectConfig.svelte';
 
@@ -399,7 +399,7 @@
             <div class="fx-jam-subsection">
                <span class="fx-jam-label"><i class="fas fa-hand"></i> Regular Jam</span>
                <div class="fx-field-row">
-                  <label class="fx-field-label">Sound</label>
+                  <span class="fx-field-label">Sound</span>
                   <div class="fx-file-picker-row">
                      <input type="text" value={fxConfig.jam?.sound?.path ?? ''} readonly
                             placeholder="No jam sound (silent)" />
@@ -420,7 +420,7 @@
                </div>
                {#if fxConfig.jam?.sound?.path}
                   <div class="fx-field-row">
-                     <label class="fx-field-label">Volume</label>
+                     <span class="fx-field-label">Volume</span>
                      <input type="range" min="0" max="1" step="0.05"
                             value={fxConfig.jam?.sound?.volume ?? 0.8}
                             on:input={(e) => saveConfig({ ...fxConfig, jam: { ...fxConfig.jam, sound: { ...fxConfig.jam?.sound, volume: Number(e.target.value) } } })} />
@@ -440,7 +440,7 @@
             <div class="fx-jam-subsection">
                <span class="fx-jam-label"><i class="fas fa-explosion"></i> Catastrophic</span>
                <div class="fx-field-row">
-                  <label class="fx-field-label">Sound</label>
+                  <span class="fx-field-label">Sound</span>
                   <div class="fx-file-picker-row">
                      <input type="text" value={fxConfig.jam?.catastrophicSound?.path ?? ''} readonly
                             placeholder="No catastrophic sound" />
@@ -461,7 +461,7 @@
                </div>
                {#if fxConfig.jam?.catastrophicSound?.path}
                   <div class="fx-field-row">
-                     <label class="fx-field-label">Volume</label>
+                     <span class="fx-field-label">Volume</span>
                      <input type="range" min="0" max="1" step="0.05"
                             value={fxConfig.jam?.catastrophicSound?.volume ?? 1.0}
                             on:input={(e) => saveConfig({ ...fxConfig, jam: { ...fxConfig.jam, catastrophicSound: { ...fxConfig.jam?.catastrophicSound, volume: Number(e.target.value) } } })} />
@@ -478,7 +478,7 @@
 
                <!-- Catastrophic visual effect -->
                <div class="fx-field-row" style="margin-top: 0.3rem;">
-                  <label class="fx-field-label">Effect</label>
+                  <span class="fx-field-label">Effect</span>
                   <label class="fx-checkbox-field">
                      <input type="checkbox" checked={fxConfig.jam?.catastrophicEffect?.enabled ?? false}
                             on:change={() => saveConfig({ ...fxConfig, jam: { ...fxConfig.jam, catastrophicEffect: { ...fxConfig.jam?.catastrophicEffect, enabled: !(fxConfig.jam?.catastrophicEffect?.enabled ?? false) } } })} />
@@ -487,7 +487,7 @@
                </div>
                {#if fxConfig.jam?.catastrophicEffect?.enabled}
                   <div class="fx-field-row">
-                     <label class="fx-field-label">Source</label>
+                     <span class="fx-field-label">Source</span>
                      <select value={fxConfig.jam?.catastrophicEffect?.source ?? 'sequencer'}
                              on:change={(e) => saveConfig({ ...fxConfig, jam: { ...fxConfig.jam, catastrophicEffect: { ...fxConfig.jam?.catastrophicEffect, source: e.target.value } } })}>
                         <option value="sequencer" disabled={!sequencerAvailable}>
@@ -498,7 +498,7 @@
                   </div>
                   {#if (fxConfig.jam?.catastrophicEffect?.source ?? 'sequencer') === 'sequencer'}
                      <div class="fx-field-row">
-                        <label class="fx-field-label">Path</label>
+                        <span class="fx-field-label">Path</span>
                         <input type="text" value={fxConfig.jam?.catastrophicEffect?.sequencerPath ?? ''}
                                placeholder="e.g. jb2a.explosion.01.orange"
                                on:change={(e) => saveConfig({ ...fxConfig, jam: { ...fxConfig.jam, catastrophicEffect: { ...fxConfig.jam?.catastrophicEffect, sequencerPath: e.target.value } } })} />
@@ -506,19 +506,14 @@
                   {/if}
                   {#if fxConfig.jam?.catastrophicEffect?.source === 'custom'}
                      <div class="fx-field-row">
-                        <label class="fx-field-label">File</label>
+                        <span class="fx-field-label">File</span>
                         <div class="fx-file-picker-row">
                            <input type="text" value={fxConfig.jam?.catastrophicEffect?.customFile ?? ''} readonly
                                   placeholder="Select a .webm file" />
                            <button class="fx-btn-small" on:click={() => {
-                              const picker = new FilePicker({
-                                 type: 'imagevideo',
-                                 current: fxConfig.jam?.catastrophicEffect?.customFile || '',
-                                 callback: (path) => {
-                                    if (path) saveConfig({ ...fxConfig, jam: { ...fxConfig.jam, catastrophicEffect: { ...fxConfig.jam?.catastrophicEffect, customFile: path } } });
-                                 }
-                              });
-                              picker.render(true);
+                              openImageVideoPicker((path) => {
+                                 if (path) saveConfig({ ...fxConfig, jam: { ...fxConfig.jam, catastrophicEffect: { ...fxConfig.jam?.catastrophicEffect, customFile: path } } });
+                              }, fxConfig.jam?.catastrophicEffect?.customFile || '');
                            }}>
                               <i class="fas fa-file"></i>
                            </button>
@@ -526,7 +521,7 @@
                      </div>
                   {/if}
                   <div class="fx-field-row">
-                     <label class="fx-field-label">Scale</label>
+                     <span class="fx-field-label">Scale</span>
                      <input type="number" min="0.1" max="5" step="0.1" value={fxConfig.jam?.catastrophicEffect?.scale ?? 1.0}
                             on:change={(e) => { const n = Number(e.target.value); if (!isNaN(n)) saveConfig({ ...fxConfig, jam: { ...fxConfig.jam, catastrophicEffect: { ...fxConfig.jam?.catastrophicEffect, scale: n } } }); }} />
                   </div>
@@ -571,7 +566,7 @@
             </div>
             {#if fxConfig.casing?.enabled}
                <div class="fx-field-row">
-                  <label class="fx-field-label">Source</label>
+                  <span class="fx-field-label">Source</span>
                   <select value={fxConfig.casing.source ?? 'sequencer'}
                           on:change={(e) => handleEffectChanged('casing', { detail: { ...fxConfig.casing, source: e.target.value } })}>
                      <option value="sequencer" disabled={!sequencerAvailable}>
@@ -582,7 +577,7 @@
                </div>
                {#if fxConfig.casing.source === 'sequencer'}
                   <div class="fx-field-row">
-                     <label class="fx-field-label">Path</label>
+                     <span class="fx-field-label">Path</span>
                      <input type="text" value={fxConfig.casing.sequencerPath ?? ''}
                             placeholder="e.g. jb2a.bullet.shell"
                             on:change={(e) => handleEffectChanged('casing', { detail: { ...fxConfig.casing, sequencerPath: e.target.value } })} />
@@ -590,19 +585,14 @@
                {/if}
                {#if fxConfig.casing.source === 'custom'}
                   <div class="fx-field-row">
-                     <label class="fx-field-label">File</label>
+                     <span class="fx-field-label">File</span>
                      <div class="fx-file-picker-row">
                         <input type="text" value={fxConfig.casing.customFile ?? ''} readonly
                                placeholder="Select a .webm file" />
                         <button class="fx-btn-small" on:click={() => {
-                           const picker = new FilePicker({
-                              type: 'imagevideo',
-                              current: fxConfig.casing.customFile || '',
-                              callback: (path) => {
-                                 if (path) handleEffectChanged('casing', { detail: { ...fxConfig.casing, customFile: path } });
-                              }
-                           });
-                           picker.render(true);
+                           openImageVideoPicker((path) => {
+                              if (path) handleEffectChanged('casing', { detail: { ...fxConfig.casing, customFile: path } });
+                           }, fxConfig.casing.customFile || '');
                         }}>
                            <i class="fas fa-file"></i>
                         </button>
@@ -610,19 +600,19 @@
                   </div>
                {/if}
                <div class="fx-field-row">
-                  <label class="fx-field-label">Scale</label>
+                  <span class="fx-field-label">Scale</span>
                   <input type="number" min="0.05" max="2" step="0.05" value={fxConfig.casing.scale ?? 0.3}
                          on:change={(e) => { const n = Number(e.target.value); if (!isNaN(n)) handleEffectChanged('casing', { detail: { ...fxConfig.casing, scale: n } }); }} />
                </div>
                <div class="fx-field-row">
-                  <label class="fx-field-label">Scatter</label>
+                  <span class="fx-field-label">Scatter</span>
                   <input type="range" min="0" max="2" step="0.1"
                          value={fxConfig.casing.scatter ?? 0.5}
                          on:input={(e) => { const n = Number(e.target.value); if (!isNaN(n)) handleEffectChanged('casing', { detail: { ...fxConfig.casing, scatter: n } }); }} />
                   <span class="fx-sound-volume-label">{Math.round((fxConfig.casing.scatter ?? 0.5) * 100)}%</span>
                </div>
                <div class="fx-field-row">
-                  <label class="fx-field-label">Eject</label>
+                  <span class="fx-field-label">Eject</span>
                   <select value={fxConfig.casing.ejectDirection ?? 'right'}
                           on:change={(e) => handleEffectChanged('casing', { detail: { ...fxConfig.casing, ejectDirection: e.target.value } })}>
                      <option value="right">Right</option>
@@ -638,7 +628,7 @@
                </label>
                {#if fxConfig.casing.persist}
                   <div class="fx-field-row">
-                     <label class="fx-field-label">Duration</label>
+                     <span class="fx-field-label">Duration</span>
                      <input type="number" min="0" max="600" step="5" value={fxConfig.casing.duration ?? 0}
                             on:change={(e) => { const n = Number(e.target.value); if (!isNaN(n)) handleEffectChanged('casing', { detail: { ...fxConfig.casing, duration: n } }); }} />
                      <span class="fx-hint-inline">{fxConfig.casing.duration ? `${fxConfig.casing.duration}s` : 'permanent'}</span>

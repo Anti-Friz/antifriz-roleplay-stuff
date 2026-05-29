@@ -267,7 +267,7 @@
             {#if fxConfig.onHit.enabled}
                <p class="fx-hint"><i class="fas fa-info-circle"></i> Played when shield absorbs damage</p>
                <div class="fx-field-row">
-                  <label class="fx-field-label">Source</label>
+                  <span class="fx-field-label">Source</span>
                   <select value={fxConfig.onHit.effect.source} on:change={(e) => updateEffect('onHit', 'source', e.target.value)}>
                      <option value="sequencer" disabled={!sequencerAvailable}>Sequencer DB{!sequencerAvailable ? ' (N/A)' : ''}</option>
                      <option value="custom">Custom File</option>
@@ -275,18 +275,18 @@
                </div>
                {#if fxConfig.onHit.effect.source === 'sequencer'}
                   <div class="fx-field-row">
-                     <label class="fx-field-label">Path</label>
+                     <span class="fx-field-label">Path</span>
                      <input type="text" value={fxConfig.onHit.effect.sequencerPath} placeholder="e.g. jb2a.shield.01.loop.blue"
                             on:change={(e) => updateEffect('onHit', 'sequencerPath', e.target.value)} />
                   </div>
                {/if}
                <div class="fx-field-row">
-                  <label class="fx-field-label">Scale</label>
+                  <span class="fx-field-label">Scale</span>
                   <input type="number" min="0.1" max="5" step="0.1" value={fxConfig.onHit.scale}
                          on:change={(e) => updateScale('onHit', e.target.value)} />
                </div>
                <div class="fx-field-row">
-                  <label class="fx-field-label">Sound</label>
+                  <span class="fx-field-label">Sound</span>
                   <div class="fx-file-picker-row">
                      <input type="text" value={fxConfig.onHit.sound.path} readonly placeholder="No sound" />
                      <button class="fx-btn-small" on:click={() => openAudioPicker((p) => { if (p) updateSound('onHit', 'path', p); }, fxConfig.onHit.sound.path)}>
@@ -299,7 +299,7 @@
                </div>
                {#if fxConfig.onHit.sound.path}
                   <div class="fx-field-row">
-                     <label class="fx-field-label">Volume</label>
+                     <span class="fx-field-label">Volume</span>
                      <input type="range" min="0" max="1" step="0.05" value={fxConfig.onHit.sound.volume}
                             on:input={(e) => updateSound('onHit', 'volume', Number(e.target.value))} />
                      <span class="fx-sound-volume-label">{Math.round((fxConfig.onHit.sound.volume ?? 0.8) * 100)}%</span>
@@ -322,7 +322,7 @@
             {#if fxConfig.onDeflect.enabled}
                <p class="fx-hint"><i class="fas fa-info-circle"></i> Played when armor save succeeds (sparks, ricochet)</p>
                <div class="fx-field-row">
-                  <label class="fx-field-label">Source</label>
+                  <span class="fx-field-label">Source</span>
                   <select value={fxConfig.onDeflect.effect.source} on:change={(e) => updateEffect('onDeflect', 'source', e.target.value)}>
                      <option value="sequencer" disabled={!sequencerAvailable}>Sequencer DB{!sequencerAvailable ? ' (N/A)' : ''}</option>
                      <option value="custom">Custom File</option>
@@ -330,18 +330,18 @@
                </div>
                {#if fxConfig.onDeflect.effect.source === 'sequencer'}
                   <div class="fx-field-row">
-                     <label class="fx-field-label">Path</label>
+                     <span class="fx-field-label">Path</span>
                      <input type="text" value={fxConfig.onDeflect.effect.sequencerPath} placeholder="e.g. jb2a.impact.004.blue"
                             on:change={(e) => updateEffect('onDeflect', 'sequencerPath', e.target.value)} />
                   </div>
                {/if}
                <div class="fx-field-row">
-                  <label class="fx-field-label">Scale</label>
+                  <span class="fx-field-label">Scale</span>
                   <input type="number" min="0.1" max="5" step="0.1" value={fxConfig.onDeflect.scale}
                          on:change={(e) => updateScale('onDeflect', e.target.value)} />
                </div>
                <div class="fx-field-row">
-                  <label class="fx-field-label">Sound</label>
+                  <span class="fx-field-label">Sound</span>
                   <div class="fx-file-picker-row">
                      <input type="text" value={fxConfig.onDeflect.sound.path} readonly placeholder="No sound" />
                      <button class="fx-btn-small" on:click={() => openAudioPicker((p) => { if (p) updateSound('onDeflect', 'path', p); }, fxConfig.onDeflect.sound.path)}>
@@ -354,7 +354,7 @@
                </div>
                {#if fxConfig.onDeflect.sound.path}
                   <div class="fx-field-row">
-                     <label class="fx-field-label">Volume</label>
+                     <span class="fx-field-label">Volume</span>
                      <input type="range" min="0" max="1" step="0.05" value={fxConfig.onDeflect.sound.volume}
                             on:input={(e) => updateSound('onDeflect', 'volume', Number(e.target.value))} />
                      <span class="fx-sound-volume-label">{Math.round((fxConfig.onDeflect.sound.volume ?? 0.8) * 100)}%</span>
@@ -377,7 +377,7 @@
             {#if fxConfig.onPenetrate.enabled}
                <p class="fx-hint"><i class="fas fa-info-circle"></i> Played when armor save fails (blood, damage)</p>
                <div class="fx-field-row">
-                  <label class="fx-field-label">Source</label>
+                  <span class="fx-field-label">Source</span>
                   <select value={fxConfig.onPenetrate.effect.source} on:change={(e) => updateEffect('onPenetrate', 'source', e.target.value)}>
                      <option value="sequencer" disabled={!sequencerAvailable}>Sequencer DB{!sequencerAvailable ? ' (N/A)' : ''}</option>
                      <option value="custom">Custom File</option>
@@ -385,18 +385,18 @@
                </div>
                {#if fxConfig.onPenetrate.effect.source === 'sequencer'}
                   <div class="fx-field-row">
-                     <label class="fx-field-label">Path</label>
+                     <span class="fx-field-label">Path</span>
                      <input type="text" value={fxConfig.onPenetrate.effect.sequencerPath} placeholder="e.g. jb2a.liquid.splash.red"
                             on:change={(e) => updateEffect('onPenetrate', 'sequencerPath', e.target.value)} />
                   </div>
                {/if}
                <div class="fx-field-row">
-                  <label class="fx-field-label">Scale</label>
+                  <span class="fx-field-label">Scale</span>
                   <input type="number" min="0.1" max="5" step="0.1" value={fxConfig.onPenetrate.scale}
                          on:change={(e) => updateScale('onPenetrate', e.target.value)} />
                </div>
                <div class="fx-field-row">
-                  <label class="fx-field-label">Sound</label>
+                  <span class="fx-field-label">Sound</span>
                   <div class="fx-file-picker-row">
                      <input type="text" value={fxConfig.onPenetrate.sound.path} readonly placeholder="No sound" />
                      <button class="fx-btn-small" on:click={() => openAudioPicker((p) => { if (p) updateSound('onPenetrate', 'path', p); }, fxConfig.onPenetrate.sound.path)}>
@@ -409,7 +409,7 @@
                </div>
                {#if fxConfig.onPenetrate.sound.path}
                   <div class="fx-field-row">
-                     <label class="fx-field-label">Volume</label>
+                     <span class="fx-field-label">Volume</span>
                      <input type="range" min="0" max="1" step="0.05" value={fxConfig.onPenetrate.sound.volume}
                             on:input={(e) => updateSound('onPenetrate', 'volume', Number(e.target.value))} />
                      <span class="fx-sound-volume-label">{Math.round((fxConfig.onPenetrate.sound.volume ?? 0.8) * 100)}%</span>
@@ -432,7 +432,7 @@
             {#if fxConfig.aura.enabled}
                <!-- Aura Mode -->
                <div class="fx-field-row">
-                  <label class="fx-field-label">Mode</label>
+                  <span class="fx-field-label">Mode</span>
                   <select value={fxConfig.aura.mode ?? 'permanent'}
                           on:change={(e) => setAuraField('mode', e.target.value)}>
                      <option value="permanent">Permanent</option>
@@ -445,7 +445,7 @@
                {:else if fxConfig.aura.mode === 'rounds'}
                   <p class="fx-hint"><i class="fas fa-info-circle"></i> Active for a set number of rounds (provider passes duration)</p>
                   <div class="fx-field-row">
-                     <label class="fx-field-label">Default Rounds</label>
+                     <span class="fx-field-label">Default Rounds</span>
                      <input type="number" min="1" max="99" step="1" value={fxConfig.aura.roundsDuration ?? 3}
                             on:change={(e) => { const n = Number(e.target.value); if (!isNaN(n)) setAuraField('roundsDuration', n); }} />
                   </div>
@@ -457,7 +457,7 @@
                <div class="fx-aura-subsection">
                   <span class="fx-jam-label"><i class="fas fa-repeat"></i> {fxConfig.aura.mode === 'reactive' ? 'Flash Effect (on hit)' : 'Loop Effect (idle)'}</span>
                   <div class="fx-field-row">
-                     <label class="fx-field-label">Source</label>
+                     <span class="fx-field-label">Source</span>
                      <select value={fxConfig.aura.loop.source} on:change={(e) => updateAuraEffect('loop', 'source', e.target.value)}>
                         <option value="sequencer" disabled={!sequencerAvailable}>Sequencer DB{!sequencerAvailable ? ' (N/A)' : ''}</option>
                         <option value="custom">Custom File</option>
@@ -465,7 +465,7 @@
                   </div>
                   {#if fxConfig.aura.loop.source === 'sequencer'}
                      <div class="fx-field-row">
-                        <label class="fx-field-label">Path</label>
+                        <span class="fx-field-label">Path</span>
                         <input type="text" value={fxConfig.aura.loop.sequencerPath} placeholder="e.g. jb2a.shield.01.loop.blue"
                                on:change={(e) => updateAuraEffect('loop', 'sequencerPath', e.target.value)} />
                      </div>
@@ -477,7 +477,7 @@
                   <div class="fx-aura-subsection">
                      <span class="fx-jam-label"><i class="fas fa-play"></i> Intro Effect (optional)</span>
                      <div class="fx-field-row">
-                        <label class="fx-field-label">Source</label>
+                        <span class="fx-field-label">Source</span>
                         <select value={fxConfig.aura.intro.source} on:change={(e) => updateAuraEffect('intro', 'source', e.target.value)}>
                            <option value="sequencer" disabled={!sequencerAvailable}>Sequencer DB{!sequencerAvailable ? ' (N/A)' : ''}</option>
                            <option value="custom">Custom File</option>
@@ -485,7 +485,7 @@
                      </div>
                      {#if fxConfig.aura.intro.source === 'sequencer'}
                         <div class="fx-field-row">
-                           <label class="fx-field-label">Path</label>
+                           <span class="fx-field-label">Path</span>
                            <input type="text" value={fxConfig.aura.intro.sequencerPath} placeholder="e.g. jb2a.shield.01.intro.blue"
                                   on:change={(e) => updateAuraEffect('intro', 'sequencerPath', e.target.value)} />
                         </div>
@@ -495,7 +495,7 @@
                   <div class="fx-aura-subsection">
                      <span class="fx-jam-label"><i class="fas fa-stop"></i> Outro Effect (optional)</span>
                      <div class="fx-field-row">
-                        <label class="fx-field-label">Source</label>
+                        <span class="fx-field-label">Source</span>
                         <select value={fxConfig.aura.outro.source} on:change={(e) => updateAuraEffect('outro', 'source', e.target.value)}>
                            <option value="sequencer" disabled={!sequencerAvailable}>Sequencer DB{!sequencerAvailable ? ' (N/A)' : ''}</option>
                            <option value="custom">Custom File</option>
@@ -503,7 +503,7 @@
                      </div>
                      {#if fxConfig.aura.outro.source === 'sequencer'}
                         <div class="fx-field-row">
-                           <label class="fx-field-label">Path</label>
+                           <span class="fx-field-label">Path</span>
                            <input type="text" value={fxConfig.aura.outro.sequencerPath} placeholder="e.g. jb2a.shield.01.outro_explode.blue"
                                   on:change={(e) => updateAuraEffect('outro', 'sequencerPath', e.target.value)} />
                         </div>
@@ -515,7 +515,7 @@
                      <span class="fx-jam-label"><i class="fas fa-explosion"></i> Overload Effect (optional)</span>
                      <p class="fx-hint"><i class="fas fa-info-circle"></i> Dramatic shield collapse — falls back to outro if not set</p>
                      <div class="fx-field-row">
-                        <label class="fx-field-label">Source</label>
+                        <span class="fx-field-label">Source</span>
                         <select value={fxConfig.aura.overloadEffect.source} on:change={(e) => updateAuraEffect('overloadEffect', 'source', e.target.value)}>
                            <option value="sequencer" disabled={!sequencerAvailable}>Sequencer DB{!sequencerAvailable ? ' (N/A)' : ''}</option>
                            <option value="custom">Custom File</option>
@@ -523,13 +523,13 @@
                      </div>
                      {#if fxConfig.aura.overloadEffect.source === 'sequencer'}
                         <div class="fx-field-row">
-                           <label class="fx-field-label">Path</label>
+                           <span class="fx-field-label">Path</span>
                            <input type="text" value={fxConfig.aura.overloadEffect.sequencerPath} placeholder="e.g. jb2a.explosion.01.orange"
                                   on:change={(e) => updateAuraEffect('overloadEffect', 'sequencerPath', e.target.value)} />
                         </div>
                      {/if}
                      <div class="fx-field-row">
-                        <label class="fx-field-label">Sound</label>
+                        <span class="fx-field-label">Sound</span>
                         <div class="fx-file-picker-row">
                            <input type="text" value={fxConfig.aura.overloadSound.path} readonly placeholder="Falls back to deactivate sound" />
                            <button class="fx-btn-small" on:click={() => openAudioPicker((p) => { if (p) updateAuraSound('overloadSound', 'path', p); }, fxConfig.aura.overloadSound.path)}>
@@ -545,7 +545,7 @@
 
                <!-- Scale -->
                <div class="fx-field-row">
-                  <label class="fx-field-label">Scale</label>
+                  <span class="fx-field-label">Scale</span>
                   <input type="number" min="0.1" max="5" step="0.1" value={fxConfig.aura.scale}
                          on:change={(e) => updateAuraScale(e.target.value)} />
                </div>
@@ -553,7 +553,7 @@
                <!-- Sounds -->
                {#if fxConfig.aura.mode !== 'reactive'}
                   <div class="fx-field-row">
-                     <label class="fx-field-label">Activate Sound</label>
+                     <span class="fx-field-label">Activate Sound</span>
                      <div class="fx-file-picker-row">
                         <input type="text" value={fxConfig.aura.activateSound.path} readonly placeholder="No sound" />
                         <button class="fx-btn-small" on:click={() => openAudioPicker((p) => { if (p) updateAuraSound('activateSound', 'path', p); }, fxConfig.aura.activateSound.path)}>
@@ -565,7 +565,7 @@
                      </div>
                   </div>
                   <div class="fx-field-row">
-                     <label class="fx-field-label">Deactivate Sound</label>
+                     <span class="fx-field-label">Deactivate Sound</span>
                      <div class="fx-file-picker-row">
                         <input type="text" value={fxConfig.aura.deactivateSound.path} readonly placeholder="No sound" />
                         <button class="fx-btn-small" on:click={() => openAudioPicker((p) => { if (p) updateAuraSound('deactivateSound', 'path', p); }, fxConfig.aura.deactivateSound.path)}>

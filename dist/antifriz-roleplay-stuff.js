@@ -22696,23 +22696,31 @@ function notifyWarn(message) {
 function notifyInfo(message) {
   ui.notifications.info(message);
 }
-function openAudioPicker(callback, currentPath = "") {
-  const picker = new FilePicker({
-    type: "audio",
+function getFilePickerClass() {
+  return foundry.applications.apps.FilePicker.implementation;
+}
+function openFilePicker(type, callback, currentPath = "") {
+  const FilePickerClass = getFilePickerClass();
+  const picker = new FilePickerClass({
+    type,
     current: currentPath,
     callback
   });
   picker.render(true);
   return picker;
 }
+function openAudioPicker(callback, currentPath = "") {
+  return openFilePicker("audio", callback, currentPath);
+}
 function openImagePicker(callback, currentPath = "") {
-  const picker = new foundry.applications.apps.FilePicker.implementation({
-    type: "image",
-    current: currentPath,
-    callback
-  });
-  picker.render(true);
-  return picker;
+  return openFilePicker("image", callback, currentPath);
+}
+function openImageVideoPicker(callback, currentPath = "") {
+  return openFilePicker("imagevideo", callback, currentPath);
+}
+function browseFiles(source, target, options = {}) {
+  const FilePickerClass = getFilePickerClass();
+  return FilePickerClass.browse(source, target, options);
 }
 function getFilenameFromPath(path) {
   return path.split("/").pop().replace(/\.[^/.]+$/, "");
@@ -29541,7 +29549,6 @@ function create_if_block_4$3(ctx) {
       attr(input, "min", "0");
       attr(input, "max", "100");
       attr(input, "step", "1");
-      input.autofocus = true;
     },
     m(target, anchor) {
       insert(target, input, anchor);
@@ -29550,7 +29557,6 @@ function create_if_block_4$3(ctx) {
         /*editingVolumeValue*/
         ctx[3]
       );
-      input.focus();
       if (!mounted) {
         dispose = [
           listen(
@@ -29560,7 +29566,8 @@ function create_if_block_4$3(ctx) {
             ctx[15]
           ),
           listen(input, "blur", blur_handler),
-          listen(input, "keydown", keydown_handler2)
+          listen(input, "keydown", keydown_handler2),
+          action_destroyer(focusOnMount.call(null, input))
         ];
         mounted = true;
       }
@@ -30060,6 +30067,9 @@ function previewSound(sound) {
   audio.volume = sound.volume ?? 0.8;
   audio.play().catch((err) => console.warn("[ARS] Sound preview failed:", err));
 }
+function focusOnMount(node) {
+  node.focus();
+}
 function instance$5($$self, $$props, $$invalidate) {
   let { sounds = [] } = $$props;
   let { soundMode = "random" } = $$props;
@@ -30085,40 +30095,36 @@ function instance$5($$self, $$props, $$invalidate) {
     });
   }
   function addSoundsFromFolder() {
-    const picker = new FilePicker({
-      type: "audio",
-      callback: async (path) => {
-        if (!path) return;
-        const dir = path.substring(0, path.lastIndexOf("/"));
-        if (!dir) return;
-        try {
-          const result = await FilePicker.browse("data", dir);
-          const audioFiles = (result.files ?? []).filter((f) => /\.(ogg|mp3|wav|flac|webm|m4a)$/i.test(f));
-          if (audioFiles.length === 0) {
-            ui.notifications.warn("No audio files found in that folder.");
-            return;
-          }
-          const existingPaths = new Set(sounds.map((s) => s.path));
-          const newSounds = audioFiles.filter((f) => !existingPaths.has(f)).map((f) => ({
-            id: foundry.utils.randomID(),
-            path: f,
-            name: getFilenameFromPath(f),
-            volume: 0.8,
-            weight: 1
-          }));
-          if (newSounds.length > 0) {
-            dispatch2("soundsChanged", { sounds: [...sounds, ...newSounds] });
-            ui.notifications.info(`Added ${newSounds.length} sound(s) from folder`);
-          } else {
-            ui.notifications.info("All files from that folder are already added.");
-          }
-        } catch (err) {
-          console.warn("[ARS] Failed to browse folder for sounds:", err);
-          ui.notifications.error("Failed to read folder contents.");
+    openAudioPicker(async (path) => {
+      if (!path) return;
+      const dir = path.substring(0, path.lastIndexOf("/"));
+      if (!dir) return;
+      try {
+        const result = await browseFiles("data", dir);
+        const audioFiles = (result.files ?? []).filter((f) => /\.(ogg|mp3|wav|flac|webm|m4a)$/i.test(f));
+        if (audioFiles.length === 0) {
+          ui.notifications.warn("No audio files found in that folder.");
+          return;
         }
+        const existingPaths = new Set(sounds.map((s) => s.path));
+        const newSounds = audioFiles.filter((f) => !existingPaths.has(f)).map((f) => ({
+          id: foundry.utils.randomID(),
+          path: f,
+          name: getFilenameFromPath(f),
+          volume: 0.8,
+          weight: 1
+        }));
+        if (newSounds.length > 0) {
+          dispatch2("soundsChanged", { sounds: [...sounds, ...newSounds] });
+          ui.notifications.info(`Added ${newSounds.length} sound(s) from folder`);
+        } else {
+          ui.notifications.info("All files from that folder are already added.");
+        }
+      } catch (err) {
+        console.warn("[ARS] Failed to browse folder for sounds:", err);
+        ui.notifications.error("Failed to read folder contents.");
       }
     });
-    picker.render(true);
   }
   function removeSound(id) {
     dispatch2("soundsChanged", { sounds: sounds.filter((s) => s.id !== id) });
@@ -30216,7 +30222,7 @@ function get_each_context_2$1(ctx, list, i) {
 }
 function create_if_block$3(ctx) {
   let div0;
-  let label0;
+  let span0;
   let t1;
   let select;
   let select_value_value;
@@ -30225,7 +30231,7 @@ function create_if_block$3(ctx) {
   let t4;
   let t5;
   let div1;
-  let label1;
+  let span1;
   let t7;
   let input;
   let input_value_value;
@@ -30275,8 +30281,8 @@ function create_if_block$3(ctx) {
   return {
     c() {
       div0 = element("div");
-      label0 = element("label");
-      label0.textContent = "Source";
+      span0 = element("span");
+      span0.textContent = "Source";
       t1 = space();
       select = element("select");
       for (let i = 0; i < each_blocks.length; i += 1) {
@@ -30290,8 +30296,8 @@ function create_if_block$3(ctx) {
       if (if_block2) if_block2.c();
       t5 = space();
       div1 = element("div");
-      label1 = element("label");
-      label1.textContent = "Scale";
+      span1 = element("span");
+      span1.textContent = "Scale";
       t7 = space();
       input = element("input");
       t8 = space();
@@ -30303,9 +30309,9 @@ function create_if_block$3(ctx) {
       t11 = space();
       if (if_block6) if_block6.c();
       if_block6_anchor = empty();
-      attr(label0, "class", "fx-field-label");
+      attr(span0, "class", "fx-field-label");
       attr(div0, "class", "fx-field-row");
-      attr(label1, "class", "fx-field-label");
+      attr(span1, "class", "fx-field-label");
       attr(input, "type", "number");
       attr(input, "min", "0.1");
       attr(input, "max", "5");
@@ -30316,7 +30322,7 @@ function create_if_block$3(ctx) {
     },
     m(target, anchor) {
       insert(target, div0, anchor);
-      append(div0, label0);
+      append(div0, span0);
       append(div0, t1);
       append(div0, select);
       for (let i = 0; i < each_blocks.length; i += 1) {
@@ -30337,7 +30343,7 @@ function create_if_block$3(ctx) {
       if (if_block2) if_block2.m(target, anchor);
       insert(target, t5, anchor);
       insert(target, div1, anchor);
-      append(div1, label1);
+      append(div1, span1);
       append(div1, t7);
       append(div1, input);
       insert(target, t8, anchor);
@@ -30592,7 +30598,7 @@ function create_each_block_2$1(ctx) {
 }
 function create_if_block_7$2(ctx) {
   let div;
-  let label;
+  let span;
   let t1;
   let input;
   let input_value_value;
@@ -30605,14 +30611,14 @@ function create_if_block_7$2(ctx) {
   return {
     c() {
       div = element("div");
-      label = element("label");
-      label.textContent = "Path";
+      span = element("span");
+      span.textContent = "Path";
       t1 = space();
       input = element("input");
       t2 = space();
       if (if_block) if_block.c();
       if_block_anchor = empty();
-      attr(label, "class", "fx-field-label");
+      attr(span, "class", "fx-field-label");
       attr(input, "type", "text");
       input.value = input_value_value = /*config*/
       ctx[1].sequencerPath;
@@ -30621,7 +30627,7 @@ function create_if_block_7$2(ctx) {
     },
     m(target, anchor) {
       insert(target, div, anchor);
-      append(div, label);
+      append(div, span);
       append(div, t1);
       append(div, input);
       insert(target, t2, anchor);
@@ -30689,7 +30695,7 @@ function create_if_block_8$2(ctx) {
 }
 function create_if_block_6$2(ctx) {
   let div1;
-  let label;
+  let span;
   let t1;
   let div0;
   let input;
@@ -30701,15 +30707,15 @@ function create_if_block_6$2(ctx) {
   return {
     c() {
       div1 = element("div");
-      label = element("label");
-      label.textContent = "File";
+      span = element("span");
+      span.textContent = "File";
       t1 = space();
       div0 = element("div");
       input = element("input");
       t2 = space();
       button = element("button");
       button.innerHTML = `<i class="fas fa-file"></i>`;
-      attr(label, "class", "fx-field-label");
+      attr(span, "class", "fx-field-label");
       attr(input, "type", "text");
       input.value = input_value_value = /*config*/
       ctx[1].customFile;
@@ -30721,7 +30727,7 @@ function create_if_block_6$2(ctx) {
     },
     m(target, anchor) {
       insert(target, div1, anchor);
-      append(div1, label);
+      append(div1, span);
       append(div1, t1);
       append(div1, div0);
       append(div0, input);
@@ -30755,13 +30761,13 @@ function create_if_block_6$2(ctx) {
 }
 function create_if_block_5$2(ctx) {
   let div0;
-  let label0;
+  let span0;
   let t1;
   let select;
   let select_value_value;
   let t2;
   let div1;
-  let label1;
+  let span1;
   let t4;
   let input;
   let input_value_value;
@@ -30778,8 +30784,8 @@ function create_if_block_5$2(ctx) {
   return {
     c() {
       div0 = element("div");
-      label0 = element("label");
-      label0.textContent = "Type";
+      span0 = element("span");
+      span0.textContent = "Type";
       t1 = space();
       select = element("select");
       for (let i = 0; i < each_blocks.length; i += 1) {
@@ -30787,13 +30793,13 @@ function create_if_block_5$2(ctx) {
       }
       t2 = space();
       div1 = element("div");
-      label1 = element("label");
-      label1.textContent = "Color";
+      span1 = element("span");
+      span1.textContent = "Color";
       t4 = space();
       input = element("input");
-      attr(label0, "class", "fx-field-label");
+      attr(span0, "class", "fx-field-label");
       attr(div0, "class", "fx-field-row");
-      attr(label1, "class", "fx-field-label");
+      attr(span1, "class", "fx-field-label");
       attr(input, "type", "color");
       input.value = input_value_value = /*config*/
       ctx[1].color;
@@ -30801,7 +30807,7 @@ function create_if_block_5$2(ctx) {
     },
     m(target, anchor) {
       insert(target, div0, anchor);
-      append(div0, label0);
+      append(div0, span0);
       append(div0, t1);
       append(div0, select);
       for (let i = 0; i < each_blocks.length; i += 1) {
@@ -30816,7 +30822,7 @@ function create_if_block_5$2(ctx) {
       );
       insert(target, t2, anchor);
       insert(target, div1, anchor);
-      append(div1, label1);
+      append(div1, span1);
       append(div1, t4);
       append(div1, input);
       if (!mounted) {
@@ -30927,7 +30933,7 @@ function create_each_block_1$2(ctx) {
 }
 function create_if_block_4$2(ctx) {
   let div;
-  let label;
+  let span;
   let t1;
   let input;
   let input_value_value;
@@ -30936,11 +30942,11 @@ function create_if_block_4$2(ctx) {
   return {
     c() {
       div = element("div");
-      label = element("label");
-      label.textContent = "Speed";
+      span = element("span");
+      span.textContent = "Speed";
       t1 = space();
       input = element("input");
-      attr(label, "class", "fx-field-label");
+      attr(span, "class", "fx-field-label");
       attr(input, "type", "number");
       attr(input, "min", "0.1");
       attr(input, "max", "5");
@@ -30951,7 +30957,7 @@ function create_if_block_4$2(ctx) {
     },
     m(target, anchor) {
       insert(target, div, anchor);
-      append(div, label);
+      append(div, span);
       append(div, t1);
       append(div, input);
       if (!mounted) {
@@ -31033,7 +31039,7 @@ function create_if_block_3$2(ctx) {
 }
 function create_if_block_2$2(ctx) {
   let div;
-  let label;
+  let span;
   let t1;
   let select;
   let select_value_value;
@@ -31062,8 +31068,8 @@ function create_if_block_2$2(ctx) {
   return {
     c() {
       div = element("div");
-      label = element("label");
-      label.textContent = "Travel";
+      span = element("span");
+      span.textContent = "Travel";
       t1 = space();
       select = element("select");
       for (let i2 = 0; i2 < each_blocks.length; i2 += 1) {
@@ -31074,14 +31080,14 @@ function create_if_block_2$2(ctx) {
       i = element("i");
       t3 = space();
       t4 = text(t4_value);
-      attr(label, "class", "fx-field-label");
+      attr(span, "class", "fx-field-label");
       attr(div, "class", "fx-field-row");
       attr(i, "class", "fas fa-info-circle");
       attr(p, "class", "fx-hint");
     },
     m(target, anchor) {
       insert(target, div, anchor);
-      append(div, label);
+      append(div, span);
       append(div, t1);
       append(div, select);
       for (let i2 = 0; i2 < each_blocks.length; i2 += 1) {
@@ -31189,12 +31195,12 @@ function create_each_block$2(ctx) {
 }
 function create_if_block_1$2(ctx) {
   let div;
-  let label;
+  let span0;
   let t1;
   let input;
   let input_value_value;
   let t2;
-  let span;
+  let span1;
   let t3_value = Math.round(
     /*config*/
     (ctx[1].scatter ?? 0.3) * 100
@@ -31206,33 +31212,33 @@ function create_if_block_1$2(ctx) {
   return {
     c() {
       div = element("div");
-      label = element("label");
-      label.textContent = "Scatter";
+      span0 = element("span");
+      span0.textContent = "Scatter";
       t1 = space();
       input = element("input");
       t2 = space();
-      span = element("span");
+      span1 = element("span");
       t3 = text(t3_value);
       t4 = text("%");
-      attr(label, "class", "fx-field-label");
+      attr(span0, "class", "fx-field-label");
       attr(input, "type", "range");
       attr(input, "min", "0");
       attr(input, "max", "1");
       attr(input, "step", "0.05");
       input.value = input_value_value = /*config*/
       ctx[1].scatter ?? 0.3;
-      attr(span, "class", "fx-sound-volume-label");
+      attr(span1, "class", "fx-sound-volume-label");
       attr(div, "class", "fx-field-row");
     },
     m(target, anchor) {
       insert(target, div, anchor);
-      append(div, label);
+      append(div, span0);
       append(div, t1);
       append(div, input);
       append(div, t2);
-      append(div, span);
-      append(span, t3);
-      append(span, t4);
+      append(div, span1);
+      append(span1, t3);
+      append(span1, t4);
       if (!mounted) {
         dispose = listen(
           input,
@@ -31465,16 +31471,12 @@ function instance$4($$self, $$props, $$invalidate) {
     update2("randomizeMirrorY", !config.randomizeMirrorY);
   }
   function pickCustomFile() {
-    const picker = new FilePicker({
-      type: "imagevideo",
-      current: config.customFile || "",
-      callback: (path) => {
-        if (path) {
-          update2("customFile", path);
-        }
-      }
-    });
-    picker.render(true);
+    openImageVideoPicker(
+      (path) => {
+        if (path) update2("customFile", path);
+      },
+      config.customFile || ""
+    );
   }
   const change_handler = (e) => update2("source", e.target.value);
   const change_handler_1 = (e) => update2("sequencerPath", e.target.value);
@@ -31596,7 +31598,7 @@ function create_if_block$2(ctx) {
   let span0;
   let t15;
   let div4;
-  let label0;
+  let span1;
   let t17;
   let div3;
   let input0;
@@ -31607,10 +31609,10 @@ function create_if_block$2(ctx) {
   let t20;
   let t21;
   let div9;
-  let span1;
+  let span2;
   let t23;
   let div7;
-  let label1;
+  let span3;
   let t25;
   let div6;
   let input1;
@@ -31621,13 +31623,13 @@ function create_if_block$2(ctx) {
   let t28;
   let t29;
   let div8;
-  let label2;
+  let span4;
   let t31;
-  let label3;
+  let label;
   let input2;
   let input2_checked_value;
   let t32;
-  let span2;
+  let span5;
   let t34;
   let t35;
   let section4;
@@ -31843,8 +31845,8 @@ function create_if_block$2(ctx) {
       span0.innerHTML = `<i class="fas fa-hand"></i> Regular Jam`;
       t15 = space();
       div4 = element("div");
-      label0 = element("label");
-      label0.textContent = "Sound";
+      span1 = element("span");
+      span1.textContent = "Sound";
       t17 = space();
       div3 = element("div");
       input0 = element("input");
@@ -31857,12 +31859,12 @@ function create_if_block$2(ctx) {
       if (if_block2) if_block2.c();
       t21 = space();
       div9 = element("div");
-      span1 = element("span");
-      span1.innerHTML = `<i class="fas fa-explosion"></i> Catastrophic`;
+      span2 = element("span");
+      span2.innerHTML = `<i class="fas fa-explosion"></i> Catastrophic`;
       t23 = space();
       div7 = element("div");
-      label1 = element("label");
-      label1.textContent = "Sound";
+      span3 = element("span");
+      span3.textContent = "Sound";
       t25 = space();
       div6 = element("div");
       input1 = element("input");
@@ -31875,14 +31877,14 @@ function create_if_block$2(ctx) {
       if (if_block4) if_block4.c();
       t29 = space();
       div8 = element("div");
-      label2 = element("label");
-      label2.textContent = "Effect";
+      span4 = element("span");
+      span4.textContent = "Effect";
       t31 = space();
-      label3 = element("label");
+      label = element("label");
       input2 = element("input");
       t32 = space();
-      span2 = element("span");
-      span2.textContent = "Explosion visual";
+      span5 = element("span");
+      span5.textContent = "Explosion visual";
       t34 = space();
       if (if_block5) if_block5.c();
       t35 = space();
@@ -31943,7 +31945,7 @@ function create_if_block$2(ctx) {
       attr(div2, "class", "fx-effect-header");
       attr(p, "class", "fx-hint");
       attr(span0, "class", "fx-jam-label");
-      attr(label0, "class", "fx-field-label");
+      attr(span1, "class", "fx-field-label");
       attr(input0, "type", "text");
       input0.value = input0_value_value = /*fxConfig*/
       ctx[2].jam?.sound?.path ?? "";
@@ -31953,8 +31955,8 @@ function create_if_block$2(ctx) {
       attr(div3, "class", "fx-file-picker-row");
       attr(div4, "class", "fx-field-row");
       attr(div5, "class", "fx-jam-subsection");
-      attr(span1, "class", "fx-jam-label");
-      attr(label1, "class", "fx-field-label");
+      attr(span2, "class", "fx-jam-label");
+      attr(span3, "class", "fx-field-label");
       attr(input1, "type", "text");
       input1.value = input1_value_value = /*fxConfig*/
       ctx[2].jam?.catastrophicSound?.path ?? "";
@@ -31963,11 +31965,11 @@ function create_if_block$2(ctx) {
       attr(button1, "class", "fx-btn-small");
       attr(div6, "class", "fx-file-picker-row");
       attr(div7, "class", "fx-field-row");
-      attr(label2, "class", "fx-field-label");
+      attr(span4, "class", "fx-field-label");
       attr(input2, "type", "checkbox");
       input2.checked = input2_checked_value = /*fxConfig*/
       ctx[2].jam?.catastrophicEffect?.enabled ?? false;
-      attr(label3, "class", "fx-checkbox-field");
+      attr(label, "class", "fx-checkbox-field");
       attr(div8, "class", "fx-field-row");
       set_style(div8, "margin-top", "0.3rem");
       attr(div9, "class", "fx-jam-subsection");
@@ -32056,7 +32058,7 @@ function create_if_block$2(ctx) {
       append(div5, span0);
       append(div5, t15);
       append(div5, div4);
-      append(div4, label0);
+      append(div4, span1);
       append(div4, t17);
       append(div4, div3);
       append(div3, input0);
@@ -32068,10 +32070,10 @@ function create_if_block$2(ctx) {
       if (if_block2) if_block2.m(div5, null);
       append(section3, t21);
       append(section3, div9);
-      append(div9, span1);
+      append(div9, span2);
       append(div9, t23);
       append(div9, div7);
-      append(div7, label1);
+      append(div7, span3);
       append(div7, t25);
       append(div7, div6);
       append(div6, input1);
@@ -32083,12 +32085,12 @@ function create_if_block$2(ctx) {
       if (if_block4) if_block4.m(div9, null);
       append(div9, t29);
       append(div9, div8);
-      append(div8, label2);
+      append(div8, span4);
       append(div8, t31);
-      append(div8, label3);
-      append(label3, input2);
-      append(label3, t32);
-      append(label3, span2);
+      append(div8, label);
+      append(label, input2);
+      append(label, t32);
+      append(label, span5);
       append(div9, t34);
       if (if_block5) if_block5.m(div9, null);
       insert(target, t35, anchor);
@@ -32966,12 +32968,12 @@ function create_if_block_13$1(ctx) {
 }
 function create_if_block_12$1(ctx) {
   let div;
-  let label;
+  let span0;
   let t1;
   let input;
   let input_value_value;
   let t2;
-  let span;
+  let span1;
   let t3_value = Math.round(
     /*fxConfig*/
     (ctx[2].jam?.sound?.volume ?? 0.8) * 100
@@ -32985,38 +32987,38 @@ function create_if_block_12$1(ctx) {
   return {
     c() {
       div = element("div");
-      label = element("label");
-      label.textContent = "Volume";
+      span0 = element("span");
+      span0.textContent = "Volume";
       t1 = space();
       input = element("input");
       t2 = space();
-      span = element("span");
+      span1 = element("span");
       t3 = text(t3_value);
       t4 = text("%");
       t5 = space();
       button = element("button");
       button.innerHTML = `<i class="fas fa-play"></i> Preview`;
-      attr(label, "class", "fx-field-label");
+      attr(span0, "class", "fx-field-label");
       attr(input, "type", "range");
       attr(input, "min", "0");
       attr(input, "max", "1");
       attr(input, "step", "0.05");
       input.value = input_value_value = /*fxConfig*/
       ctx[2].jam?.sound?.volume ?? 0.8;
-      attr(span, "class", "fx-sound-volume-label");
+      attr(span1, "class", "fx-sound-volume-label");
       attr(div, "class", "fx-field-row");
       attr(button, "class", "fx-btn fx-btn-small");
       attr(button, "title", "Preview jam sound");
     },
     m(target, anchor) {
       insert(target, div, anchor);
-      append(div, label);
+      append(div, span0);
       append(div, t1);
       append(div, input);
       append(div, t2);
-      append(div, span);
-      append(span, t3);
-      append(span, t4);
+      append(div, span1);
+      append(span1, t3);
+      append(span1, t4);
       insert(target, t5, anchor);
       insert(target, button, anchor);
       if (!mounted) {
@@ -33095,12 +33097,12 @@ function create_if_block_11$1(ctx) {
 }
 function create_if_block_10$1(ctx) {
   let div;
-  let label;
+  let span0;
   let t1;
   let input;
   let input_value_value;
   let t2;
-  let span;
+  let span1;
   let t3_value = Math.round(
     /*fxConfig*/
     (ctx[2].jam?.catastrophicSound?.volume ?? 1) * 100
@@ -33114,38 +33116,38 @@ function create_if_block_10$1(ctx) {
   return {
     c() {
       div = element("div");
-      label = element("label");
-      label.textContent = "Volume";
+      span0 = element("span");
+      span0.textContent = "Volume";
       t1 = space();
       input = element("input");
       t2 = space();
-      span = element("span");
+      span1 = element("span");
       t3 = text(t3_value);
       t4 = text("%");
       t5 = space();
       button = element("button");
       button.innerHTML = `<i class="fas fa-play"></i> Preview`;
-      attr(label, "class", "fx-field-label");
+      attr(span0, "class", "fx-field-label");
       attr(input, "type", "range");
       attr(input, "min", "0");
       attr(input, "max", "1");
       attr(input, "step", "0.05");
       input.value = input_value_value = /*fxConfig*/
       ctx[2].jam?.catastrophicSound?.volume ?? 1;
-      attr(span, "class", "fx-sound-volume-label");
+      attr(span1, "class", "fx-sound-volume-label");
       attr(div, "class", "fx-field-row");
       attr(button, "class", "fx-btn fx-btn-small");
       attr(button, "title", "Preview catastrophic sound");
     },
     m(target, anchor) {
       insert(target, div, anchor);
-      append(div, label);
+      append(div, span0);
       append(div, t1);
       append(div, input);
       append(div, t2);
-      append(div, span);
-      append(span, t3);
-      append(span, t4);
+      append(div, span1);
+      append(span1, t3);
+      append(span1, t4);
       insert(target, t5, anchor);
       insert(target, button, anchor);
       if (!mounted) {
@@ -33191,7 +33193,7 @@ function create_if_block_10$1(ctx) {
 }
 function create_if_block_7$1(ctx) {
   let div0;
-  let label0;
+  let span0;
   let t1;
   let select;
   let option0;
@@ -33207,7 +33209,7 @@ function create_if_block_7$1(ctx) {
   let t7;
   let t8;
   let div1;
-  let label1;
+  let span1;
   let t10;
   let input;
   let input_value_value;
@@ -33224,8 +33226,8 @@ function create_if_block_7$1(ctx) {
   return {
     c() {
       div0 = element("div");
-      label0 = element("label");
-      label0.textContent = "Source";
+      span0 = element("span");
+      span0.textContent = "Source";
       t1 = space();
       select = element("select");
       option0 = element("option");
@@ -33240,11 +33242,11 @@ function create_if_block_7$1(ctx) {
       if (if_block1) if_block1.c();
       t8 = space();
       div1 = element("div");
-      label1 = element("label");
-      label1.textContent = "Scale";
+      span1 = element("span");
+      span1.textContent = "Scale";
       t10 = space();
       input = element("input");
-      attr(label0, "class", "fx-field-label");
+      attr(span0, "class", "fx-field-label");
       option0.__value = "sequencer";
       set_input_value(option0, option0.__value);
       option0.disabled = option0_disabled_value = !/*sequencerAvailable*/
@@ -33252,7 +33254,7 @@ function create_if_block_7$1(ctx) {
       option1.__value = "custom";
       set_input_value(option1, option1.__value);
       attr(div0, "class", "fx-field-row");
-      attr(label1, "class", "fx-field-label");
+      attr(span1, "class", "fx-field-label");
       attr(input, "type", "number");
       attr(input, "min", "0.1");
       attr(input, "max", "5");
@@ -33263,7 +33265,7 @@ function create_if_block_7$1(ctx) {
     },
     m(target, anchor) {
       insert(target, div0, anchor);
-      append(div0, label0);
+      append(div0, span0);
       append(div0, t1);
       append(div0, select);
       append(select, option0);
@@ -33282,7 +33284,7 @@ function create_if_block_7$1(ctx) {
       if (if_block1) if_block1.m(target, anchor);
       insert(target, t8, anchor);
       insert(target, div1, anchor);
-      append(div1, label1);
+      append(div1, span1);
       append(div1, t10);
       append(div1, input);
       if (!mounted) {
@@ -33374,7 +33376,7 @@ function create_if_block_7$1(ctx) {
 }
 function create_if_block_9$1(ctx) {
   let div;
-  let label;
+  let span;
   let t1;
   let input;
   let input_value_value;
@@ -33383,11 +33385,11 @@ function create_if_block_9$1(ctx) {
   return {
     c() {
       div = element("div");
-      label = element("label");
-      label.textContent = "Path";
+      span = element("span");
+      span.textContent = "Path";
       t1 = space();
       input = element("input");
-      attr(label, "class", "fx-field-label");
+      attr(span, "class", "fx-field-label");
       attr(input, "type", "text");
       input.value = input_value_value = /*fxConfig*/
       ctx[2].jam?.catastrophicEffect?.sequencerPath ?? "";
@@ -33396,7 +33398,7 @@ function create_if_block_9$1(ctx) {
     },
     m(target, anchor) {
       insert(target, div, anchor);
-      append(div, label);
+      append(div, span);
       append(div, t1);
       append(div, input);
       if (!mounted) {
@@ -33427,7 +33429,7 @@ function create_if_block_9$1(ctx) {
 }
 function create_if_block_8$1(ctx) {
   let div1;
-  let label;
+  let span;
   let t1;
   let div0;
   let input;
@@ -33439,15 +33441,15 @@ function create_if_block_8$1(ctx) {
   return {
     c() {
       div1 = element("div");
-      label = element("label");
-      label.textContent = "File";
+      span = element("span");
+      span.textContent = "File";
       t1 = space();
       div0 = element("div");
       input = element("input");
       t2 = space();
       button = element("button");
       button.innerHTML = `<i class="fas fa-file"></i>`;
-      attr(label, "class", "fx-field-label");
+      attr(span, "class", "fx-field-label");
       attr(input, "type", "text");
       input.value = input_value_value = /*fxConfig*/
       ctx[2].jam?.catastrophicEffect?.customFile ?? "";
@@ -33459,7 +33461,7 @@ function create_if_block_8$1(ctx) {
     },
     m(target, anchor) {
       insert(target, div1, anchor);
-      append(div1, label);
+      append(div1, span);
       append(div1, t1);
       append(div1, div0);
       append(div0, input);
@@ -33511,7 +33513,7 @@ function create_if_block_6$1(ctx) {
 }
 function create_if_block_2$1(ctx) {
   let div0;
-  let label0;
+  let span0;
   let t1;
   let select0;
   let option0;
@@ -33527,18 +33529,18 @@ function create_if_block_2$1(ctx) {
   let t7;
   let t8;
   let div1;
-  let label1;
+  let span1;
   let t10;
   let input0;
   let input0_value_value;
   let t11;
   let div2;
-  let label2;
+  let span2;
   let t13;
   let input1;
   let input1_value_value;
   let t14;
-  let span0;
+  let span3;
   let t15_value = Math.round(
     /*fxConfig*/
     (ctx[2].casing.scatter ?? 0.5) * 100
@@ -33547,7 +33549,7 @@ function create_if_block_2$1(ctx) {
   let t16;
   let t17;
   let div3;
-  let label3;
+  let span4;
   let t19;
   let select1;
   let option2;
@@ -33556,11 +33558,11 @@ function create_if_block_2$1(ctx) {
   let option5;
   let select1_value_value;
   let t24;
-  let label4;
+  let label;
   let input2;
   let input2_checked_value;
   let t25;
-  let span1;
+  let span5;
   let t27;
   let if_block2_anchor;
   let mounted;
@@ -33580,8 +33582,8 @@ function create_if_block_2$1(ctx) {
   return {
     c() {
       div0 = element("div");
-      label0 = element("label");
-      label0.textContent = "Source";
+      span0 = element("span");
+      span0.textContent = "Source";
       t1 = space();
       select0 = element("select");
       option0 = element("option");
@@ -33596,24 +33598,24 @@ function create_if_block_2$1(ctx) {
       if (if_block1) if_block1.c();
       t8 = space();
       div1 = element("div");
-      label1 = element("label");
-      label1.textContent = "Scale";
+      span1 = element("span");
+      span1.textContent = "Scale";
       t10 = space();
       input0 = element("input");
       t11 = space();
       div2 = element("div");
-      label2 = element("label");
-      label2.textContent = "Scatter";
+      span2 = element("span");
+      span2.textContent = "Scatter";
       t13 = space();
       input1 = element("input");
       t14 = space();
-      span0 = element("span");
+      span3 = element("span");
       t15 = text(t15_value);
       t16 = text("%");
       t17 = space();
       div3 = element("div");
-      label3 = element("label");
-      label3.textContent = "Eject";
+      span4 = element("span");
+      span4.textContent = "Eject";
       t19 = space();
       select1 = element("select");
       option2 = element("option");
@@ -33625,15 +33627,15 @@ function create_if_block_2$1(ctx) {
       option5 = element("option");
       option5.textContent = "Random";
       t24 = space();
-      label4 = element("label");
+      label = element("label");
       input2 = element("input");
       t25 = space();
-      span1 = element("span");
-      span1.textContent = "Stay on map";
+      span5 = element("span");
+      span5.textContent = "Stay on map";
       t27 = space();
       if (if_block2) if_block2.c();
       if_block2_anchor = empty();
-      attr(label0, "class", "fx-field-label");
+      attr(span0, "class", "fx-field-label");
       option0.__value = "sequencer";
       set_input_value(option0, option0.__value);
       option0.disabled = option0_disabled_value = !/*sequencerAvailable*/
@@ -33641,7 +33643,7 @@ function create_if_block_2$1(ctx) {
       option1.__value = "custom";
       set_input_value(option1, option1.__value);
       attr(div0, "class", "fx-field-row");
-      attr(label1, "class", "fx-field-label");
+      attr(span1, "class", "fx-field-label");
       attr(input0, "type", "number");
       attr(input0, "min", "0.05");
       attr(input0, "max", "2");
@@ -33649,16 +33651,16 @@ function create_if_block_2$1(ctx) {
       input0.value = input0_value_value = /*fxConfig*/
       ctx[2].casing.scale ?? 0.3;
       attr(div1, "class", "fx-field-row");
-      attr(label2, "class", "fx-field-label");
+      attr(span2, "class", "fx-field-label");
       attr(input1, "type", "range");
       attr(input1, "min", "0");
       attr(input1, "max", "2");
       attr(input1, "step", "0.1");
       input1.value = input1_value_value = /*fxConfig*/
       ctx[2].casing.scatter ?? 0.5;
-      attr(span0, "class", "fx-sound-volume-label");
+      attr(span3, "class", "fx-sound-volume-label");
       attr(div2, "class", "fx-field-row");
-      attr(label3, "class", "fx-field-label");
+      attr(span4, "class", "fx-field-label");
       option2.__value = "right";
       set_input_value(option2, option2.__value);
       option3.__value = "left";
@@ -33671,11 +33673,11 @@ function create_if_block_2$1(ctx) {
       attr(input2, "type", "checkbox");
       input2.checked = input2_checked_value = /*fxConfig*/
       ctx[2].casing.persist ?? true;
-      attr(label4, "class", "fx-checkbox-field");
+      attr(label, "class", "fx-checkbox-field");
     },
     m(target, anchor) {
       insert(target, div0, anchor);
-      append(div0, label0);
+      append(div0, span0);
       append(div0, t1);
       append(div0, select0);
       append(select0, option0);
@@ -33694,21 +33696,21 @@ function create_if_block_2$1(ctx) {
       if (if_block1) if_block1.m(target, anchor);
       insert(target, t8, anchor);
       insert(target, div1, anchor);
-      append(div1, label1);
+      append(div1, span1);
       append(div1, t10);
       append(div1, input0);
       insert(target, t11, anchor);
       insert(target, div2, anchor);
-      append(div2, label2);
+      append(div2, span2);
       append(div2, t13);
       append(div2, input1);
       append(div2, t14);
-      append(div2, span0);
-      append(span0, t15);
-      append(span0, t16);
+      append(div2, span3);
+      append(span3, t15);
+      append(span3, t16);
       insert(target, t17, anchor);
       insert(target, div3, anchor);
-      append(div3, label3);
+      append(div3, span4);
       append(div3, t19);
       append(div3, select1);
       append(select1, option2);
@@ -33721,10 +33723,10 @@ function create_if_block_2$1(ctx) {
         ctx[2].casing.ejectDirection ?? "right"
       );
       insert(target, t24, anchor);
-      insert(target, label4, anchor);
-      append(label4, input2);
-      append(label4, t25);
-      append(label4, span1);
+      insert(target, label, anchor);
+      append(label, input2);
+      append(label, t25);
+      append(label, span5);
       insert(target, t27, anchor);
       if (if_block2) if_block2.m(target, anchor);
       insert(target, if_block2_anchor, anchor);
@@ -33869,7 +33871,7 @@ function create_if_block_2$1(ctx) {
         detach(t17);
         detach(div3);
         detach(t24);
-        detach(label4);
+        detach(label);
         detach(t27);
         detach(if_block2_anchor);
       }
@@ -33883,7 +33885,7 @@ function create_if_block_2$1(ctx) {
 }
 function create_if_block_5$1(ctx) {
   let div;
-  let label;
+  let span;
   let t1;
   let input;
   let input_value_value;
@@ -33892,11 +33894,11 @@ function create_if_block_5$1(ctx) {
   return {
     c() {
       div = element("div");
-      label = element("label");
-      label.textContent = "Path";
+      span = element("span");
+      span.textContent = "Path";
       t1 = space();
       input = element("input");
-      attr(label, "class", "fx-field-label");
+      attr(span, "class", "fx-field-label");
       attr(input, "type", "text");
       input.value = input_value_value = /*fxConfig*/
       ctx[2].casing.sequencerPath ?? "";
@@ -33905,7 +33907,7 @@ function create_if_block_5$1(ctx) {
     },
     m(target, anchor) {
       insert(target, div, anchor);
-      append(div, label);
+      append(div, span);
       append(div, t1);
       append(div, input);
       if (!mounted) {
@@ -33936,7 +33938,7 @@ function create_if_block_5$1(ctx) {
 }
 function create_if_block_4$1(ctx) {
   let div1;
-  let label;
+  let span;
   let t1;
   let div0;
   let input;
@@ -33948,15 +33950,15 @@ function create_if_block_4$1(ctx) {
   return {
     c() {
       div1 = element("div");
-      label = element("label");
-      label.textContent = "File";
+      span = element("span");
+      span.textContent = "File";
       t1 = space();
       div0 = element("div");
       input = element("input");
       t2 = space();
       button = element("button");
       button.innerHTML = `<i class="fas fa-file"></i>`;
-      attr(label, "class", "fx-field-label");
+      attr(span, "class", "fx-field-label");
       attr(input, "type", "text");
       input.value = input_value_value = /*fxConfig*/
       ctx[2].casing.customFile ?? "";
@@ -33968,7 +33970,7 @@ function create_if_block_4$1(ctx) {
     },
     m(target, anchor) {
       insert(target, div1, anchor);
-      append(div1, label);
+      append(div1, span);
       append(div1, t1);
       append(div1, div0);
       append(div0, input);
@@ -34002,12 +34004,12 @@ function create_if_block_4$1(ctx) {
 }
 function create_if_block_3$1(ctx) {
   let div;
-  let label;
+  let span0;
   let t1;
   let input;
   let input_value_value;
   let t2;
-  let span;
+  let span1;
   let t3_value = (
     /*fxConfig*/
     ctx[2].casing.duration ? `${/*fxConfig*/
@@ -34021,35 +34023,35 @@ function create_if_block_3$1(ctx) {
   return {
     c() {
       div = element("div");
-      label = element("label");
-      label.textContent = "Duration";
+      span0 = element("span");
+      span0.textContent = "Duration";
       t1 = space();
       input = element("input");
       t2 = space();
-      span = element("span");
+      span1 = element("span");
       t3 = text(t3_value);
       t4 = space();
       p = element("p");
       p.innerHTML = `<i class="fas fa-info-circle"></i> 0 = permanent (clear via Sequencer Effect Manager)`;
-      attr(label, "class", "fx-field-label");
+      attr(span0, "class", "fx-field-label");
       attr(input, "type", "number");
       attr(input, "min", "0");
       attr(input, "max", "600");
       attr(input, "step", "5");
       input.value = input_value_value = /*fxConfig*/
       ctx[2].casing.duration ?? 0;
-      attr(span, "class", "fx-hint-inline");
+      attr(span1, "class", "fx-hint-inline");
       attr(div, "class", "fx-field-row");
       attr(p, "class", "fx-hint");
     },
     m(target, anchor) {
       insert(target, div, anchor);
-      append(div, label);
+      append(div, span0);
       append(div, t1);
       append(div, input);
       append(div, t2);
-      append(div, span);
-      append(span, t3);
+      append(div, span1);
+      append(span1, t3);
       insert(target, t4, anchor);
       insert(target, p, anchor);
       if (!mounted) {
@@ -34873,10 +34875,8 @@ function instance$3($$self, $$props, $$invalidate) {
     }
   });
   const click_handler_8 = () => {
-    const picker = new FilePicker({
-      type: "imagevideo",
-      current: fxConfig.jam?.catastrophicEffect?.customFile || "",
-      callback: (path) => {
+    openImageVideoPicker(
+      (path) => {
         if (path) saveConfig({
           ...fxConfig,
           jam: {
@@ -34887,9 +34887,9 @@ function instance$3($$self, $$props, $$invalidate) {
             }
           }
         });
-      }
-    });
-    picker.render(true);
+      },
+      fxConfig.jam?.catastrophicEffect?.customFile || ""
+    );
   };
   const change_handler_6 = (e) => {
     const n = Number(e.target.value);
@@ -34926,16 +34926,14 @@ function instance$3($$self, $$props, $$invalidate) {
     }
   });
   const click_handler_10 = () => {
-    const picker = new FilePicker({
-      type: "imagevideo",
-      current: fxConfig.casing.customFile || "",
-      callback: (path) => {
+    openImageVideoPicker(
+      (path) => {
         if (path) handleEffectChanged("casing", {
           detail: { ...fxConfig.casing, customFile: path }
         });
-      }
-    });
-    picker.render(true);
+      },
+      fxConfig.casing.customFile || ""
+    );
   };
   const change_handler_9 = (e) => {
     const n = Number(e.target.value);
@@ -35555,7 +35553,7 @@ function create_if_block_23(ctx) {
   let p;
   let t1;
   let div0;
-  let label0;
+  let span0;
   let t3;
   let select;
   let option0;
@@ -35569,13 +35567,13 @@ function create_if_block_23(ctx) {
   let t7;
   let t8;
   let div1;
-  let label1;
+  let span1;
   let t10;
   let input0;
   let input0_value_value;
   let t11;
   let div3;
-  let label2;
+  let span2;
   let t13;
   let div2;
   let input1;
@@ -35606,8 +35604,8 @@ function create_if_block_23(ctx) {
       p.innerHTML = `<i class="fas fa-info-circle"></i> Played when shield absorbs damage`;
       t1 = space();
       div0 = element("div");
-      label0 = element("label");
-      label0.textContent = "Source";
+      span0 = element("span");
+      span0.textContent = "Source";
       t3 = space();
       select = element("select");
       option0 = element("option");
@@ -35619,14 +35617,14 @@ function create_if_block_23(ctx) {
       if (if_block0) if_block0.c();
       t8 = space();
       div1 = element("div");
-      label1 = element("label");
-      label1.textContent = "Scale";
+      span1 = element("span");
+      span1.textContent = "Scale";
       t10 = space();
       input0 = element("input");
       t11 = space();
       div3 = element("div");
-      label2 = element("label");
-      label2.textContent = "Sound";
+      span2 = element("span");
+      span2.textContent = "Sound";
       t13 = space();
       div2 = element("div");
       input1 = element("input");
@@ -35641,7 +35639,7 @@ function create_if_block_23(ctx) {
       button1 = element("button");
       button1.innerHTML = `<i class="fas fa-play"></i> Test`;
       attr(p, "class", "fx-hint");
-      attr(label0, "class", "fx-field-label");
+      attr(span0, "class", "fx-field-label");
       option0.__value = "sequencer";
       set_input_value(option0, option0.__value);
       option0.disabled = option0_disabled_value = !/*sequencerAvailable*/
@@ -35649,7 +35647,7 @@ function create_if_block_23(ctx) {
       option1.__value = "custom";
       set_input_value(option1, option1.__value);
       attr(div0, "class", "fx-field-row");
-      attr(label1, "class", "fx-field-label");
+      attr(span1, "class", "fx-field-label");
       attr(input0, "type", "number");
       attr(input0, "min", "0.1");
       attr(input0, "max", "5");
@@ -35657,7 +35655,7 @@ function create_if_block_23(ctx) {
       input0.value = input0_value_value = /*fxConfig*/
       ctx[2].onHit.scale;
       attr(div1, "class", "fx-field-row");
-      attr(label2, "class", "fx-field-label");
+      attr(span2, "class", "fx-field-label");
       attr(input1, "type", "text");
       input1.value = input1_value_value = /*fxConfig*/
       ctx[2].onHit.sound.path;
@@ -35673,7 +35671,7 @@ function create_if_block_23(ctx) {
       insert(target, p, anchor);
       insert(target, t1, anchor);
       insert(target, div0, anchor);
-      append(div0, label0);
+      append(div0, span0);
       append(div0, t3);
       append(div0, select);
       append(select, option0);
@@ -35689,12 +35687,12 @@ function create_if_block_23(ctx) {
       if (if_block0) if_block0.m(target, anchor);
       insert(target, t8, anchor);
       insert(target, div1, anchor);
-      append(div1, label1);
+      append(div1, span1);
       append(div1, t10);
       append(div1, input0);
       insert(target, t11, anchor);
       insert(target, div3, anchor);
-      append(div3, label2);
+      append(div3, span2);
       append(div3, t13);
       append(div3, div2);
       append(div2, input1);
@@ -35834,7 +35832,7 @@ function create_if_block_23(ctx) {
 }
 function create_if_block_26(ctx) {
   let div;
-  let label;
+  let span;
   let t1;
   let input;
   let input_value_value;
@@ -35843,11 +35841,11 @@ function create_if_block_26(ctx) {
   return {
     c() {
       div = element("div");
-      label = element("label");
-      label.textContent = "Path";
+      span = element("span");
+      span.textContent = "Path";
       t1 = space();
       input = element("input");
-      attr(label, "class", "fx-field-label");
+      attr(span, "class", "fx-field-label");
       attr(input, "type", "text");
       input.value = input_value_value = /*fxConfig*/
       ctx[2].onHit.effect.sequencerPath;
@@ -35856,7 +35854,7 @@ function create_if_block_26(ctx) {
     },
     m(target, anchor) {
       insert(target, div, anchor);
-      append(div, label);
+      append(div, span);
       append(div, t1);
       append(div, input);
       if (!mounted) {
@@ -35920,12 +35918,12 @@ function create_if_block_25(ctx) {
 }
 function create_if_block_24(ctx) {
   let div;
-  let label;
+  let span0;
   let t1;
   let input;
   let input_value_value;
   let t2;
-  let span;
+  let span1;
   let t3_value = Math.round(
     /*fxConfig*/
     (ctx[2].onHit.sound.volume ?? 0.8) * 100
@@ -35937,33 +35935,33 @@ function create_if_block_24(ctx) {
   return {
     c() {
       div = element("div");
-      label = element("label");
-      label.textContent = "Volume";
+      span0 = element("span");
+      span0.textContent = "Volume";
       t1 = space();
       input = element("input");
       t2 = space();
-      span = element("span");
+      span1 = element("span");
       t3 = text(t3_value);
       t4 = text("%");
-      attr(label, "class", "fx-field-label");
+      attr(span0, "class", "fx-field-label");
       attr(input, "type", "range");
       attr(input, "min", "0");
       attr(input, "max", "1");
       attr(input, "step", "0.05");
       input.value = input_value_value = /*fxConfig*/
       ctx[2].onHit.sound.volume;
-      attr(span, "class", "fx-sound-volume-label");
+      attr(span1, "class", "fx-sound-volume-label");
       attr(div, "class", "fx-field-row");
     },
     m(target, anchor) {
       insert(target, div, anchor);
-      append(div, label);
+      append(div, span0);
       append(div, t1);
       append(div, input);
       append(div, t2);
-      append(div, span);
-      append(span, t3);
-      append(span, t4);
+      append(div, span1);
+      append(span1, t3);
+      append(span1, t4);
       if (!mounted) {
         dispose = listen(
           input,
@@ -35999,7 +35997,7 @@ function create_if_block_19(ctx) {
   let p;
   let t1;
   let div0;
-  let label0;
+  let span0;
   let t3;
   let select;
   let option0;
@@ -36013,13 +36011,13 @@ function create_if_block_19(ctx) {
   let t7;
   let t8;
   let div1;
-  let label1;
+  let span1;
   let t10;
   let input0;
   let input0_value_value;
   let t11;
   let div3;
-  let label2;
+  let span2;
   let t13;
   let div2;
   let input1;
@@ -36050,8 +36048,8 @@ function create_if_block_19(ctx) {
       p.innerHTML = `<i class="fas fa-info-circle"></i> Played when armor save succeeds (sparks, ricochet)`;
       t1 = space();
       div0 = element("div");
-      label0 = element("label");
-      label0.textContent = "Source";
+      span0 = element("span");
+      span0.textContent = "Source";
       t3 = space();
       select = element("select");
       option0 = element("option");
@@ -36063,14 +36061,14 @@ function create_if_block_19(ctx) {
       if (if_block0) if_block0.c();
       t8 = space();
       div1 = element("div");
-      label1 = element("label");
-      label1.textContent = "Scale";
+      span1 = element("span");
+      span1.textContent = "Scale";
       t10 = space();
       input0 = element("input");
       t11 = space();
       div3 = element("div");
-      label2 = element("label");
-      label2.textContent = "Sound";
+      span2 = element("span");
+      span2.textContent = "Sound";
       t13 = space();
       div2 = element("div");
       input1 = element("input");
@@ -36085,7 +36083,7 @@ function create_if_block_19(ctx) {
       button1 = element("button");
       button1.innerHTML = `<i class="fas fa-play"></i> Test`;
       attr(p, "class", "fx-hint");
-      attr(label0, "class", "fx-field-label");
+      attr(span0, "class", "fx-field-label");
       option0.__value = "sequencer";
       set_input_value(option0, option0.__value);
       option0.disabled = option0_disabled_value = !/*sequencerAvailable*/
@@ -36093,7 +36091,7 @@ function create_if_block_19(ctx) {
       option1.__value = "custom";
       set_input_value(option1, option1.__value);
       attr(div0, "class", "fx-field-row");
-      attr(label1, "class", "fx-field-label");
+      attr(span1, "class", "fx-field-label");
       attr(input0, "type", "number");
       attr(input0, "min", "0.1");
       attr(input0, "max", "5");
@@ -36101,7 +36099,7 @@ function create_if_block_19(ctx) {
       input0.value = input0_value_value = /*fxConfig*/
       ctx[2].onDeflect.scale;
       attr(div1, "class", "fx-field-row");
-      attr(label2, "class", "fx-field-label");
+      attr(span2, "class", "fx-field-label");
       attr(input1, "type", "text");
       input1.value = input1_value_value = /*fxConfig*/
       ctx[2].onDeflect.sound.path;
@@ -36117,7 +36115,7 @@ function create_if_block_19(ctx) {
       insert(target, p, anchor);
       insert(target, t1, anchor);
       insert(target, div0, anchor);
-      append(div0, label0);
+      append(div0, span0);
       append(div0, t3);
       append(div0, select);
       append(select, option0);
@@ -36133,12 +36131,12 @@ function create_if_block_19(ctx) {
       if (if_block0) if_block0.m(target, anchor);
       insert(target, t8, anchor);
       insert(target, div1, anchor);
-      append(div1, label1);
+      append(div1, span1);
       append(div1, t10);
       append(div1, input0);
       insert(target, t11, anchor);
       insert(target, div3, anchor);
-      append(div3, label2);
+      append(div3, span2);
       append(div3, t13);
       append(div3, div2);
       append(div2, input1);
@@ -36278,7 +36276,7 @@ function create_if_block_19(ctx) {
 }
 function create_if_block_22(ctx) {
   let div;
-  let label;
+  let span;
   let t1;
   let input;
   let input_value_value;
@@ -36287,11 +36285,11 @@ function create_if_block_22(ctx) {
   return {
     c() {
       div = element("div");
-      label = element("label");
-      label.textContent = "Path";
+      span = element("span");
+      span.textContent = "Path";
       t1 = space();
       input = element("input");
-      attr(label, "class", "fx-field-label");
+      attr(span, "class", "fx-field-label");
       attr(input, "type", "text");
       input.value = input_value_value = /*fxConfig*/
       ctx[2].onDeflect.effect.sequencerPath;
@@ -36300,7 +36298,7 @@ function create_if_block_22(ctx) {
     },
     m(target, anchor) {
       insert(target, div, anchor);
-      append(div, label);
+      append(div, span);
       append(div, t1);
       append(div, input);
       if (!mounted) {
@@ -36364,12 +36362,12 @@ function create_if_block_21(ctx) {
 }
 function create_if_block_20(ctx) {
   let div;
-  let label;
+  let span0;
   let t1;
   let input;
   let input_value_value;
   let t2;
-  let span;
+  let span1;
   let t3_value = Math.round(
     /*fxConfig*/
     (ctx[2].onDeflect.sound.volume ?? 0.8) * 100
@@ -36381,33 +36379,33 @@ function create_if_block_20(ctx) {
   return {
     c() {
       div = element("div");
-      label = element("label");
-      label.textContent = "Volume";
+      span0 = element("span");
+      span0.textContent = "Volume";
       t1 = space();
       input = element("input");
       t2 = space();
-      span = element("span");
+      span1 = element("span");
       t3 = text(t3_value);
       t4 = text("%");
-      attr(label, "class", "fx-field-label");
+      attr(span0, "class", "fx-field-label");
       attr(input, "type", "range");
       attr(input, "min", "0");
       attr(input, "max", "1");
       attr(input, "step", "0.05");
       input.value = input_value_value = /*fxConfig*/
       ctx[2].onDeflect.sound.volume;
-      attr(span, "class", "fx-sound-volume-label");
+      attr(span1, "class", "fx-sound-volume-label");
       attr(div, "class", "fx-field-row");
     },
     m(target, anchor) {
       insert(target, div, anchor);
-      append(div, label);
+      append(div, span0);
       append(div, t1);
       append(div, input);
       append(div, t2);
-      append(div, span);
-      append(span, t3);
-      append(span, t4);
+      append(div, span1);
+      append(span1, t3);
+      append(span1, t4);
       if (!mounted) {
         dispose = listen(
           input,
@@ -36443,7 +36441,7 @@ function create_if_block_15(ctx) {
   let p;
   let t1;
   let div0;
-  let label0;
+  let span0;
   let t3;
   let select;
   let option0;
@@ -36457,13 +36455,13 @@ function create_if_block_15(ctx) {
   let t7;
   let t8;
   let div1;
-  let label1;
+  let span1;
   let t10;
   let input0;
   let input0_value_value;
   let t11;
   let div3;
-  let label2;
+  let span2;
   let t13;
   let div2;
   let input1;
@@ -36494,8 +36492,8 @@ function create_if_block_15(ctx) {
       p.innerHTML = `<i class="fas fa-info-circle"></i> Played when armor save fails (blood, damage)`;
       t1 = space();
       div0 = element("div");
-      label0 = element("label");
-      label0.textContent = "Source";
+      span0 = element("span");
+      span0.textContent = "Source";
       t3 = space();
       select = element("select");
       option0 = element("option");
@@ -36507,14 +36505,14 @@ function create_if_block_15(ctx) {
       if (if_block0) if_block0.c();
       t8 = space();
       div1 = element("div");
-      label1 = element("label");
-      label1.textContent = "Scale";
+      span1 = element("span");
+      span1.textContent = "Scale";
       t10 = space();
       input0 = element("input");
       t11 = space();
       div3 = element("div");
-      label2 = element("label");
-      label2.textContent = "Sound";
+      span2 = element("span");
+      span2.textContent = "Sound";
       t13 = space();
       div2 = element("div");
       input1 = element("input");
@@ -36529,7 +36527,7 @@ function create_if_block_15(ctx) {
       button1 = element("button");
       button1.innerHTML = `<i class="fas fa-play"></i> Test`;
       attr(p, "class", "fx-hint");
-      attr(label0, "class", "fx-field-label");
+      attr(span0, "class", "fx-field-label");
       option0.__value = "sequencer";
       set_input_value(option0, option0.__value);
       option0.disabled = option0_disabled_value = !/*sequencerAvailable*/
@@ -36537,7 +36535,7 @@ function create_if_block_15(ctx) {
       option1.__value = "custom";
       set_input_value(option1, option1.__value);
       attr(div0, "class", "fx-field-row");
-      attr(label1, "class", "fx-field-label");
+      attr(span1, "class", "fx-field-label");
       attr(input0, "type", "number");
       attr(input0, "min", "0.1");
       attr(input0, "max", "5");
@@ -36545,7 +36543,7 @@ function create_if_block_15(ctx) {
       input0.value = input0_value_value = /*fxConfig*/
       ctx[2].onPenetrate.scale;
       attr(div1, "class", "fx-field-row");
-      attr(label2, "class", "fx-field-label");
+      attr(span2, "class", "fx-field-label");
       attr(input1, "type", "text");
       input1.value = input1_value_value = /*fxConfig*/
       ctx[2].onPenetrate.sound.path;
@@ -36561,7 +36559,7 @@ function create_if_block_15(ctx) {
       insert(target, p, anchor);
       insert(target, t1, anchor);
       insert(target, div0, anchor);
-      append(div0, label0);
+      append(div0, span0);
       append(div0, t3);
       append(div0, select);
       append(select, option0);
@@ -36577,12 +36575,12 @@ function create_if_block_15(ctx) {
       if (if_block0) if_block0.m(target, anchor);
       insert(target, t8, anchor);
       insert(target, div1, anchor);
-      append(div1, label1);
+      append(div1, span1);
       append(div1, t10);
       append(div1, input0);
       insert(target, t11, anchor);
       insert(target, div3, anchor);
-      append(div3, label2);
+      append(div3, span2);
       append(div3, t13);
       append(div3, div2);
       append(div2, input1);
@@ -36722,7 +36720,7 @@ function create_if_block_15(ctx) {
 }
 function create_if_block_18(ctx) {
   let div;
-  let label;
+  let span;
   let t1;
   let input;
   let input_value_value;
@@ -36731,11 +36729,11 @@ function create_if_block_18(ctx) {
   return {
     c() {
       div = element("div");
-      label = element("label");
-      label.textContent = "Path";
+      span = element("span");
+      span.textContent = "Path";
       t1 = space();
       input = element("input");
-      attr(label, "class", "fx-field-label");
+      attr(span, "class", "fx-field-label");
       attr(input, "type", "text");
       input.value = input_value_value = /*fxConfig*/
       ctx[2].onPenetrate.effect.sequencerPath;
@@ -36744,7 +36742,7 @@ function create_if_block_18(ctx) {
     },
     m(target, anchor) {
       insert(target, div, anchor);
-      append(div, label);
+      append(div, span);
       append(div, t1);
       append(div, input);
       if (!mounted) {
@@ -36808,12 +36806,12 @@ function create_if_block_17(ctx) {
 }
 function create_if_block_16(ctx) {
   let div;
-  let label;
+  let span0;
   let t1;
   let input;
   let input_value_value;
   let t2;
-  let span;
+  let span1;
   let t3_value = Math.round(
     /*fxConfig*/
     (ctx[2].onPenetrate.sound.volume ?? 0.8) * 100
@@ -36825,33 +36823,33 @@ function create_if_block_16(ctx) {
   return {
     c() {
       div = element("div");
-      label = element("label");
-      label.textContent = "Volume";
+      span0 = element("span");
+      span0.textContent = "Volume";
       t1 = space();
       input = element("input");
       t2 = space();
-      span = element("span");
+      span1 = element("span");
       t3 = text(t3_value);
       t4 = text("%");
-      attr(label, "class", "fx-field-label");
+      attr(span0, "class", "fx-field-label");
       attr(input, "type", "range");
       attr(input, "min", "0");
       attr(input, "max", "1");
       attr(input, "step", "0.05");
       input.value = input_value_value = /*fxConfig*/
       ctx[2].onPenetrate.sound.volume;
-      attr(span, "class", "fx-sound-volume-label");
+      attr(span1, "class", "fx-sound-volume-label");
       attr(div, "class", "fx-field-row");
     },
     m(target, anchor) {
       insert(target, div, anchor);
-      append(div, label);
+      append(div, span0);
       append(div, t1);
       append(div, input);
       append(div, t2);
-      append(div, span);
-      append(span, t3);
-      append(span, t4);
+      append(div, span1);
+      append(span1, t3);
+      append(span1, t4);
       if (!mounted) {
         dispose = listen(
           input,
@@ -36885,7 +36883,7 @@ function create_if_block_16(ctx) {
 }
 function create_if_block_1(ctx) {
   let div0;
-  let label0;
+  let span0;
   let t1;
   let select0;
   let option0;
@@ -36895,7 +36893,7 @@ function create_if_block_1(ctx) {
   let t5;
   let t6;
   let div2;
-  let span;
+  let span1;
   let i;
   let t7;
   let t8_value = (
@@ -36905,7 +36903,7 @@ function create_if_block_1(ctx) {
   let t8;
   let t9;
   let div1;
-  let label1;
+  let span2;
   let t11;
   let select1;
   let option3;
@@ -36920,7 +36918,7 @@ function create_if_block_1(ctx) {
   let t16;
   let t17;
   let div3;
-  let label2;
+  let span3;
   let t19;
   let input;
   let input_value_value;
@@ -36969,8 +36967,8 @@ function create_if_block_1(ctx) {
   return {
     c() {
       div0 = element("div");
-      label0 = element("label");
-      label0.textContent = "Mode";
+      span0 = element("span");
+      span0.textContent = "Mode";
       t1 = space();
       select0 = element("select");
       option0 = element("option");
@@ -36983,14 +36981,14 @@ function create_if_block_1(ctx) {
       if (if_block0) if_block0.c();
       t6 = space();
       div2 = element("div");
-      span = element("span");
+      span1 = element("span");
       i = element("i");
       t7 = space();
       t8 = text(t8_value);
       t9 = space();
       div1 = element("div");
-      label1 = element("label");
-      label1.textContent = "Source";
+      span2 = element("span");
+      span2.textContent = "Source";
       t11 = space();
       select1 = element("select");
       option3 = element("option");
@@ -37004,8 +37002,8 @@ function create_if_block_1(ctx) {
       if (if_block2) if_block2.c();
       t17 = space();
       div3 = element("div");
-      label2 = element("label");
-      label2.textContent = "Scale";
+      span3 = element("span");
+      span3.textContent = "Scale";
       t19 = space();
       input = element("input");
       t20 = space();
@@ -37013,7 +37011,7 @@ function create_if_block_1(ctx) {
       t21 = space();
       div4 = element("div");
       if_block4.c();
-      attr(label0, "class", "fx-field-label");
+      attr(span0, "class", "fx-field-label");
       option0.__value = "permanent";
       set_input_value(option0, option0.__value);
       option1.__value = "rounds";
@@ -37022,8 +37020,8 @@ function create_if_block_1(ctx) {
       set_input_value(option2, option2.__value);
       attr(div0, "class", "fx-field-row");
       attr(i, "class", "fas fa-repeat");
-      attr(span, "class", "fx-jam-label");
-      attr(label1, "class", "fx-field-label");
+      attr(span1, "class", "fx-jam-label");
+      attr(span2, "class", "fx-field-label");
       option3.__value = "sequencer";
       set_input_value(option3, option3.__value);
       option3.disabled = option3_disabled_value = !/*sequencerAvailable*/
@@ -37032,7 +37030,7 @@ function create_if_block_1(ctx) {
       set_input_value(option4, option4.__value);
       attr(div1, "class", "fx-field-row");
       attr(div2, "class", "fx-aura-subsection");
-      attr(label2, "class", "fx-field-label");
+      attr(span3, "class", "fx-field-label");
       attr(input, "type", "number");
       attr(input, "min", "0.1");
       attr(input, "max", "5");
@@ -37044,7 +37042,7 @@ function create_if_block_1(ctx) {
     },
     m(target, anchor) {
       insert(target, div0, anchor);
-      append(div0, label0);
+      append(div0, span0);
       append(div0, t1);
       append(div0, select0);
       append(select0, option0);
@@ -37059,13 +37057,13 @@ function create_if_block_1(ctx) {
       if (if_block0) if_block0.m(target, anchor);
       insert(target, t6, anchor);
       insert(target, div2, anchor);
-      append(div2, span);
-      append(span, i);
-      append(span, t7);
-      append(span, t8);
+      append(div2, span1);
+      append(span1, i);
+      append(span1, t7);
+      append(span1, t8);
       append(div2, t9);
       append(div2, div1);
-      append(div1, label1);
+      append(div1, span2);
       append(div1, t11);
       append(div1, select1);
       append(select1, option3);
@@ -37083,7 +37081,7 @@ function create_if_block_1(ctx) {
       if (if_block2) if_block2.m(target, anchor);
       insert(target, t17, anchor);
       insert(target, div3, anchor);
-      append(div3, label2);
+      append(div3, span3);
       append(div3, t19);
       append(div3, input);
       insert(target, t20, anchor);
@@ -37264,7 +37262,7 @@ function create_if_block_13(ctx) {
   let p;
   let t1;
   let div;
-  let label;
+  let span;
   let t3;
   let input;
   let input_value_value;
@@ -37276,12 +37274,12 @@ function create_if_block_13(ctx) {
       p.innerHTML = `<i class="fas fa-info-circle"></i> Active for a set number of rounds (provider passes duration)`;
       t1 = space();
       div = element("div");
-      label = element("label");
-      label.textContent = "Default Rounds";
+      span = element("span");
+      span.textContent = "Default Rounds";
       t3 = space();
       input = element("input");
       attr(p, "class", "fx-hint");
-      attr(label, "class", "fx-field-label");
+      attr(span, "class", "fx-field-label");
       attr(input, "type", "number");
       attr(input, "min", "1");
       attr(input, "max", "99");
@@ -37294,7 +37292,7 @@ function create_if_block_13(ctx) {
       insert(target, p, anchor);
       insert(target, t1, anchor);
       insert(target, div, anchor);
-      append(div, label);
+      append(div, span);
       append(div, t3);
       append(div, input);
       if (!mounted) {
@@ -37346,7 +37344,7 @@ function create_if_block_12(ctx) {
 }
 function create_if_block_11(ctx) {
   let div;
-  let label;
+  let span;
   let t1;
   let input;
   let input_value_value;
@@ -37355,11 +37353,11 @@ function create_if_block_11(ctx) {
   return {
     c() {
       div = element("div");
-      label = element("label");
-      label.textContent = "Path";
+      span = element("span");
+      span.textContent = "Path";
       t1 = space();
       input = element("input");
-      attr(label, "class", "fx-field-label");
+      attr(span, "class", "fx-field-label");
       attr(input, "type", "text");
       input.value = input_value_value = /*fxConfig*/
       ctx[2].aura.loop.sequencerPath;
@@ -37368,7 +37366,7 @@ function create_if_block_11(ctx) {
     },
     m(target, anchor) {
       insert(target, div, anchor);
-      append(div, label);
+      append(div, span);
       append(div, t1);
       append(div, input);
       if (!mounted) {
@@ -37402,7 +37400,7 @@ function create_if_block_6(ctx) {
   let span0;
   let t1;
   let div0;
-  let label0;
+  let span1;
   let t3;
   let select0;
   let option0;
@@ -37416,10 +37414,10 @@ function create_if_block_6(ctx) {
   let t7;
   let t8;
   let div3;
-  let span1;
+  let span2;
   let t10;
   let div2;
-  let label1;
+  let span3;
   let t12;
   let select1;
   let option2;
@@ -37433,12 +37431,12 @@ function create_if_block_6(ctx) {
   let t16;
   let t17;
   let div7;
-  let span2;
+  let span4;
   let t19;
   let p;
   let t21;
   let div4;
-  let label2;
+  let span5;
   let t23;
   let select2;
   let option4;
@@ -37452,7 +37450,7 @@ function create_if_block_6(ctx) {
   let t27;
   let t28;
   let div6;
-  let label3;
+  let span6;
   let t30;
   let div5;
   let input;
@@ -37485,8 +37483,8 @@ function create_if_block_6(ctx) {
       span0.innerHTML = `<i class="fas fa-play"></i> Intro Effect (optional)`;
       t1 = space();
       div0 = element("div");
-      label0 = element("label");
-      label0.textContent = "Source";
+      span1 = element("span");
+      span1.textContent = "Source";
       t3 = space();
       select0 = element("select");
       option0 = element("option");
@@ -37498,12 +37496,12 @@ function create_if_block_6(ctx) {
       if (if_block0) if_block0.c();
       t8 = space();
       div3 = element("div");
-      span1 = element("span");
-      span1.innerHTML = `<i class="fas fa-stop"></i> Outro Effect (optional)`;
+      span2 = element("span");
+      span2.innerHTML = `<i class="fas fa-stop"></i> Outro Effect (optional)`;
       t10 = space();
       div2 = element("div");
-      label1 = element("label");
-      label1.textContent = "Source";
+      span3 = element("span");
+      span3.textContent = "Source";
       t12 = space();
       select1 = element("select");
       option2 = element("option");
@@ -37515,15 +37513,15 @@ function create_if_block_6(ctx) {
       if (if_block1) if_block1.c();
       t17 = space();
       div7 = element("div");
-      span2 = element("span");
-      span2.innerHTML = `<i class="fas fa-explosion"></i> Overload Effect (optional)`;
+      span4 = element("span");
+      span4.innerHTML = `<i class="fas fa-explosion"></i> Overload Effect (optional)`;
       t19 = space();
       p = element("p");
       p.innerHTML = `<i class="fas fa-info-circle"></i> Dramatic shield collapse — falls back to outro if not set`;
       t21 = space();
       div4 = element("div");
-      label2 = element("label");
-      label2.textContent = "Source";
+      span5 = element("span");
+      span5.textContent = "Source";
       t23 = space();
       select2 = element("select");
       option4 = element("option");
@@ -37535,8 +37533,8 @@ function create_if_block_6(ctx) {
       if (if_block2) if_block2.c();
       t28 = space();
       div6 = element("div");
-      label3 = element("label");
-      label3.textContent = "Sound";
+      span6 = element("span");
+      span6.textContent = "Sound";
       t30 = space();
       div5 = element("div");
       input = element("input");
@@ -37546,7 +37544,7 @@ function create_if_block_6(ctx) {
       t32 = space();
       if (if_block3) if_block3.c();
       attr(span0, "class", "fx-jam-label");
-      attr(label0, "class", "fx-field-label");
+      attr(span1, "class", "fx-field-label");
       option0.__value = "sequencer";
       set_input_value(option0, option0.__value);
       option0.disabled = option0_disabled_value = !/*sequencerAvailable*/
@@ -37555,8 +37553,8 @@ function create_if_block_6(ctx) {
       set_input_value(option1, option1.__value);
       attr(div0, "class", "fx-field-row");
       attr(div1, "class", "fx-aura-subsection");
-      attr(span1, "class", "fx-jam-label");
-      attr(label1, "class", "fx-field-label");
+      attr(span2, "class", "fx-jam-label");
+      attr(span3, "class", "fx-field-label");
       option2.__value = "sequencer";
       set_input_value(option2, option2.__value);
       option2.disabled = option2_disabled_value = !/*sequencerAvailable*/
@@ -37565,9 +37563,9 @@ function create_if_block_6(ctx) {
       set_input_value(option3, option3.__value);
       attr(div2, "class", "fx-field-row");
       attr(div3, "class", "fx-aura-subsection");
-      attr(span2, "class", "fx-jam-label");
+      attr(span4, "class", "fx-jam-label");
       attr(p, "class", "fx-hint");
-      attr(label2, "class", "fx-field-label");
+      attr(span5, "class", "fx-field-label");
       option4.__value = "sequencer";
       set_input_value(option4, option4.__value);
       option4.disabled = option4_disabled_value = !/*sequencerAvailable*/
@@ -37575,7 +37573,7 @@ function create_if_block_6(ctx) {
       option5.__value = "custom";
       set_input_value(option5, option5.__value);
       attr(div4, "class", "fx-field-row");
-      attr(label3, "class", "fx-field-label");
+      attr(span6, "class", "fx-field-label");
       attr(input, "type", "text");
       input.value = input_value_value = /*fxConfig*/
       ctx[2].aura.overloadSound.path;
@@ -37592,7 +37590,7 @@ function create_if_block_6(ctx) {
       append(div1, span0);
       append(div1, t1);
       append(div1, div0);
-      append(div0, label0);
+      append(div0, span1);
       append(div0, t3);
       append(div0, select0);
       append(select0, option0);
@@ -37608,10 +37606,10 @@ function create_if_block_6(ctx) {
       if (if_block0) if_block0.m(div1, null);
       insert(target, t8, anchor);
       insert(target, div3, anchor);
-      append(div3, span1);
+      append(div3, span2);
       append(div3, t10);
       append(div3, div2);
-      append(div2, label1);
+      append(div2, span3);
       append(div2, t12);
       append(div2, select1);
       append(select1, option2);
@@ -37627,12 +37625,12 @@ function create_if_block_6(ctx) {
       if (if_block1) if_block1.m(div3, null);
       insert(target, t17, anchor);
       insert(target, div7, anchor);
-      append(div7, span2);
+      append(div7, span4);
       append(div7, t19);
       append(div7, p);
       append(div7, t21);
       append(div7, div4);
-      append(div4, label2);
+      append(div4, span5);
       append(div4, t23);
       append(div4, select2);
       append(select2, option4);
@@ -37648,7 +37646,7 @@ function create_if_block_6(ctx) {
       if (if_block2) if_block2.m(div7, null);
       append(div7, t28);
       append(div7, div6);
-      append(div6, label3);
+      append(div6, span6);
       append(div6, t30);
       append(div6, div5);
       append(div5, input);
@@ -37823,7 +37821,7 @@ function create_if_block_6(ctx) {
 }
 function create_if_block_10(ctx) {
   let div;
-  let label;
+  let span;
   let t1;
   let input;
   let input_value_value;
@@ -37832,11 +37830,11 @@ function create_if_block_10(ctx) {
   return {
     c() {
       div = element("div");
-      label = element("label");
-      label.textContent = "Path";
+      span = element("span");
+      span.textContent = "Path";
       t1 = space();
       input = element("input");
-      attr(label, "class", "fx-field-label");
+      attr(span, "class", "fx-field-label");
       attr(input, "type", "text");
       input.value = input_value_value = /*fxConfig*/
       ctx[2].aura.intro.sequencerPath;
@@ -37845,7 +37843,7 @@ function create_if_block_10(ctx) {
     },
     m(target, anchor) {
       insert(target, div, anchor);
-      append(div, label);
+      append(div, span);
       append(div, t1);
       append(div, input);
       if (!mounted) {
@@ -37876,7 +37874,7 @@ function create_if_block_10(ctx) {
 }
 function create_if_block_9(ctx) {
   let div;
-  let label;
+  let span;
   let t1;
   let input;
   let input_value_value;
@@ -37885,11 +37883,11 @@ function create_if_block_9(ctx) {
   return {
     c() {
       div = element("div");
-      label = element("label");
-      label.textContent = "Path";
+      span = element("span");
+      span.textContent = "Path";
       t1 = space();
       input = element("input");
-      attr(label, "class", "fx-field-label");
+      attr(span, "class", "fx-field-label");
       attr(input, "type", "text");
       input.value = input_value_value = /*fxConfig*/
       ctx[2].aura.outro.sequencerPath;
@@ -37898,7 +37896,7 @@ function create_if_block_9(ctx) {
     },
     m(target, anchor) {
       insert(target, div, anchor);
-      append(div, label);
+      append(div, span);
       append(div, t1);
       append(div, input);
       if (!mounted) {
@@ -37929,7 +37927,7 @@ function create_if_block_9(ctx) {
 }
 function create_if_block_8(ctx) {
   let div;
-  let label;
+  let span;
   let t1;
   let input;
   let input_value_value;
@@ -37938,11 +37936,11 @@ function create_if_block_8(ctx) {
   return {
     c() {
       div = element("div");
-      label = element("label");
-      label.textContent = "Path";
+      span = element("span");
+      span.textContent = "Path";
       t1 = space();
       input = element("input");
-      attr(label, "class", "fx-field-label");
+      attr(span, "class", "fx-field-label");
       attr(input, "type", "text");
       input.value = input_value_value = /*fxConfig*/
       ctx[2].aura.overloadEffect.sequencerPath;
@@ -37951,7 +37949,7 @@ function create_if_block_8(ctx) {
     },
     m(target, anchor) {
       insert(target, div, anchor);
-      append(div, label);
+      append(div, span);
       append(div, t1);
       append(div, input);
       if (!mounted) {
@@ -38015,7 +38013,7 @@ function create_if_block_7(ctx) {
 }
 function create_if_block_3(ctx) {
   let div1;
-  let label0;
+  let span0;
   let t1;
   let div0;
   let input0;
@@ -38025,7 +38023,7 @@ function create_if_block_3(ctx) {
   let t3;
   let t4;
   let div3;
-  let label1;
+  let span1;
   let t6;
   let div2;
   let input1;
@@ -38046,8 +38044,8 @@ function create_if_block_3(ctx) {
   return {
     c() {
       div1 = element("div");
-      label0 = element("label");
-      label0.textContent = "Activate Sound";
+      span0 = element("span");
+      span0.textContent = "Activate Sound";
       t1 = space();
       div0 = element("div");
       input0 = element("input");
@@ -38058,8 +38056,8 @@ function create_if_block_3(ctx) {
       if (if_block0) if_block0.c();
       t4 = space();
       div3 = element("div");
-      label1 = element("label");
-      label1.textContent = "Deactivate Sound";
+      span1 = element("span");
+      span1.textContent = "Deactivate Sound";
       t6 = space();
       div2 = element("div");
       input1 = element("input");
@@ -38068,7 +38066,7 @@ function create_if_block_3(ctx) {
       button1.innerHTML = `<i class="fas fa-file"></i>`;
       t8 = space();
       if (if_block1) if_block1.c();
-      attr(label0, "class", "fx-field-label");
+      attr(span0, "class", "fx-field-label");
       attr(input0, "type", "text");
       input0.value = input0_value_value = /*fxConfig*/
       ctx[2].aura.activateSound.path;
@@ -38077,7 +38075,7 @@ function create_if_block_3(ctx) {
       attr(button0, "class", "fx-btn-small");
       attr(div0, "class", "fx-file-picker-row");
       attr(div1, "class", "fx-field-row");
-      attr(label1, "class", "fx-field-label");
+      attr(span1, "class", "fx-field-label");
       attr(input1, "type", "text");
       input1.value = input1_value_value = /*fxConfig*/
       ctx[2].aura.deactivateSound.path;
@@ -38089,7 +38087,7 @@ function create_if_block_3(ctx) {
     },
     m(target, anchor) {
       insert(target, div1, anchor);
-      append(div1, label0);
+      append(div1, span0);
       append(div1, t1);
       append(div1, div0);
       append(div0, input0);
@@ -38099,7 +38097,7 @@ function create_if_block_3(ctx) {
       if (if_block0) if_block0.m(div0, null);
       insert(target, t4, anchor);
       insert(target, div3, anchor);
-      append(div3, label1);
+      append(div3, span1);
       append(div3, t6);
       append(div3, div2);
       append(div2, input1);

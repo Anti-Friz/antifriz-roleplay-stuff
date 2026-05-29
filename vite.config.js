@@ -50,7 +50,12 @@ export default ({ mode }) =>
 
       css: {
          // Creates a standard configuration for PostCSS with autoprefixer & postcss-preset-env.
-         postcss: postcssConfig({ compress: s_COMPRESS, sourceMap: s_SOURCEMAPS })
+         postcss: postcssConfig({ compress: s_COMPRESS, sourceMap: s_SOURCEMAPS }),
+         preprocessorOptions: {
+            scss: {
+               api: 'modern'
+            }
+         }
       },
 
       // About server options:

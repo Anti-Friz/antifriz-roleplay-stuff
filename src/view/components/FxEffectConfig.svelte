@@ -5,7 +5,7 @@
     * Supports Sequencer DB path, custom file, and builtin type selection.
     */
    import { createEventDispatcher } from 'svelte';
-   import { openAudioPicker, getFilenameFromPath } from '#utils';
+   import { openImageVideoPicker } from '#utils';
 
    export let title = 'Effect';
    export let config = {};
@@ -64,17 +64,9 @@
    }
 
    function pickCustomFile() {
-      // Video/image picker for .webm effect files
-      const picker = new FilePicker({
-         type: 'imagevideo',
-         current: config.customFile || '',
-         callback: (path) => {
-            if (path) {
-               update('customFile', path);
-            }
-         }
-      });
-      picker.render(true);
+      openImageVideoPicker((path) => {
+         if (path) update('customFile', path);
+      }, config.customFile || '');
    }
 </script>
 
@@ -90,7 +82,7 @@
    {#if config.enabled}
       <!-- Source selector -->
       <div class="fx-field-row">
-         <label class="fx-field-label">Source</label>
+         <span class="fx-field-label">Source</span>
          <select value={config.source} on:change={(e) => update('source', e.target.value)}>
             {#each SOURCES as src}
                <option value={src.value} disabled={src.value === 'sequencer' && !sequencerAvailable}>
@@ -103,7 +95,7 @@
       <!-- Sequencer DB path -->
       {#if config.source === 'sequencer'}
          <div class="fx-field-row">
-            <label class="fx-field-label">Path</label>
+            <span class="fx-field-label">Path</span>
             <input type="text" value={config.sequencerPath}
                    placeholder="e.g. jb2a.bullet.snipe.blue"
                    on:change={(e) => update('sequencerPath', e.target.value)} />
@@ -119,7 +111,7 @@
       <!-- Custom file -->
       {#if config.source === 'custom'}
          <div class="fx-field-row">
-            <label class="fx-field-label">File</label>
+            <span class="fx-field-label">File</span>
             <div class="fx-file-picker-row">
                <input type="text" value={config.customFile} readonly
                       placeholder="Select a .webm file" />
@@ -133,7 +125,7 @@
       <!-- Builtin type -->
       {#if config.source === 'builtin'}
          <div class="fx-field-row">
-            <label class="fx-field-label">Type</label>
+            <span class="fx-field-label">Type</span>
             <select value={config.builtinType} on:change={(e) => update('builtinType', e.target.value)}>
                {#each builtinTypes as bt}
                   <option value={bt.value}>{bt.label}</option>
@@ -141,7 +133,7 @@
             </select>
          </div>
          <div class="fx-field-row">
-            <label class="fx-field-label">Color</label>
+            <span class="fx-field-label">Color</span>
             <input type="color" value={config.color}
                    on:change={(e) => update('color', e.target.value)} />
          </div>
@@ -149,7 +141,7 @@
 
       <!-- Scale -->
       <div class="fx-field-row">
-         <label class="fx-field-label">Scale</label>
+         <span class="fx-field-label">Scale</span>
          <input type="number" min="0.1" max="5" step="0.1" value={config.scale}
                 on:change={(e) => updateNumber('scale', e.target.value)} />
       </div>
@@ -157,7 +149,7 @@
       <!-- Speed (projectile only) -->
       {#if showSpeed}
          <div class="fx-field-row">
-            <label class="fx-field-label">Speed</label>
+            <span class="fx-field-label">Speed</span>
             <input type="number" min="0.1" max="5" step="0.1" value={config.speed}
                    on:change={(e) => updateNumber('speed', e.target.value)} />
          </div>
@@ -175,7 +167,7 @@
       <!-- Travel Mode (projectile only) -->
       {#if showTravelMode}
          <div class="fx-field-row">
-            <label class="fx-field-label">Travel</label>
+            <span class="fx-field-label">Travel</span>
             <select value={config.travelMode ?? 'beam'} on:change={(e) => update('travelMode', e.target.value)}>
                {#each TRAVEL_MODES as tm}
                   <option value={tm.value}>{tm.label}</option>
@@ -191,7 +183,7 @@
       <!-- Scatter (projectile destination spread) -->
       {#if showScatter}
          <div class="fx-field-row">
-            <label class="fx-field-label">Scatter</label>
+            <span class="fx-field-label">Scatter</span>
             <input type="range" min="0" max="1" step="0.05"
                    value={config.scatter ?? 0.3}
                    on:input={(e) => updateNumber('scatter', e.target.value)} />

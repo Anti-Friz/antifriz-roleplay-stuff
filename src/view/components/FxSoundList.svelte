@@ -5,7 +5,7 @@
     * Dispatches events to parent for persistence.
     */
    import { createEventDispatcher } from 'svelte';
-   import { openAudioPicker, getFilenameFromPath } from '#utils';
+   import { browseFiles, openAudioPicker, getFilenameFromPath } from '#utils';
 
    export let sounds = [];
    export let soundMode = 'random';
@@ -38,45 +38,41 @@
 
    function addSoundsFromFolder() {
       // User picks ANY audio file — we import ALL audio files from that file's folder
-      const picker = new FilePicker({
-         type: 'audio',
-         callback: async (path) => {
-            if (!path) return;
-            const dir = path.substring(0, path.lastIndexOf('/'));
-            if (!dir) return;
+      openAudioPicker(async (path) => {
+         if (!path) return;
+         const dir = path.substring(0, path.lastIndexOf('/'));
+         if (!dir) return;
 
-            try {
-               const result = await FilePicker.browse('data', dir);
-               const audioFiles = (result.files ?? []).filter(f =>
-                  /\.(ogg|mp3|wav|flac|webm|m4a)$/i.test(f)
-               );
-               if (audioFiles.length === 0) {
-                  ui.notifications.warn('No audio files found in that folder.');
-                  return;
-               }
-               const existingPaths = new Set(sounds.map(s => s.path));
-               const newSounds = audioFiles
-                  .filter(f => !existingPaths.has(f))
-                  .map(f => ({
-                     id: foundry.utils.randomID(),
-                     path: f,
-                     name: getFilenameFromPath(f),
-                     volume: 0.8,
-                     weight: 1
-                  }));
-               if (newSounds.length > 0) {
-                  dispatch('soundsChanged', { sounds: [...sounds, ...newSounds] });
-                  ui.notifications.info(`Added ${newSounds.length} sound(s) from folder`);
-               } else {
-                  ui.notifications.info('All files from that folder are already added.');
-               }
-            } catch (err) {
-               console.warn('[ARS] Failed to browse folder for sounds:', err);
-               ui.notifications.error('Failed to read folder contents.');
+         try {
+            const result = await browseFiles('data', dir);
+            const audioFiles = (result.files ?? []).filter(f =>
+               /\.(ogg|mp3|wav|flac|webm|m4a)$/i.test(f)
+            );
+            if (audioFiles.length === 0) {
+               ui.notifications.warn('No audio files found in that folder.');
+               return;
             }
+            const existingPaths = new Set(sounds.map(s => s.path));
+            const newSounds = audioFiles
+               .filter(f => !existingPaths.has(f))
+               .map(f => ({
+                  id: foundry.utils.randomID(),
+                  path: f,
+                  name: getFilenameFromPath(f),
+                  volume: 0.8,
+                  weight: 1
+               }));
+            if (newSounds.length > 0) {
+               dispatch('soundsChanged', { sounds: [...sounds, ...newSounds] });
+               ui.notifications.info(`Added ${newSounds.length} sound(s) from folder`);
+            } else {
+               ui.notifications.info('All files from that folder are already added.');
+            }
+         } catch (err) {
+            console.warn('[ARS] Failed to browse folder for sounds:', err);
+            ui.notifications.error('Failed to read folder contents.');
          }
       });
-      picker.render(true);
    }
 
    function removeSound(id) {
@@ -118,6 +114,10 @@
    function cancelEditVolume() {
       editingVolumeId = null;
    }
+
+   function focusOnMount(node) {
+      node.focus();
+   }
 </script>
 
 <div class="fx-sound-list">
@@ -142,7 +142,7 @@
                          if (e.key === 'Enter') commitEditVolume(sound.id);
                          if (e.key === 'Escape') cancelEditVolume();
                       }}
-                      autofocus />
+                      use:focusOnMount />
             {:else}
                <!-- svelte-ignore a11y-no-static-element-interactions -->
                <span class="fx-sound-volume-label" on:dblclick={() => startEditVolume(sound)}
