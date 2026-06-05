@@ -33,6 +33,7 @@
 ```
 
 **Що робить:**
+
 1. Інкрементує patch версію (0.0.1 → 0.0.2)
 2. Оновлює `module.json`
 3. Створює commit і tag
@@ -40,6 +41,7 @@
 5. Створює `module.zip`
 
 **Після виконання:**
+
 - Версія оновлена і запушена ✅
 - Архів готовий ✅
 - GitHub release можна створити окремо
@@ -53,10 +55,12 @@
 ```
 
 **Вимоги:**
+
 - Встановлений [GitHub CLI](https://cli.github.com/)
 - Авторизація: `gh auth login`
 
 **Що робить:**
+
 1. Все з базового варіанту
 2. **Пушить зміни**
 3. Створює GitHub Release
@@ -112,7 +116,7 @@ $notes = @"
 ### Параметри
 
 | Параметр | Тип | Опис |
-|----------|-----|------|
+| ---------- | ----- | ------ |
 | `-NoVersionBump` | switch | Не інкрементувати версію |
 | `-CreateGitHubRelease` | switch | Створити GitHub Release |
 | `-ReleaseNotes` | string | Кастомні release notes (markdown) |
@@ -123,11 +127,13 @@ $notes = @"
 ### Встановлення GitHub CLI (опціонально)
 
 #### Windows
+
 ```powershell
 winget install GitHub.cli
 ```
 
 #### Авторизація
+
 ```powershell
 gh auth login
 ```
@@ -168,25 +174,32 @@ git commit -m "feat: додав нову фічу"
 ### Troubleshooting
 
 #### "GitHub CLI (gh) not found"
+
 ```powershell
 winget install GitHub.cli
 ```
 
 #### "Not authenticated with GitHub CLI"
+
 ```powershell
 gh auth login
 ```
 
 #### "Version format should be X.Y.Z"
+
 Переконайся що в `module.json` версія має формат `"version": "0.0.1"` (3 числа через крапку).
 
 #### "You have uncommitted changes"
+
 Скрипт знайшов незакомічені файли (крім `module.json`). Можеш:
+
 - Закомітити їх: `git add . && git commit -m "..."`
 - Або продовжити реліз з ними (скрипт запитає підтвердження)
 
 #### "Error pushing to remote"
+
 Перевір інтернет з'єднання та доступ до GitHub. Можна запушити вручну:
+
 ```powershell
 git push && git push --tags
 ```
@@ -196,6 +209,7 @@ git push && git push --tags
 ### Приклади
 
 #### Швидкий патч
+
 ```powershell
 # Виправив баг, хочу швидко випустити patch
 .\scripts\build-release.ps1
@@ -205,12 +219,14 @@ git push && git push --tags
 ```
 
 #### Повний автоматичний реліз
+
 ```powershell
 # Все одразу: версія, push, архів, GitHub Release
 .\scripts\build-release.ps1 -CreateGitHubRelease -ReleaseNotes "🐛 Hotfix: виправлено критичний баг"
 ```
 
 #### Перевірка перед релізом
+
 ```powershell
 # Створити все локально без push
 .\scripts\build-release.ps1 -SkipPush
@@ -220,6 +236,7 @@ git push && git push --tags
 ```
 
 #### Тільки архів (версію вже оновив вручну)
+
 ```powershell
 .\scripts\build-release.ps1 -NoVersionBump
 ```
@@ -235,4 +252,3 @@ git push && git push --tags
 3. **Автоматичне оновлення download URL**: Якщо `download` в `module.json` містить версію (наприклад `/v0.0.1/`), вона автоматично оновиться.
 
 4. **Безпека**: З `-SkipPush` можна перевірити все локально перед публікацією.
-

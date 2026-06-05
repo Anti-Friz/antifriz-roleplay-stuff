@@ -70,7 +70,7 @@ export class WeaponFxApp extends SvelteApp {
             class: WeaponFxShell,
             target: document.body,
             intro: true,
-            props: function() {
+            props: () => {
                return {
                   tjsDoc: this.#tjsDoc
                };
