@@ -30,20 +30,25 @@ Hooks.once('ready', async function () {
 });
 
 // ========================================
-// AppV1 Header Buttons (Legacy / v12 and prior)
+// AppV1 Header Buttons (core sheets + TRL SvelteApp)
 // ========================================
-Hooks.on('getActorSheetHeaderButtons', (sheet, buttons) => {
-   utils.injectActorHeaderButtons(sheet, buttons);
+// `getApplicationHeaderButtons` fires for every ApplicationV1 in the inheritance
+// chain — core ActorSheet/ItemSheet AND TRL SvelteApp sheets (e.g. the FFG item
+// sheet) — whereas `get{Actor,Item}SheetHeaderButtons` only fire for core sheet
+// subclasses, so TRL-based sheets never received buttons.
+Hooks.on('getApplicationHeaderButtons', (app, buttons) => {
+   const doc = app?.document;
+   // Only a document's own sheet; skips helper apps that also expose `document`.
+   if (!(doc instanceof foundry.abstract.Document) || doc.sheet !== app) return;
+
+   if (doc instanceof Actor) utils.injectActorHeaderButtons(app, buttons);
+   else if (doc instanceof Item) utils.injectItemHeaderButtons(app, buttons);
 });
 
-Hooks.on('getItemSheetHeaderButtons', (sheet, buttons) => {
-   utils.injectItemHeaderButtons(sheet, buttons);
-});
-
 // ========================================
-// AppV2 Header Buttons (Foundry v12+ DocumentSheetV2)
+// AppV2 Header Controls (ApplicationV2 / DocumentSheetV2)
 // ========================================
-Hooks.on('renderDocumentSheetV2', (app, el) => {
-   utils.injectDocumentSheetV2Buttons(app, el);
+Hooks.on('getHeaderControlsApplicationV2', (app, controls) => {
+   utils.injectHeaderControlsV2(app, controls);
 });
 

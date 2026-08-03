@@ -2,9 +2,6 @@
 
 ## Project Overview
 This is a Foundry VTT module built with:
-- **TyphonJS Runtime Library (TRL)** for Svelte integration
-- **Svelte 4** for reactive UI components
-- **Vite** for bundling
 - **ES Modules** (ESM) architecture
 
 ## General Foundry API Routing
@@ -16,6 +13,8 @@ For broad requests that may not name a specific file, route manually to the user
 - Requests involving hooks, lifecycle events, render hooks, AppV2 header hooks, document hooks, or canvas hooks: load `foundry-v13-hooks`.
 - Requests involving ApplicationV2, DocumentSheetV2, DialogV2, FilePicker, ImagePopout, TextEditor, ContextMenu, or Foundry UI: load `foundry-v13-applications-ui`.
 - If a request also involves TRL/Svelte integration, load the relevant `trl-*` skill after confirming the Foundry API surface.
+- For real Foundry implementation patterns, refer to `c:\Users\Yaroslav\source\repos\Test_AI_things\Examples\FoundrySystemExamples`.
+- For module-specific implementation and code verification, refer to `d:\FoundryUserData\Data\modules\antifriz-roleplay-stuff`.
 
 ## Path Aliases (jsconfig.json)
 The project uses path aliases via `jsconfig.json`:
@@ -28,15 +27,6 @@ The project uses path aliases via `jsconfig.json`:
 - `#standard/*` → `@typhonjs-fvtt/standard/*`
 
 ## Import Patterns
-
-### TRL Runtime imports
-```javascript
-import { SvelteApp } from '#runtime/svelte/application';
-import { TJSGameSettings } from '#runtime/svelte/store/fvtt/settings';
-import { TJSDocument } from '#runtime/svelte/store/fvtt/document';
-import { ApplicationShell } from '#runtime/svelte/component/application';
-import { deepMerge } from '#runtime/util/object';
-```
 
 ### Internal module imports (use named exports)
 ```javascript
@@ -51,81 +41,6 @@ import { CharacterMusicShell, PortraitGalleryShell } from '#view';
 - **Flag namespace**: `antifriz-roleplay-stuff`
 - **Socket channel**: `module.antifriz-roleplay-stuff`
 
-## SvelteApp Pattern with TJSDocument
-Applications should use TJSDocument for reactive document handling:
-```javascript
-import { TJSDocument } from '#runtime/svelte/store/fvtt/document';
-
-export class MyApp extends SvelteApp {
-   #tjsDoc;
-
-   constructor(actor, options = {}) {
-      super(options);
-      this.#tjsDoc = new TJSDocument(actor);
-   }
-
-   static open(actor) {
-      // Prevent duplicate windows
-      const existingApp = Object.values(ui.windows).find(
-         w => w instanceof MyApp && w.actor?.id === actor.id
-      );
-      if (existingApp) {
-         existingApp.render(true, { focus: true });
-         return existingApp;
-      }
-
-      const app = new this(actor);
-      app.render(true);
-      return app;
-   }
-
-   static get defaultOptions() {
-      return deepMerge(super.defaultOptions, {
-         id: 'my-app-{id}',
-         classes: ['antifriz-roleplay-stuff', 'my-app'],
-         svelte: {
-            class: MyShell,
-            props: function() {
-               return { tjsDoc: this.#tjsDoc };
-            }
-         }
-      });
-   }
-
-   get actor() {
-      return this.#tjsDoc.get();
-   }
-}
-```
-
-## Svelte Shell Components with TJSDocument
-Required exports for TRL ApplicationShell:
-```svelte
-<svelte:options accessors={true}/>
-
-<script>
-   import { getContext } from 'svelte';
-   import { ApplicationShell } from '#runtime/svelte/component/application';
-   import { MODULE_ID } from '#config';
-
-   export let elementRoot = void 0;
-   export let tjsDoc = null;
-
-   // Access application context
-   const external = getContext('#external');
-   const application = external?.application;
-
-   // Reactive actor from TJSDocument store
-   $: actor = tjsDoc ? $tjsDoc : null;
-
-   // Use MODULE_ID constant for flags
-   $: data = actor?.getFlag(MODULE_ID, 'flagKey') ?? {};
-</script>
-
-<ApplicationShell bind:elementRoot>
-   <!-- content -->
-</ApplicationShell>
-```
 
 ## CSS/SCSS Structure
 Styles are organized in `src/styles/components/`:
@@ -143,28 +58,6 @@ Use CSS variables for theming:
 }
 ```
 
-## Foundry VTT v13 APIs
-Use namespaced APIs for v13:
-```javascript
-// FilePicker
-new foundry.applications.apps.FilePicker.implementation({ ... })
-
-// ImagePopout
-new foundry.applications.apps.ImagePopout({ src, window: { title } })
-
-// Random ID
-foundry.utils.randomID()
-```
-
-
-## Actor Flags Usage
-```javascript
-// Get flag
-actor.getFlag('antifriz-roleplay-stuff', 'flagKey')
-
-// Set flag
-await actor.setFlag('antifriz-roleplay-stuff', 'flagKey', value)
-```
 
 ## File Structure
 ```

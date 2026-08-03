@@ -65,101 +65,78 @@ export function injectItemHeaderButtons(sheet, buttons) {
          class: 'antifriz-fx-menu-btn',
          icon: 'fas fa-wand-magic-sparkles',
          onclick: function(e) {
-            _showFxDropdown(e, doc);
+            // Core V1 passes a DOM event; TRL SvelteApp passes { button, event }.
+            _showFxDropdown(e?.event ?? e, doc);
          }
       });
    }
 }
 
 // ========================================
-// AppV2 Header Buttons (Foundry v12+ DocumentSheetV2)
+// AppV2 Header Controls (ApplicationV2 / DocumentSheetV2)
 // ========================================
 
 /**
- * Inject header buttons for DocumentSheetV2 (Actor/Item)
- * @param {ApplicationV2} app - The application
- * @param {HTMLElement} el - The element
+ * Inject header controls for ApplicationV2 actor/item sheets.
+ *
+ * V2 analogue of the `getActorSheetHeaderButtons` / `getItemSheetHeaderButtons`
+ * hooks: instead of touching the DOM in a render hook, we push entries into the
+ * `controls` array supplied by the `getHeaderControlsApplicationV2` hook. Foundry
+ * renders them as items in the window-header controls menu. The `{ icon, label,
+ * action, onClick }` shape works on both Foundry v13 and v14.
+ *
+ * @param {foundry.applications.api.ApplicationV2} app - The application being rendered
+ * @param {object[]} controls - The header control entries to append to
  */
-export function injectDocumentSheetV2Buttons(app, el) {
-   // Check if this is ApplicationV2
-   if (!(app instanceof foundry.applications.api.ApplicationV2)) return;
-   
-   const doc = app.document;
-   if (!doc) return;
-   
-   // Determine if Actor or Item and get settings
+export function injectHeaderControlsV2(app, controls) {
+   const doc = app?.document;
+   if (!(doc instanceof foundry.abstract.Document)) return;
+
    const isActor = doc instanceof Actor;
    const isItem = doc instanceof Item;
-   
    if (!isActor && !isItem) return;
-   
-   const showGallery = isActor 
+
+   const showGallery = isActor
       ? game.settings.get(MODULE_ID, 'showGalleryButton')
       : game.settings.get(MODULE_ID, 'showItemGalleryButton');
    const showMusic = isActor
       ? game.settings.get(MODULE_ID, 'showMusicButton')
       : game.settings.get(MODULE_ID, 'showItemMusicButton');
-   
-   if (!showGallery && !showMusic && !(isItem && game.settings.get(MODULE_ID, 'enableWeaponFx'))) return;
 
-   // Get the element
-   let html = el;
-   if (html instanceof jQuery) html = html[0];
-   
-   const header = html.querySelector('header.window-header');
-   if (!header) return;
-   
-   // Find reference element (copyUuid button or close button)
-   const refElement = header.querySelector('button[data-action="copyUuid"]') 
-      || header.querySelector('button[data-action="close"]')
-      || header.querySelector('.window-title');
-   
-   if (!refElement) return;
-   
-   // Add Music button
-   if (showMusic && !header.querySelector('button[data-action="antifriz-music"]')) {
-      const musicBtn = document.createElement('button');
-      musicBtn.type = 'button';
-      musicBtn.dataset.action = 'antifriz-music';
-      musicBtn.dataset.tooltip = 'Music';
-      musicBtn.classList.add('header-control', 'fas', 'fa-music', 'icon');
-      musicBtn.addEventListener('click', (e) => {
-         e.preventDefault();
-         e.stopPropagation();
-         CharacterMusicApp.open(doc);
+   if (showMusic) {
+      controls.push({
+         icon: 'fas fa-music',
+         label: 'Music',
+         action: 'antifrizMusic',
+         onClick: () => CharacterMusicApp.open(doc)
       });
-      refElement.before(musicBtn);
-   }
-   
-   // Add Gallery button
-   if (showGallery && !header.querySelector('button[data-action="antifriz-gallery"]')) {
-      const galleryBtn = document.createElement('button');
-      galleryBtn.type = 'button';
-      galleryBtn.dataset.action = 'antifriz-gallery';
-      galleryBtn.dataset.tooltip = 'Gallery';
-      galleryBtn.classList.add('header-control', 'fas', 'fa-photo-film', 'icon');
-      galleryBtn.addEventListener('click', (e) => {
-         e.preventDefault();
-         e.stopPropagation();
-         PortraitGalleryApp.open(doc);
-      });
-      refElement.before(galleryBtn);
    }
 
-   // Add FX dropdown button (items only, gated by world setting)
-   const showFx = isItem && game.settings.get(MODULE_ID, 'enableWeaponFx');
-   if (showFx && !header.querySelector('button[data-action="antifriz-fx-menu"]')) {
-      const fxBtn = document.createElement('button');
-      fxBtn.type = 'button';
-      fxBtn.dataset.action = 'antifriz-fx-menu';
-      fxBtn.dataset.tooltip = 'Effects';
-      fxBtn.classList.add('header-control', 'fas', 'fa-wand-magic-sparkles', 'icon');
-      fxBtn.addEventListener('click', (e) => {
-         e.preventDefault();
-         e.stopPropagation();
-         _showFxDropdown(e, doc);
+   if (showGallery) {
+      controls.push({
+         icon: 'fas fa-photo-film',
+         label: 'Gallery',
+         action: 'antifrizGallery',
+         onClick: () => PortraitGalleryApp.open(doc)
       });
-      refElement.before(fxBtn);
+   }
+
+   // Weapon FX + Defensive FX (items only, gated by world setting). The header
+   // controls already render as a menu, so add each option directly rather than
+   // opening the nested dropdown used by the AppV1 path.
+   if (isItem && game.settings.get(MODULE_ID, 'enableWeaponFx')) {
+      controls.push({
+         icon: 'fas fa-burst',
+         label: 'Weapon FX',
+         action: 'antifrizWeaponFx',
+         onClick: () => WeaponFxApp.open(doc)
+      });
+      controls.push({
+         icon: 'fas fa-shield-halved',
+         label: 'Defensive FX',
+         action: 'antifrizDefensiveFx',
+         onClick: () => DefensiveFxApp.open(doc)
+      });
    }
 }
 
