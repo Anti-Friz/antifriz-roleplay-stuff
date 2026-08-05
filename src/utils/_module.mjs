@@ -17,3 +17,4 @@ export * from './fxRendererBuiltin.mjs';
 export * from './fxTriggerManager.mjs';
 export * from './defensiveFxService.mjs';
 export * from './fxImportExport.mjs';
+export * from './tokenCounters/_module.mjs';

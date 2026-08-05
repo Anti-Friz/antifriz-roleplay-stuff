@@ -14,6 +14,7 @@ const LOG_PREFIX = constants.moduleLabel;
 Hooks.once('init', async function () {
    hooks.registerSettings();
    hooks.registerPerceivedImageHooks();
+   hooks.registerTokenCounterHooks();
 });
 
 Hooks.once('ready', async function () {
@@ -24,6 +25,17 @@ Hooks.once('ready', async function () {
    if (fxEnabled) {
       utils.initFxTriggerManager();
       console.log(`${LOG_PREFIX} | Weapon FX subsystem enabled`);
+   }
+
+   // Conditionally initialize Token Counters subsystem
+   if (game.settings.get(MODULE_ID, 'enableTokenCounters')) {
+      hooks.initTokenCounters();
+   }
+
+   // Expose the module public API for macros and other modules
+   const mod = game.modules.get(MODULE_ID);
+   if (mod) {
+      mod.api = { ...(mod.api ?? {}), tokenCounters: utils.createTokenCountersApi() };
    }
 
    console.log(`${LOG_PREFIX} | Ready`);

@@ -1,6 +1,7 @@
 import { TJSGameSettings } from '#runtime/svelte/store/fvtt/settings';
 import { MODULE_ID, DEFAULT_MUSIC_CATEGORIES } from '#config';
 import { MusicCategoriesApp, HeaderButtonsApp } from '#applications';
+import { refreshAllTokenCounters } from '../canvas/TokenCounterOverlay.mjs';
 
 /**
  * TJSGameSettings instance for reactive Foundry settings
@@ -33,6 +34,29 @@ function _registerWorldSettings() {
       onChange: () => {
          Object.values(ui.windows).forEach(w => w.render?.());
       }
+   });
+
+   // Token Counters subsystem master switch (GM only)
+   game.settings.register(MODULE_ID, 'enableTokenCounters', {
+      name: 'SETTINGS.enableTokenCounters.Name',
+      hint: 'SETTINGS.enableTokenCounters.Hint',
+      scope: 'world',
+      config: true,
+      type: Boolean,
+      default: false,
+      restricted: true,
+      onChange: () => {
+         Object.values(ui.windows).forEach(w => w.render?.());
+         refreshAllTokenCounters();
+      }
+   });
+
+   // Token-counter preset library (hidden; managed via the config app)
+   game.settings.register(MODULE_ID, 'tokenCounterPresets', {
+      scope: 'world',
+      config: false,
+      type: Array,
+      default: []
    });
 
    // Music categories (world setting, GM only)
@@ -118,6 +142,14 @@ function _registerClientSettings() {
    });
 
    game.settings.register(MODULE_ID, 'showItemGalleryButton', {
+      scope: 'client',
+      config: false,
+      type: Boolean,
+      default: true
+   });
+
+   // Show the Token Counters config button on actor sheet headers
+   game.settings.register(MODULE_ID, 'showTokenCountersButton', {
       scope: 'client',
       config: false,
       type: Boolean,

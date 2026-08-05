@@ -8,6 +8,12 @@ export * as moduleConfig from './module.mjs';
 export { constants, DEFAULT_IMAGES } from './module.mjs';
 export { WEAPON_FX_PRESETS, getPresetCategories, getPresetsByCategory, getPresetById } from './weaponFxPresets.mjs';
 
+export * as tokenCountersConfig from './tokenCounters.mjs';
+export {
+   TC_FLAGS, COUNTER_TYPES, SHAPES, FILL_MODES, VISIBILITY,
+   HUD_MODES, VISIBLE_WHEN, ELEMENT_TYPES, COUNTER_DEFAULTS
+} from './tokenCounters.mjs';
+
 export const MODULE_ID = constants.moduleId;
 export const MODULE_LABEL = constants.moduleLabel;
 

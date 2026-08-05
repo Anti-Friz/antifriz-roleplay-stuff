@@ -12,6 +12,10 @@
       "Name": "Debug Mode",
       "Hint": "Enable debug logging to the browser console"
     },
+    "enableTokenCounters": {
+      "Name": "Enable Token Counters",
+      "Hint": "Enable the Token Counters subsystem: configurable counters and macro buttons drawn around tokens. Adds a configuration button to actor sheet headers."
+    },
     "musicCategories": {
       "Name": "Music Categories",
       "Hint": "Custom categories for organizing music tracks"

@@ -49,6 +49,9 @@ export const settings = {
    showItemMusicButton: 'showItemMusicButton',
    showItemGalleryButton: 'showItemGalleryButton',
    enableWeaponFx: 'enableWeaponFx',
+   enableTokenCounters: 'enableTokenCounters',
+   showTokenCountersButton: 'showTokenCountersButton',
+   tokenCounterPresets: 'tokenCounterPresets',
    debugMode: 'debugMode'
 };
 
@@ -59,5 +62,8 @@ export const settings = {
  * @property {string} showItemMusicButton - Show music button on item sheets
  * @property {string} showItemGalleryButton - Show gallery button on item sheets
  * @property {string} enableWeaponFx - Enable Weapon FX subsystem (world, GM only)
+ * @property {string} enableTokenCounters - Enable Token Counters subsystem (world, GM only)
+ * @property {string} showTokenCountersButton - Show token-counters config button on actor sheets
+ * @property {string} tokenCounterPresets - Stored token-counter preset library (world)
  * @property {string} debugMode - Enable debug logging
  */

@@ -2694,6 +2694,55 @@ function getPresetCategories() {
 function getPresetsByCategory(category) {
   return WEAPON_FX_PRESETS.filter((p) => p.category === category);
 }
+const TC_FLAGS = Object.freeze({
+  definitions: "tokenCounters",
+  state: "tokenCounterState"
+});
+const COUNTER_TYPES = Object.freeze({
+  system: { id: "system", label: "TOKENCOUNTERS.type.system" },
+  turns: { id: "turns", label: "TOKENCOUNTERS.type.turns" },
+  manual: { id: "manual", label: "TOKENCOUNTERS.type.manual" },
+  script: { id: "script", label: "TOKENCOUNTERS.type.script" }
+});
+const SHAPES = Object.freeze({
+  ring: { id: "ring", label: "TOKENCOUNTERS.shape.ring" },
+  arc: { id: "arc", label: "TOKENCOUNTERS.shape.arc" },
+  circle: { id: "circle", label: "TOKENCOUNTERS.shape.circle" },
+  square: { id: "square", label: "TOKENCOUNTERS.shape.square" },
+  polygon: { id: "polygon", label: "TOKENCOUNTERS.shape.polygon" },
+  icon: { id: "icon", label: "TOKENCOUNTERS.shape.icon" }
+});
+const FILL_MODES = Object.freeze({
+  depleteClockwise: { id: "depleteClockwise", label: "TOKENCOUNTERS.fill.depleteClockwise" },
+  fillUp: { id: "fillUp", label: "TOKENCOUNTERS.fill.fillUp" },
+  fixed: { id: "fixed", label: "TOKENCOUNTERS.fill.fixed" }
+});
+const VISIBILITY = Object.freeze({
+  everyone: { id: "everyone", label: "TOKENCOUNTERS.visibility.everyone" },
+  owners: { id: "owners", label: "TOKENCOUNTERS.visibility.owners" },
+  gm: { id: "gm", label: "TOKENCOUNTERS.visibility.gm" }
+});
+const HUD_MODES = Object.freeze({
+  always: { id: "always", label: "TOKENCOUNTERS.hud.always" },
+  onSelect: { id: "onSelect", label: "TOKENCOUNTERS.hud.onSelect" },
+  onHover: { id: "onHover", label: "TOKENCOUNTERS.hud.onHover" }
+});
+const VISIBLE_WHEN = Object.freeze({
+  always: { id: "always", label: "TOKENCOUNTERS.visibleWhen.always" },
+  inCombat: { id: "inCombat", label: "TOKENCOUNTERS.visibleWhen.inCombat" },
+  valuePositive: { id: "valuePositive", label: "TOKENCOUNTERS.visibleWhen.valuePositive" }
+});
+const ELEMENT_TYPES = Object.freeze({
+  button: { id: "button", label: "TOKENCOUNTERS.element.button" },
+  dropdown: { id: "dropdown", label: "TOKENCOUNTERS.element.dropdown" }
+});
+const COUNTER_DEFAULTS = Object.freeze({
+  type: COUNTER_TYPES.manual.id,
+  shape: SHAPES.ring.id,
+  fillMode: FILL_MODES.depleteClockwise.id,
+  visibility: VISIBILITY.owners.id,
+  visibleWhen: VISIBLE_WHEN.always.id
+});
 const MODULE_ID = constants.moduleId;
 const MODULE_LABEL = constants.moduleLabel;
 const DEFAULT_MUSIC_CATEGORIES = [
@@ -9457,7 +9506,7 @@ async function nextAnimationFrame(cntr = 1) {
   }
   return currentTime;
 }
-function draggable(node, { position, enabled = true, button = 0, storeDragging = void 0, tween = false, tweenOptions = { duration: 1, ease: "cubicOut" }, hasTargetClassList, ignoreTargetClassList }) {
+function draggable(node, { position, enabled: enabled2 = true, button = 0, storeDragging = void 0, tween = false, tweenOptions = { duration: 1, ease: "cubicOut" }, hasTargetClassList, ignoreTargetClassList }) {
   if (hasTargetClassList !== void 0 && !isIterable(hasTargetClassList)) {
     throw new TypeError(`'hasTargetClassList' is not iterable.`);
   }
@@ -9488,7 +9537,7 @@ function draggable(node, { position, enabled = true, button = 0, storeDragging =
     node.removeEventListener(...handlers.dragUp);
     node.classList.remove("tjs-draggable");
   }
-  if (enabled) {
+  if (enabled2) {
     activateListeners();
   }
   function onDragPointerDown(event) {
@@ -9568,8 +9617,8 @@ function draggable(node, { position, enabled = true, button = 0, storeDragging =
         }
       }
       if (typeof options.enabled === "boolean") {
-        enabled = options.enabled;
-        if (enabled) {
+        enabled2 = options.enabled;
+        if (enabled2) {
           activateListeners();
         } else {
           removeListeners();
@@ -12948,12 +12997,12 @@ class SystemBase {
    *
    * @param [options.height] - Manual height.
    */
-  constructor({ constrain = true, element: element2, enabled = true, lock = false, width, height } = {}) {
+  constructor({ constrain = true, element: element2, enabled: enabled2 = true, lock = false, width, height } = {}) {
     this.#constrain = true;
     this.#enabled = true;
     this.constrain = constrain;
     this.element = element2;
-    this.enabled = enabled;
+    this.enabled = enabled2;
     this.width = width;
     this.height = height;
     this.#lock = typeof lock === "boolean" ? lock : false;
@@ -13024,14 +13073,14 @@ class SystemBase {
   /**
    * @param enabled - New enabled state.
    */
-  set enabled(enabled) {
+  set enabled(enabled2) {
     if (this.#lock) {
       return;
     }
-    if (typeof enabled !== "boolean") {
+    if (typeof enabled2 !== "boolean") {
       throw new TypeError(`'enabled' is not a boolean.`);
     }
-    this.#enabled = enabled;
+    this.#enabled = enabled2;
     this.#updateSubscribers();
   }
   /**
@@ -13176,11 +13225,11 @@ class AdapterValidators {
   /**
    * @param enabled - Sets enabled state.
    */
-  set enabled(enabled) {
-    if (typeof enabled !== "boolean") {
+  set enabled(enabled2) {
+    if (typeof enabled2 !== "boolean") {
       throw new TypeError(`'enabled' is not a boolean.`);
     }
-    this.#enabled = enabled;
+    this.#enabled = enabled2;
   }
   /**
    * Provides an iterator for validators.
@@ -14030,13 +14079,13 @@ class TJSPosition {
    *
    * @param enabled - Newly enabled state.
    */
-  set enabled(enabled) {
-    if (typeof enabled !== "boolean") {
+  set enabled(enabled2) {
+    if (typeof enabled2 !== "boolean") {
       throw new TypeError(`'enabled' is not a boolean.`);
     }
-    if (this.#enabled !== enabled) {
-      this.#enabled = enabled;
-      if (enabled) {
+    if (this.#enabled !== enabled2) {
+      this.#enabled = enabled2;
+      if (enabled2) {
         this.set(this.#data);
       }
     }
@@ -15496,8 +15545,8 @@ class AppShellContextInternal {
 }
 const DIMENSION_REGEX = /^([+-]?(?:\d+(?:\.\d+)?|\.\d+)(?:[eE][+-]?\d+)?)\s*([a-zA-Z%]+)?$/;
 function extractDimensionNumberAndUnit(dimension) {
-  const [, num, unit = ""] = dimension.trim().match(DIMENSION_REGEX) ?? [];
-  return { number: parseInt(num, 10), unit };
+  const [, num2, unit = ""] = dimension.trim().match(DIMENSION_REGEX) ?? [];
+  return { number: parseInt(num2, 10), unit };
 }
 function calculateNewDimensions(base, constraint) {
   const { width, height } = base;
@@ -17169,10 +17218,10 @@ function create_fragment$a(ctx) {
 }
 function instance$a($$self, $$props, $$invalidate) {
   let { elementRoot = void 0 } = $$props;
-  let { enabled = true } = $$props;
+  let { enabled: enabled2 = true } = $$props;
   let ignoreElements, wrapEl;
   function onFocus() {
-    if (!enabled) {
+    if (!enabled2) {
       return;
     }
     if (A11yHelper.isFocusTarget(elementRoot)) {
@@ -17192,7 +17241,7 @@ function instance$a($$self, $$props, $$invalidate) {
   }
   $$self.$$set = ($$props2) => {
     if ("elementRoot" in $$props2) $$invalidate(2, elementRoot = $$props2.elementRoot);
-    if ("enabled" in $$props2) $$invalidate(3, enabled = $$props2.enabled);
+    if ("enabled" in $$props2) $$invalidate(3, enabled2 = $$props2.enabled);
   };
   $$self.$$.update = () => {
     if ($$self.$$.dirty & /*wrapEl*/
@@ -17202,7 +17251,7 @@ function instance$a($$self, $$props, $$invalidate) {
       }
     }
   };
-  return [wrapEl, onFocus, elementRoot, enabled, div_binding];
+  return [wrapEl, onFocus, elementRoot, enabled2, div_binding];
 }
 class TJSFocusWrap extends SvelteComponent {
   constructor(options) {
@@ -18685,8 +18734,8 @@ class GetSvelteData {
     return this.#svelteData[0];
   }
 }
-function handleAlwaysOnTop(application, enabled, initialPopOut) {
-  if (typeof enabled !== "boolean") {
+function handleAlwaysOnTop(application, enabled2, initialPopOut) {
+  if (typeof enabled2 !== "boolean") {
     throw new TypeError(`[SvelteApp handleAlwaysOnTop error]: 'enabled' is not a boolean.`);
   }
   if (typeof initialPopOut !== "boolean") {
@@ -18697,7 +18746,7 @@ function handleAlwaysOnTop(application, enabled, initialPopOut) {
     console.error("[SvelteApp handleAlwaysOnTop error]: global SvelteApp data unavailable.");
     return;
   }
-  if (enabled) {
+  if (enabled2) {
     globalThis.requestAnimationFrame(() => {
       application.reactive.popOut = false;
       globalThis.requestAnimationFrame(() => application.bringToTop({ force: true }));
@@ -19489,7 +19538,7 @@ class SvelteReactive {
   #storesSubscribe() {
     this.#storeUnsubscribe.push(subscribeIgnoreFirst(
       this.#storeAppOptions.alwaysOnTop,
-      (enabled) => handleAlwaysOnTop(this.#application, enabled, this.#initialPopOut)
+      (enabled2) => handleAlwaysOnTop(this.#application, enabled2, this.#initialPopOut)
     ));
     this.#storeUnsubscribe.push(subscribeIgnoreFirst(this.#storeAppOptions.headerButtonNoClose, (value) => this.updateHeaderButtons({ headerButtonNoClose: value })));
     this.#storeUnsubscribe.push(subscribeIgnoreFirst(this.#storeAppOptions.popOut, (value) => {
@@ -22514,7 +22563,7 @@ function _showFxDropdown(event, doc) {
   };
   setTimeout(() => document.addEventListener("click", closeHandler, true), 0);
 }
-const LOG_PREFIX$1 = constants.moduleLabel;
+const LOG_PREFIX$2 = constants.moduleLabel;
 function isDebugEnabled() {
   try {
     return game.settings.get(MODULE_ID, "debugMode") ?? false;
@@ -22524,7 +22573,7 @@ function isDebugEnabled() {
 }
 function debug(...args) {
   if (isDebugEnabled()) {
-    console.log(`${LOG_PREFIX$1} |`, ...args);
+    console.log(`${LOG_PREFIX$2} |`, ...args);
   }
 }
 const PERMISSION_TYPES = {
@@ -24280,6 +24329,545 @@ function _validateWeaponFxConfig(config) {
 function _validateDefensiveFxConfig(config) {
   if (typeof config !== "object" || config === null) return false;
   return config.onHit !== void 0 || config.onDeflect !== void 0 || config.onPenetrate !== void 0 || config.aura !== void 0;
+}
+const VALID_TYPES = new Set(Object.values(COUNTER_TYPES).map((t) => t.id));
+const VALID_SHAPES = new Set(Object.values(SHAPES).map((s) => s.id));
+const VALID_FILL = new Set(Object.values(FILL_MODES).map((f) => f.id));
+const VALID_VIS = new Set(Object.values(VISIBILITY).map((v) => v.id));
+const VALID_WHEN = new Set(Object.values(VISIBLE_WHEN).map((v) => v.id));
+const VALID_HUD = new Set(Object.values(HUD_MODES).map((h) => h.id));
+const KINDS = /* @__PURE__ */ new Set(["counter", "button", "dropdown"]);
+function num(v, fallback = 0) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : fallback;
+}
+function pick(set, v, fallback) {
+  return set.has(v) ? v : fallback;
+}
+function normalizeCounter(raw = {}) {
+  const kind = KINDS.has(raw.kind) ? raw.kind : "counter";
+  const base = {
+    id: typeof raw.id === "string" && raw.id ? raw.id : foundry.utils.randomID(),
+    kind,
+    label: typeof raw.label === "string" ? raw.label : "",
+    disabled: raw.disabled === true,
+    visibility: pick(VALID_VIS, raw.visibility, COUNTER_DEFAULTS.visibility),
+    placement: normalizePlacement(raw.placement)
+  };
+  if (kind === "counter") return { ...base, ...normalizeCounterBody(raw) };
+  return { ...base, ...normalizeElement(raw, kind) };
+}
+function normalizePlacement(p = {}) {
+  return {
+    auto: p.auto !== false,
+    angle: num(p.angle, 0),
+    arcSpan: num(p.arcSpan, 90),
+    ring: Math.max(0, Math.trunc(num(p.ring, 0)))
+  };
+}
+function normalizeCounterBody(raw) {
+  const visual = raw.visual ?? {};
+  return {
+    type: pick(VALID_TYPES, raw.type, COUNTER_DEFAULTS.type),
+    binding: {
+      valuePath: typeof raw.binding?.valuePath === "string" ? raw.binding.valuePath : "",
+      maxPath: typeof raw.binding?.maxPath === "string" ? raw.binding.maxPath : null
+    },
+    value: num(raw.value, 0),
+    min: raw.min == null ? null : num(raw.min, 0),
+    max: raw.max == null ? null : num(raw.max, null),
+    turns: normalizeTurns(raw.turns),
+    visual: {
+      shape: pick(VALID_SHAPES, visual.shape, COUNTER_DEFAULTS.shape),
+      fillMode: pick(VALID_FILL, visual.fillMode, COUNTER_DEFAULTS.fillMode),
+      color: typeof visual.color === "string" ? visual.color : "#4caf50",
+      thresholds: Array.isArray(visual.thresholds) ? visual.thresholds.map((t) => ({ at: num(t.at), color: String(t.color ?? "#ffffff") })) : [],
+      icon: typeof visual.icon === "string" ? visual.icon : null,
+      thickness: num(visual.thickness, 4),
+      showText: visual.showText !== false
+    },
+    visibleWhen: pick(VALID_WHEN, raw.visibleWhen, COUNTER_DEFAULTS.visibleWhen)
+  };
+}
+function normalizeTurns(t = {}) {
+  return {
+    direction: t.direction === "up" ? "up" : "down",
+    tickOn: t.tickOn === "turn" ? "turn" : "round",
+    start: num(t.start, 0),
+    end: t.end == null ? null : num(t.end, null),
+    expire: ["hide", "keep", "remove"].includes(t.expire) ? t.expire : "hide",
+    // Reserved for P7 advanced scripting; stored now, executed later.
+    startEffect: t.startEffect ?? null,
+    endEffect: t.endEffect ?? null
+  };
+}
+function normalizeElement(raw, kind) {
+  const el = {
+    elementType: pick(new Set(Object.values(ELEMENT_TYPES).map((e) => e.id)), kind, ELEMENT_TYPES.button.id),
+    icon: typeof raw.icon === "string" ? raw.icon : "fas fa-bolt",
+    color: typeof raw.color === "string" ? raw.color : "#3f51b5",
+    hudMode: pick(VALID_HUD, raw.hudMode, HUD_MODES.onSelect.id)
+  };
+  if (kind === "dropdown") {
+    el.options = Array.isArray(raw.options) ? raw.options.map((o) => ({ label: String(o.label ?? ""), macro: o.macro ?? null })) : [];
+  } else {
+    el.macro = raw.macro ?? null;
+  }
+  return el;
+}
+function readSystemValue(actor, binding) {
+  if (!actor?.system || !binding?.valuePath) return { value: 0, max: null };
+  const value = Number(foundry.utils.getProperty(actor.system, binding.valuePath)) || 0;
+  let max = null;
+  if (binding.maxPath) {
+    const raw = Number(foundry.utils.getProperty(actor.system, binding.maxPath));
+    max = Number.isFinite(raw) ? raw : null;
+  }
+  return { value, max };
+}
+function getActorCounterDefs(actor) {
+  const raw = actor?.getFlag?.(MODULE_ID, TC_FLAGS.definitions);
+  return Array.isArray(raw) ? raw.map(normalizeCounter) : [];
+}
+function getTokenCounterDefs(tokenDoc) {
+  const raw = tokenDoc?.getFlag?.(MODULE_ID, TC_FLAGS.definitions);
+  return Array.isArray(raw) ? raw.map(normalizeCounter) : [];
+}
+function getEffectiveCounterDefs(tokenDoc) {
+  const actorDefs = getActorCounterDefs(tokenDoc?.actor ?? null);
+  const tokenDefs = getTokenCounterDefs(tokenDoc);
+  if (!tokenDefs.length) return actorDefs.filter((d) => !d.disabled);
+  const byId = new Map(actorDefs.map((d) => [d.id, d]));
+  for (const def of tokenDefs) {
+    if (def.disabled) byId.delete(def.id);
+    else byId.set(def.id, def);
+  }
+  return [...byId.values()];
+}
+function readCounterState(tokenDoc) {
+  return tokenDoc?.getFlag?.(MODULE_ID, TC_FLAGS.state) ?? {};
+}
+async function writeCounterState(tokenDoc, counterId, patch) {
+  if (!tokenDoc || !counterId) return;
+  const key = `${TC_FLAGS.state}.${counterId}`;
+  if (patch === null) {
+    await tokenDoc.unsetFlag(MODULE_ID, key);
+    return;
+  }
+  const current = readCounterState(tokenDoc)[counterId] ?? {};
+  await tokenDoc.setFlag(MODULE_ID, key, { ...current, ...patch });
+}
+function resolveCounterValue(tokenDoc, def, state) {
+  const entry = (state ?? readCounterState(tokenDoc))[def.id] ?? null;
+  switch (def.type) {
+    case COUNTER_TYPES.system.id: {
+      const { value, max } = readSystemValue(tokenDoc?.actor, def.binding);
+      return { value, max, started: true };
+    }
+    case COUNTER_TYPES.turns.id:
+      return deriveTurnValue(def, entry);
+    case COUNTER_TYPES.manual.id:
+    case COUNTER_TYPES.script.id:
+    default:
+      return { value: Number(entry?.value ?? def.value ?? 0), max: def.max ?? null, started: true };
+  }
+}
+function deriveTurnValue(def, anchor) {
+  const t = def.turns ?? {};
+  const start = Number(t.start ?? 0);
+  if (!anchor || !game.combat) {
+    return { value: start, max: t.end ?? null, started: false };
+  }
+  const round = game.combat.round ?? 0;
+  const elapsed = Math.max(0, round - Number(anchor.startRound ?? round));
+  let value = t.direction === "up" ? start + elapsed : start - elapsed;
+  if (t.end != null) {
+    value = t.direction === "up" ? Math.min(value, t.end) : Math.max(value, t.end);
+  }
+  return { value, max: t.end ?? null, started: true };
+}
+const TOP_DEG = -90;
+function layoutCounters(defs) {
+  const rings = [];
+  const badges = [];
+  for (const def of defs) {
+    if (def.visual?.shape === "ring") rings.push(def);
+    else badges.push(def);
+  }
+  const out = [];
+  rings.forEach((def, i) => {
+    out.push({ def, isRing: true, ringIndex: i, angleCenterDeg: TOP_DEG, arcSpanDeg: 360 });
+  });
+  const autoBadges = badges.filter((d) => d.placement?.auto !== false);
+  const manualBadges = badges.filter((d) => d.placement?.auto === false);
+  const step = autoBadges.length ? 360 / autoBadges.length : 0;
+  autoBadges.forEach((def, i) => {
+    const isArc = def.visual?.shape === "arc";
+    out.push({
+      def,
+      isRing: false,
+      ringIndex: 0,
+      angleCenterDeg: TOP_DEG + i * step,
+      arcSpanDeg: isArc ? Math.min(def.placement?.arcSpan ?? step, step) : def.placement?.arcSpan ?? 40
+    });
+  });
+  for (const def of manualBadges) {
+    out.push({
+      def,
+      isRing: false,
+      ringIndex: Math.max(0, def.placement?.ring ?? 0),
+      angleCenterDeg: def.placement?.angle ?? TOP_DEG,
+      arcSpanDeg: def.placement?.arcSpan ?? 40
+    });
+  }
+  return out;
+}
+const CONTAINER_KEY = "_afgTokenCounters";
+const RING_GAP = 3;
+const BASE_MARGIN = 6;
+const BADGE_CIRCLE_R = 10;
+const BADGE_SQUARE = 18;
+const BADGE_POLY_R = 11;
+const ICON_SIZE = 20;
+const DEG = Math.PI / 180;
+function refreshTokenCounters(token) {
+  if (!token || token.destroyed) return;
+  if (!game.settings.get(MODULE_ID, "enableTokenCounters")) {
+    removeTokenCounters(token);
+    return;
+  }
+  const tokenDoc = token.document;
+  if (!tokenDoc) {
+    removeTokenCounters(token);
+    return;
+  }
+  const defs = getEffectiveCounterDefs(tokenDoc).filter((d) => d.kind === "counter");
+  if (!defs.length) {
+    removeTokenCounters(token);
+    return;
+  }
+  const container = ensureContainer(token);
+  for (const child of container.removeChildren()) child.destroy({ children: true });
+  container.position.set(token.w / 2, token.h / 2);
+  const baseRadius = Math.max(token.w, token.h) / 2 + BASE_MARGIN;
+  const state = readCounterState(tokenDoc);
+  for (const item of layoutCounters(defs)) {
+    try {
+      const { value, max } = resolveCounterValue(tokenDoc, item.def, state);
+      if (!isCounterVisible(item.def, token, value)) continue;
+      container.addChild(drawCounter(item, value, max, baseRadius));
+    } catch (err) {
+      console.error(`${MODULE_ID} | token counter draw failed`, item?.def?.id, err);
+    }
+  }
+}
+function ensureContainer(token) {
+  const existing = token[CONTAINER_KEY];
+  if (existing && !existing.destroyed) return existing;
+  const container = new PIXI.Container();
+  container.eventMode = "none";
+  container.zIndex = 9999;
+  token[CONTAINER_KEY] = container;
+  token.sortableChildren = true;
+  token.addChild(container);
+  return container;
+}
+function removeTokenCounters(token) {
+  const container = token?.[CONTAINER_KEY];
+  if (container && !container.destroyed) container.destroy({ children: true });
+  if (token) token[CONTAINER_KEY] = null;
+}
+function refreshAllTokenCounters() {
+  if (!canvas?.ready) return;
+  for (const token of canvas.tokens?.placeables ?? []) refreshTokenCounters(token);
+}
+function refreshActorTokenCounters(actor) {
+  if (!actor || !canvas?.ready) return;
+  for (const token of actor.getActiveTokens?.() ?? []) refreshTokenCounters(token);
+}
+function isCounterVisible(def, token, value) {
+  const actor = token?.actor;
+  switch (def.visibility) {
+    case "gm":
+      if (!game.user.isGM) return false;
+      break;
+    case "owners":
+      if (!game.user.isGM && !actor?.isOwner) return false;
+      break;
+  }
+  switch (def.visibleWhen) {
+    case "inCombat":
+      if (!game.combat?.started) return false;
+      break;
+    case "valuePositive":
+      if (!(Number(value) > 0)) return false;
+      break;
+  }
+  return true;
+}
+function colorToNumber(hex, fallback = 16777215) {
+  if (typeof hex !== "string") return fallback;
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  return m ? parseInt(m[1], 16) : fallback;
+}
+function pickColor(def, value, max) {
+  const visual = def.visual ?? {};
+  const base = colorToNumber(visual.color);
+  const thresholds = visual.thresholds ?? [];
+  if (!thresholds.length) return base;
+  const metric = max && max > 0 ? value / max : value;
+  let chosen = visual.color;
+  let best = -Infinity;
+  for (const t of thresholds) {
+    if (metric >= t.at && t.at > best) {
+      best = t.at;
+      chosen = t.color;
+    }
+  }
+  return colorToNumber(chosen, base);
+}
+function isImagePath(s) {
+  return typeof s === "string" && /\.(png|jpe?g|webp|svg|gif|bmp)$/i.test(s);
+}
+function makeText(label) {
+  const text2 = new PIXI.Text(label, {
+    fontFamily: "Signika, sans-serif",
+    fontSize: 12,
+    fill: 16777215,
+    stroke: 0,
+    strokeThickness: 3,
+    align: "center"
+  });
+  text2.anchor.set(0.5);
+  text2.resolution = 2;
+  return text2;
+}
+function drawCounter(item, value, max, baseRadius) {
+  const { def, isRing, ringIndex, angleCenterDeg, arcSpanDeg } = item;
+  const visual = def.visual ?? {};
+  const color = pickColor(def, value, max);
+  const fraction = max && max > 0 ? Math.clamp(value / max, 0, 1) : value > 0 ? 1 : 0;
+  const thickness = Math.max(2, visual.thickness ?? 4);
+  const radius = baseRadius + ringIndex * (thickness + RING_GAP);
+  const label = max != null ? `${value}/${max}` : `${value}`;
+  const node = new PIXI.Container();
+  const g = new PIXI.Graphics();
+  node.addChild(g);
+  if (isRing || visual.shape === "arc") {
+    drawArc(g, color, fraction, radius, thickness, isRing ? 360 : arcSpanDeg, angleCenterDeg);
+    if (visual.showText) {
+      const a = angleCenterDeg * DEG;
+      const text2 = makeText(label);
+      text2.position.set(Math.cos(a) * radius, Math.sin(a) * radius);
+      node.addChild(text2);
+    }
+  } else {
+    drawBadge(node, g, def, color, fraction, radius, angleCenterDeg);
+    if (visual.showText) node.addChild(makeText(label));
+  }
+  return node;
+}
+function drawArc(g, color, fraction, radius, thickness, spanDeg, centerDeg) {
+  const full = spanDeg >= 360;
+  const spanRad = (full ? 360 : spanDeg) * DEG;
+  const start = full ? -Math.PI / 2 : centerDeg * DEG - spanRad / 2;
+  const at = (a) => [Math.cos(a) * radius, Math.sin(a) * radius];
+  g.lineStyle({ width: thickness, color: 0, alpha: 0.35, cap: "round" });
+  const [bx, by] = at(start);
+  g.moveTo(bx, by);
+  g.arc(0, 0, radius, start, start + spanRad);
+  if (fraction > 0) {
+    const end = start + spanRad * Math.clamp(fraction, 0, 1);
+    g.lineStyle({ width: thickness, color, alpha: 1, cap: "round" });
+    const [fx, fy] = at(start);
+    g.moveTo(fx, fy);
+    g.arc(0, 0, radius, start, end);
+  }
+}
+function drawBadge(node, g, def, color, fraction, radius, centerDeg) {
+  const a = centerDeg * DEG;
+  node.position.set(Math.cos(a) * radius, Math.sin(a) * radius);
+  const shape = def.visual?.shape;
+  if (shape === "square") {
+    const s = BADGE_SQUARE;
+    g.beginFill(0, 0.4);
+    g.drawRect(-s / 2, -s / 2, s, s);
+    g.endFill();
+    const fh = s * fraction;
+    if (fh > 0) {
+      g.beginFill(color, 0.9);
+      g.drawRect(-s / 2, s / 2 - fh, s, fh);
+      g.endFill();
+    }
+    g.lineStyle(1.5, color, 1);
+    g.drawRect(-s / 2, -s / 2, s, s);
+    return;
+  }
+  if (shape === "polygon") {
+    const pts = [];
+    const sides = 6;
+    for (let i = 0; i < sides; i++) {
+      const ang = -Math.PI / 2 + i * (2 * Math.PI / sides);
+      pts.push(Math.cos(ang) * BADGE_POLY_R, Math.sin(ang) * BADGE_POLY_R);
+    }
+    g.beginFill(color, 0.85);
+    g.drawPolygon(pts);
+    g.endFill();
+    g.lineStyle(1.5, 0, 0.5);
+    g.drawPolygon(pts);
+    return;
+  }
+  if (shape === "icon" && isImagePath(def.visual?.icon)) {
+    const sprite = PIXI.Sprite.from(def.visual.icon);
+    sprite.anchor.set(0.5);
+    sprite.width = ICON_SIZE;
+    sprite.height = ICON_SIZE;
+    node.addChild(sprite);
+    return;
+  }
+  g.beginFill(color, 0.85);
+  g.drawCircle(0, 0, BADGE_CIRCLE_R);
+  g.endFill();
+  g.lineStyle(1.5, 0, 0.5);
+  g.drawCircle(0, 0, BADGE_CIRCLE_R);
+}
+const LOG_PREFIX$1 = "Antifriz Roleplay Stuff | tokenCounters";
+function asTokenDoc(target) {
+  if (!target) return null;
+  if (target.documentName === "Token") return target;
+  if (target.document?.documentName === "Token") return target.document;
+  return null;
+}
+function asActor(target) {
+  if (!target) return null;
+  if (target.documentName === "Actor") return target;
+  return asTokenDoc(target)?.actor ?? target.actor ?? null;
+}
+function pickStore(target, scope) {
+  if (scope === "actor") return asActor(target);
+  const tokenDoc = asTokenDoc(target);
+  if (scope === "token") return tokenDoc;
+  if (tokenDoc && target.documentName !== "Actor") return tokenDoc;
+  return asActor(target);
+}
+function readDefs(doc) {
+  const raw = doc?.getFlag?.(MODULE_ID, TC_FLAGS.definitions);
+  return Array.isArray(raw) ? raw : [];
+}
+async function writeDefs(doc, defs) {
+  await doc.setFlag(MODULE_ID, TC_FLAGS.definitions, defs);
+}
+function createTokenCountersApi() {
+  return {
+    version: 1,
+    // Enum ids exposed so macro authors can build definitions without magic strings.
+    config: Object.freeze({
+      COUNTER_TYPES,
+      SHAPES,
+      FILL_MODES,
+      VISIBILITY,
+      HUD_MODES,
+      VISIBLE_WHEN,
+      ELEMENT_TYPES
+    }),
+    /** Redraw every token-counter overlay on the active scene (per-client). */
+    refresh() {
+      refreshAllTokenCounters();
+    },
+    /**
+     * Add a counter/element definition to an actor or token.
+     * @param {Actor|Token|TokenDocument} target
+     * @param {object} [definition] - Partial definition (normalised automatically).
+     * @param {{scope?: 'auto'|'actor'|'token'}} [options]
+     * @returns {Promise<object|null>} The stored definition, or null if no valid target.
+     */
+    async add(target, definition = {}, { scope = "auto" } = {}) {
+      const doc = pickStore(target, scope);
+      if (!doc) {
+        console.warn(`${LOG_PREFIX$1}.add(): no actor/token target`);
+        return null;
+      }
+      const def = normalizeCounter(definition);
+      await writeDefs(doc, [...readDefs(doc), def]);
+      return def;
+    },
+    /**
+     * Update an existing definition by id.
+     * @param {Actor|Token|TokenDocument} target
+     * @param {string} id
+     * @param {object} [patch]
+     * @param {{scope?: 'auto'|'actor'|'token'}} [options]
+     * @returns {Promise<object|null>}
+     */
+    async update(target, id, patch = {}, { scope = "auto" } = {}) {
+      const doc = pickStore(target, scope);
+      if (!doc) return null;
+      const defs = readDefs(doc);
+      const idx = defs.findIndex((d) => d.id === id);
+      if (idx === -1) return null;
+      const merged = normalizeCounter({ ...defs[idx], ...patch, id });
+      const next = defs.slice();
+      next[idx] = merged;
+      await writeDefs(doc, next);
+      return merged;
+    },
+    /**
+     * Remove a definition by id.
+     * @param {Actor|Token|TokenDocument} target
+     * @param {string} id
+     * @param {{scope?: 'auto'|'actor'|'token'}} [options]
+     * @returns {Promise<boolean>}
+     */
+    async remove(target, id, { scope = "auto" } = {}) {
+      const doc = pickStore(target, scope);
+      if (!doc) return false;
+      const defs = readDefs(doc);
+      const next = defs.filter((d) => d.id !== id);
+      if (next.length === defs.length) return false;
+      await writeDefs(doc, next);
+      return true;
+    },
+    /**
+     * Get effective definitions, with resolved values when a token is supplied.
+     * @param {Actor|Token|TokenDocument} target
+     * @returns {Array<{definition: object, value: number|null, max: number|null}>}
+     */
+    get(target) {
+      const tokenDoc = asTokenDoc(target);
+      if (tokenDoc) {
+        const state = tokenDoc.getFlag(MODULE_ID, TC_FLAGS.state) ?? {};
+        return getEffectiveCounterDefs(tokenDoc).map((def) => {
+          const { value, max } = resolveCounterValue(tokenDoc, def, state);
+          return { definition: def, value, max };
+        });
+      }
+      return getActorCounterDefs(asActor(target)).map((def) => ({ definition: def, value: null, max: null }));
+    },
+    /**
+     * Set a manual counter's value (stored per-token).
+     * @param {Token|TokenDocument} target
+     * @param {string} id
+     * @param {number} value
+     * @returns {Promise<boolean>}
+     */
+    async setValue(target, id, value) {
+      const tokenDoc = asTokenDoc(target);
+      if (!tokenDoc) {
+        console.warn(`${LOG_PREFIX$1}.setValue(): requires a token target`);
+        return false;
+      }
+      await writeCounterState(tokenDoc, id, { value: Number(value) || 0 });
+      return true;
+    },
+    /** @todo P7 — register a custom counter type. */
+    registerType() {
+      console.warn(`${LOG_PREFIX$1}.registerType() is not implemented yet`);
+    },
+    /** @todo P7 — register a custom visibility condition. */
+    registerCondition() {
+      console.warn(`${LOG_PREFIX$1}.registerCondition() is not implemented yet`);
+    }
+  };
 }
 function get_each_context_1$6(ctx, list, i) {
   const child_ctx = ctx.slice();
@@ -30129,9 +30717,9 @@ function instance$5($$self, $$props, $$invalidate) {
     $$invalidate(3, editingVolumeValue = String(Math.round((sound.volume ?? 0.8) * 100)));
   }
   function commitEditVolume(id) {
-    const num = parseInt(editingVolumeValue, 10);
-    if (!isNaN(num)) {
-      const clamped = Math.max(0, Math.min(100, num)) / 100;
+    const num2 = parseInt(editingVolumeValue, 10);
+    if (!isNaN(num2)) {
+      const clamped = Math.max(0, Math.min(100, num2)) / 100;
       updateSound(id, "volume", clamped);
     }
     $$invalidate(2, editingVolumeId = null);
@@ -31443,8 +32031,8 @@ function instance$4($$self, $$props, $$invalidate) {
     dispatch2("changed", updated);
   }
   function updateNumber(field, value) {
-    const num = Number(value);
-    if (!isNaN(num)) update2(field, num);
+    const num2 = Number(value);
+    if (!isNaN(num2)) update2(field, num2);
   }
   function toggleEnabled() {
     update2("enabled", !config.enabled);
@@ -34609,11 +35197,11 @@ function instance$3($$self, $$props, $$invalidate) {
     });
   }
   async function setRofField(field, value) {
-    const num = Number(value);
-    if (isNaN(num)) return;
+    const num2 = Number(value);
+    if (isNaN(num2)) return;
     await saveConfig({
       ...fxConfig,
-      rateOfFire: { ...fxConfig.rateOfFire, [field]: num }
+      rateOfFire: { ...fxConfig.rateOfFire, [field]: num2 }
     });
   }
   async function toggleRofRandomize() {
@@ -40813,6 +41401,25 @@ function _registerWorldSettings() {
       Object.values(ui.windows).forEach((w) => w.render?.());
     }
   });
+  game.settings.register(MODULE_ID, "enableTokenCounters", {
+    name: "SETTINGS.enableTokenCounters.Name",
+    hint: "SETTINGS.enableTokenCounters.Hint",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: false,
+    restricted: true,
+    onChange: () => {
+      Object.values(ui.windows).forEach((w) => w.render?.());
+      refreshAllTokenCounters();
+    }
+  });
+  game.settings.register(MODULE_ID, "tokenCounterPresets", {
+    scope: "world",
+    config: false,
+    type: Array,
+    default: []
+  });
   game.settings.register(MODULE_ID, "musicCategories", {
     name: "SETTINGS.musicCategories.Name",
     hint: "SETTINGS.musicCategories.Hint",
@@ -40872,6 +41479,12 @@ function _registerClientSettings() {
     default: true
   });
   game.settings.register(MODULE_ID, "showItemGalleryButton", {
+    scope: "client",
+    config: false,
+    type: Boolean,
+    default: true
+  });
+  game.settings.register(MODULE_ID, "showTokenCountersButton", {
     scope: "client",
     config: false,
     type: Boolean,
@@ -41030,10 +41643,10 @@ function handleSetVolume(data) {
 }
 const DEFAULT_PORTRAIT = "icons/svg/mystery-man.svg";
 const tokenTextureState = /* @__PURE__ */ new WeakMap();
-let hooksRegistered = false;
+let hooksRegistered$1 = false;
 function registerPerceivedImageHooks() {
-  if (hooksRegistered) return;
-  hooksRegistered = true;
+  if (hooksRegistered$1) return;
+  hooksRegistered$1 = true;
   Hooks.on("canvasReady", refreshPerceivedTokenImages);
   Hooks.on("drawToken", applyPerceivedTokenImage);
   Hooks.on("refreshToken", applyPerceivedTokenImage);
@@ -41255,10 +41868,38 @@ function normalizeImagePath(src) {
     return decodeURIComponent(src).replace(/^\/+/, "").split("?")[0].split("#")[0];
   }
 }
+let hooksRegistered = false;
+function enabled() {
+  return game.settings.get(MODULE_ID, "enableTokenCounters");
+}
+function registerTokenCounterHooks() {
+  if (hooksRegistered) return;
+  hooksRegistered = true;
+  Hooks.on("drawToken", (token) => {
+    if (enabled()) refreshTokenCounters(token);
+  });
+  Hooks.on("destroyToken", (token) => removeTokenCounters(token));
+  Hooks.on("canvasReady", () => {
+    if (enabled()) refreshAllTokenCounters();
+  });
+  Hooks.on("updateToken", (tokenDoc) => {
+    if (!enabled()) return;
+    const token = tokenDoc.object;
+    if (token) refreshTokenCounters(token);
+  });
+  Hooks.on("updateActor", (actor) => {
+    if (enabled()) refreshActorTokenCounters(actor);
+  });
+}
+function initTokenCounters() {
+  console.log(`${MODULE_ID} | Token Counters subsystem enabled`);
+  refreshAllTokenCounters();
+}
 const LOG_PREFIX = constants.moduleLabel;
 Hooks.once("init", async function() {
   registerSettings();
   registerPerceivedImageHooks();
+  registerTokenCounterHooks();
 });
 Hooks.once("ready", async function() {
   registerSocketListeners();
@@ -41266,6 +41907,13 @@ Hooks.once("ready", async function() {
   if (fxEnabled) {
     initFxTriggerManager();
     console.log(`${LOG_PREFIX} | Weapon FX subsystem enabled`);
+  }
+  if (game.settings.get(MODULE_ID, "enableTokenCounters")) {
+    initTokenCounters();
+  }
+  const mod = game.modules.get(MODULE_ID);
+  if (mod) {
+    mod.api = { ...mod.api ?? {}, tokenCounters: createTokenCountersApi() };
   }
   console.log(`${LOG_PREFIX} | Ready`);
 });
