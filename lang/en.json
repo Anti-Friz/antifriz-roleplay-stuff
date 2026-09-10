@@ -16,6 +16,15 @@
       "Name": "Enable Token Counters",
       "Hint": "Enable the Token Counters subsystem: configurable counters and macro buttons drawn around tokens. Adds a configuration button to actor sheet headers."
     },
+    "enableMovementRuler": {
+      "Name": "Enable Movement Ruler Colors",
+      "Hint": "Colour the token drag ruler by how far the token can still move. Speed ranges come from the active speed provider, which game systems and modules can supply through the module API."
+    },
+    "movementRulerMenu": {
+      "Name": "Movement Ruler",
+      "Label": "Configure Movement Ruler",
+      "Hint": "Choose the speed provider and configure the ruler colours"
+    },
     "musicCategories": {
       "Name": "Music Categories",
       "Hint": "Custom categories for organizing music tracks"
@@ -27,6 +36,56 @@
       "Title": "Music Categories Configuration",
       "Notes": "Define custom categories for organizing character music. Changes apply to all actors and items.",
       "AddCategory": "Add Category"
+    }
+  },
+  "MOVEMENTRULER": {
+    "Title": "Movement Ruler Configuration",
+    "Saved": "Movement ruler configuration saved",
+    "ResetColors": "Reset colours to defaults",
+    "headers": {
+      "Provider": "Speed Provider",
+      "Display": "Display",
+      "Colors": "Colours",
+      "ProviderSettings": "Provider Settings"
+    },
+    "provider": {
+      "Name": "Active speed provider",
+      "Hint": "Providers supply the movement ranges used to colour the ruler. Game systems take precedence over modules.",
+      "PlayerHint": "Only a Gamemaster can change the active speed provider.",
+      "Native": "Built-in (generic attribute)",
+      "System": "Game system: {name}",
+      "Module": "Module: {name}"
+    },
+    "measurement": {
+      "Name": "Compare ranges against",
+      "Hint": "\"Movement cost\" respects difficult terrain and movement actions; \"Distance\" uses the plain measured distance.",
+      "Cost": "Movement cost",
+      "Distance": "Distance"
+    },
+    "observerOnly": {
+      "Name": "Observers only",
+      "Hint": "Only colour the ruler when the dragging user has at least Observer permission on the token's actor."
+    },
+    "highlightGrid": {
+      "Name": "Colour highlighted grid spaces"
+    },
+    "colorWaypoints": {
+      "Name": "Colour waypoint markers"
+    },
+    "speeds": {
+      "Walk": "Walk",
+      "Dash": "Dash",
+      "Unreachable": "Out of range"
+    },
+    "generic": {
+      "speedAttribute": {
+        "Name": "Speed attribute",
+        "Hint": "Property path resolved on the dragged token, e.g. actor.system.attributes.movement.walk. Leave empty to disable colouring."
+      },
+      "dashMultiplier": {
+        "Name": "Dash multiplier",
+        "Hint": "Multiplier applied to the speed attribute for the second colour band. Set to 1 or lower to use a single band."
+      }
     }
   },
   "MUSIC": {

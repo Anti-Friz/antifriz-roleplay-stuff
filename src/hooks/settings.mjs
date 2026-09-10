@@ -1,7 +1,8 @@
 import { TJSGameSettings } from '#runtime/svelte/store/fvtt/settings';
 import { MODULE_ID, DEFAULT_MUSIC_CATEGORIES } from '#config';
 import { MusicCategoriesApp, HeaderButtonsApp } from '#applications';
-import { refreshAllTokenCounters } from '../canvas/TokenCounterOverlay.mjs';
+import { refreshAllTokenCounters, removeAllTokenCounters } from '../canvas/TokenCounterOverlay.mjs';
+import { registerMovementRulerSettings } from './movementRuler.mjs';
 
 /**
  * TJSGameSettings instance for reactive Foundry settings
@@ -15,6 +16,7 @@ export const AFSettings = new TJSGameSettings(MODULE_ID);
 export function registerSettings() {
    _registerWorldSettings();
    _registerClientSettings();
+   registerMovementRulerSettings();
 }
 
 /**
@@ -45,9 +47,10 @@ function _registerWorldSettings() {
       type: Boolean,
       default: false,
       restricted: true,
-      onChange: () => {
+      onChange: (value) => {
          Object.values(ui.windows).forEach(w => w.render?.());
-         refreshAllTokenCounters();
+         if (value) refreshAllTokenCounters();
+         else removeAllTokenCounters();
       }
    });
 

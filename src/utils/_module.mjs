@@ -18,3 +18,4 @@ export * from './fxTriggerManager.mjs';
 export * from './defensiveFxService.mjs';
 export * from './fxImportExport.mjs';
 export * from './tokenCounters/_module.mjs';
+export * from './movementRuler/_module.mjs';

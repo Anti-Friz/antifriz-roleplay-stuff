@@ -221,9 +221,13 @@ function select_option(select, value, mounting) {
       return;
     }
   }
-  {
+  if (!mounting || value !== void 0) {
     select.selectedIndex = -1;
   }
+}
+function select_value(select) {
+  const selected_option = select.querySelector(":checked");
+  return selected_option && selected_option.__value;
 }
 function toggle_class(element2, name, toggle) {
   element2.classList.toggle(name, !!toggle);
@@ -2743,6 +2747,33 @@ const COUNTER_DEFAULTS = Object.freeze({
   visibility: VISIBILITY.owners.id,
   visibleWhen: VISIBLE_WHEN.always.id
 });
+const MR_SETTINGS = Object.freeze({
+  enabled: "enableMovementRuler",
+  speedProvider: "movementRulerSpeedProvider",
+  measurement: "movementRulerMeasurement",
+  highlightGrid: "movementRulerHighlightGrid",
+  colorWaypoints: "movementRulerColorWaypoints",
+  observerOnly: "movementRulerObserverOnly"
+});
+const MR_NATIVE_PROVIDER_ID = "native";
+const MR_UNREACHABLE_COLOR_ID = "unreachable";
+const MR_READY_HOOK = "antifriz-roleplay-stuff.movementRulerReady";
+const MR_MEASUREMENT_MODES = Object.freeze({
+  COST: "cost",
+  DISTANCE: "distance"
+});
+const MR_DEFAULT_UNREACHABLE_COLOR = 16711680;
+const MR_GENERIC_COLORS = Object.freeze({
+  WALK: 65280,
+  DASH: 16776960
+});
+const MR_DEFAULT_DASH_MULTIPLIER = 2;
+function mrColorSettingKey(providerId, colorId) {
+  return `movementRuler.${providerId}.color.${colorId}`;
+}
+function mrProviderSettingKey(providerId, settingId) {
+  return `movementRuler.${providerId}.setting.${settingId}`;
+}
 const MODULE_ID = constants.moduleId;
 const MODULE_LABEL = constants.moduleLabel;
 const DEFAULT_MUSIC_CATEGORIES = [
@@ -4624,8 +4655,8 @@ class StyleManager {
         styleElement,
         token: StyleManager.#CTOR_TOKEN
       });
-    } catch (error) {
-      console.error(`TyphonJS Runtime [StyleManager error]: Please update your browser to the latest version.`, error);
+    } catch (error2) {
+      console.error(`TyphonJS Runtime [StyleManager error]: Please update your browser to the latest version.`, error2);
     }
     return void 0;
   }
@@ -4678,8 +4709,8 @@ class StyleManager {
         styleElement,
         token: StyleManager.#CTOR_TOKEN
       });
-    } catch (error) {
-      console.error(`TyphonJS Runtime [StyleManager error]: Please update your browser to the latest version.`, error);
+    } catch (error2) {
+      console.error(`TyphonJS Runtime [StyleManager error]: Please update your browser to the latest version.`, error2);
       if (styleElement && styleElement.parentNode) {
         styleElement.remove();
       }
@@ -15723,21 +15754,21 @@ function popoverTooltip(node, { cssClass, direction, isHTML, locked, tooltip }) 
     }
   };
 }
-function create_if_block$a(ctx) {
+function create_if_block$b(ctx) {
   let if_block_anchor;
   function select_block_type(ctx2, dirty) {
     if (
       /*iconType*/
       ctx2[3] === "font"
-    ) return create_if_block_1$8;
+    ) return create_if_block_1$9;
     if (
       /*iconType*/
       ctx2[3] === "img"
-    ) return create_if_block_2$8;
+    ) return create_if_block_2$9;
     if (
       /*iconType*/
       ctx2[3] === "svg"
-    ) return create_if_block_3$7;
+    ) return create_if_block_3$8;
   }
   let current_block_type = select_block_type(ctx);
   let if_block = current_block_type && current_block_type(ctx);
@@ -15772,7 +15803,7 @@ function create_if_block$a(ctx) {
     }
   };
 }
-function create_if_block_3$7(ctx) {
+function create_if_block_3$8(ctx) {
   let svg;
   let inlineSvg_action;
   let mounted;
@@ -15808,7 +15839,7 @@ function create_if_block_3$7(ctx) {
     }
   };
 }
-function create_if_block_2$8(ctx) {
+function create_if_block_2$9(ctx) {
   let img;
   let img_src_value;
   return {
@@ -15836,7 +15867,7 @@ function create_if_block_2$8(ctx) {
     }
   };
 }
-function create_if_block_1$8(ctx) {
+function create_if_block_1$9(ctx) {
   let i;
   let i_class_value;
   return {
@@ -15866,7 +15897,7 @@ function create_if_block_1$8(ctx) {
     }
   };
 }
-function create_fragment$d(ctx) {
+function create_fragment$e(ctx) {
   let button_1;
   let button_1_class_value;
   let applyStyles_action;
@@ -15875,7 +15906,7 @@ function create_fragment$d(ctx) {
   let dispose;
   let if_block = (
     /*icon*/
-    ctx[2] && create_if_block$a(ctx)
+    ctx[2] && create_if_block$b(ctx)
   );
   return {
     c() {
@@ -15949,7 +15980,7 @@ function create_fragment$d(ctx) {
         if (if_block) {
           if_block.p(ctx2, dirty);
         } else {
-          if_block = create_if_block$a(ctx2);
+          if_block = create_if_block$b(ctx2);
           if_block.c();
           if_block.m(button_1, null);
         }
@@ -16006,7 +16037,7 @@ function create_fragment$d(ctx) {
     }
   };
 }
-function instance$d($$self, $$props, $$invalidate) {
+function instance$e($$self, $$props, $$invalidate) {
   let icon;
   let label;
   let tooltipDirection;
@@ -16108,7 +16139,7 @@ function instance$d($$self, $$props, $$invalidate) {
 class TJSHeaderButton extends SvelteComponent {
   constructor(options) {
     super();
-    init(this, options, instance$d, create_fragment$d, safe_not_equal, { button: 0, storeHeaderButtonNoLabel: 1 });
+    init(this, options, instance$e, create_fragment$e, safe_not_equal, { button: 0, storeHeaderButtonNoLabel: 1 });
   }
   get button() {
     return this.$$.ctx[0];
@@ -16125,17 +16156,17 @@ class TJSHeaderButton extends SvelteComponent {
     flush();
   }
 }
-function get_each_context$7(ctx, list, i) {
+function get_each_context$8(ctx, list, i) {
   const child_ctx = ctx.slice();
   child_ctx[40] = list[i];
   return child_ctx;
 }
-function get_each_context_1$7(ctx, list, i) {
+function get_each_context_1$8(ctx, list, i) {
   const child_ctx = ctx.slice();
   child_ctx[40] = list[i];
   return child_ctx;
 }
-function create_if_block_2$7(ctx) {
+function create_if_block_2$8(ctx) {
   let svg;
   let inlineSvg_action;
   let mounted;
@@ -16171,7 +16202,7 @@ function create_if_block_2$7(ctx) {
     }
   };
 }
-function create_if_block_1$7(ctx) {
+function create_if_block_1$8(ctx) {
   let i;
   let i_class_value;
   return {
@@ -16197,7 +16228,7 @@ function create_if_block_1$7(ctx) {
     }
   };
 }
-function create_if_block$9(ctx) {
+function create_if_block$a(ctx) {
   let img;
   let img_src_value;
   return {
@@ -16229,7 +16260,7 @@ function create_if_block$9(ctx) {
     }
   };
 }
-function create_each_block_1$7(ctx) {
+function create_each_block_1$8(ctx) {
   let switch_instance;
   let switch_instance_anchor;
   let current;
@@ -16314,7 +16345,7 @@ function create_each_block_1$7(ctx) {
     }
   };
 }
-function create_each_block$7(ctx) {
+function create_each_block$8(ctx) {
   let switch_instance;
   let switch_instance_anchor;
   let current;
@@ -16421,15 +16452,15 @@ function create_key_block(ctx) {
     if (
       /*mediaType*/
       ctx2[8] === "img"
-    ) return create_if_block$9;
+    ) return create_if_block$a;
     if (
       /*mediaType*/
       ctx2[8] === "font"
-    ) return create_if_block_1$7;
+    ) return create_if_block_1$8;
     if (
       /*mediaType*/
       ctx2[8] === "svg"
-    ) return create_if_block_2$7;
+    ) return create_if_block_2$8;
   }
   let current_block_type = select_block_type(ctx);
   let if_block = current_block_type && current_block_type(ctx);
@@ -16439,7 +16470,7 @@ function create_key_block(ctx) {
   );
   let each_blocks_1 = [];
   for (let i = 0; i < each_value_1.length; i += 1) {
-    each_blocks_1[i] = create_each_block_1$7(get_each_context_1$7(ctx, each_value_1, i));
+    each_blocks_1[i] = create_each_block_1$8(get_each_context_1$8(ctx, each_value_1, i));
   }
   const out = (i) => transition_out(each_blocks_1[i], 1, 1, () => {
     each_blocks_1[i] = null;
@@ -16450,7 +16481,7 @@ function create_key_block(ctx) {
   );
   let each_blocks = [];
   for (let i = 0; i < each_value.length; i += 1) {
-    each_blocks[i] = create_each_block$7(get_each_context$7(ctx, each_value, i));
+    each_blocks[i] = create_each_block$8(get_each_context$8(ctx, each_value, i));
   }
   const out_1 = (i) => transition_out(each_blocks[i], 1, 1, () => {
     each_blocks[i] = null;
@@ -16565,12 +16596,12 @@ function create_key_block(ctx) {
         );
         let i;
         for (i = 0; i < each_value_1.length; i += 1) {
-          const child_ctx = get_each_context_1$7(ctx2, each_value_1, i);
+          const child_ctx = get_each_context_1$8(ctx2, each_value_1, i);
           if (each_blocks_1[i]) {
             each_blocks_1[i].p(child_ctx, dirty);
             transition_in(each_blocks_1[i], 1);
           } else {
-            each_blocks_1[i] = create_each_block_1$7(child_ctx);
+            each_blocks_1[i] = create_each_block_1$8(child_ctx);
             each_blocks_1[i].c();
             transition_in(each_blocks_1[i], 1);
             each_blocks_1[i].m(header, t3);
@@ -16590,12 +16621,12 @@ function create_key_block(ctx) {
         );
         let i;
         for (i = 0; i < each_value.length; i += 1) {
-          const child_ctx = get_each_context$7(ctx2, each_value, i);
+          const child_ctx = get_each_context$8(ctx2, each_value, i);
           if (each_blocks[i]) {
             each_blocks[i].p(child_ctx, dirty);
             transition_in(each_blocks[i], 1);
           } else {
-            each_blocks[i] = create_each_block$7(child_ctx);
+            each_blocks[i] = create_each_block$8(child_ctx);
             each_blocks[i].c();
             transition_in(each_blocks[i], 1);
             each_blocks[i].m(header, null);
@@ -16661,7 +16692,7 @@ function create_key_block(ctx) {
     }
   };
 }
-function create_fragment$c(ctx) {
+function create_fragment$d(ctx) {
   let previous_key = (
     /*draggable*/
     ctx[0]
@@ -16711,7 +16742,7 @@ function create_fragment$c(ctx) {
     }
   };
 }
-function instance$c($$self, $$props, $$invalidate) {
+function instance$d($$self, $$props, $$invalidate) {
   let $focusKeep;
   let $focusAuto;
   let $elementRoot;
@@ -16916,7 +16947,7 @@ function instance$c($$self, $$props, $$invalidate) {
 class TJSApplicationHeader extends SvelteComponent {
   constructor(options) {
     super();
-    init(this, options, instance$c, create_fragment$c, safe_not_equal, { draggable: 0, draggableOptions: 25 }, null, [-1, -1]);
+    init(this, options, instance$d, create_fragment$d, safe_not_equal, { draggable: 0, draggableOptions: 25 }, null, [-1, -1]);
   }
 }
 class ResizeHandleTransform {
@@ -16973,7 +17004,7 @@ class ResizeHandleTransform {
     return this.#pDeltaLocal;
   }
 }
-function create_fragment$b(ctx) {
+function create_fragment$c(ctx) {
   let div;
   let resizable_action;
   let mounted;
@@ -17037,7 +17068,7 @@ function create_fragment$b(ctx) {
     }
   };
 }
-function instance$b($$self, $$props, $$invalidate) {
+function instance$c($$self, $$props, $$invalidate) {
   let $storeElementRoot;
   let $storeMinimized;
   let $storeResizable;
@@ -17177,10 +17208,10 @@ function instance$b($$self, $$props, $$invalidate) {
 class ResizableHandle extends SvelteComponent {
   constructor(options) {
     super();
-    init(this, options, instance$b, create_fragment$b, safe_not_equal, { isResizable: 10 });
+    init(this, options, instance$c, create_fragment$c, safe_not_equal, { isResizable: 10 });
   }
 }
-function create_fragment$a(ctx) {
+function create_fragment$b(ctx) {
   let div;
   let mounted;
   let dispose;
@@ -17216,7 +17247,7 @@ function create_fragment$a(ctx) {
     }
   };
 }
-function instance$a($$self, $$props, $$invalidate) {
+function instance$b($$self, $$props, $$invalidate) {
   let { elementRoot = void 0 } = $$props;
   let { enabled: enabled2 = true } = $$props;
   let ignoreElements, wrapEl;
@@ -17256,10 +17287,10 @@ function instance$a($$self, $$props, $$invalidate) {
 class TJSFocusWrap extends SvelteComponent {
   constructor(options) {
     super();
-    init(this, options, instance$a, create_fragment$a, safe_not_equal, { elementRoot: 2, enabled: 3 });
+    init(this, options, instance$b, create_fragment$b, safe_not_equal, { elementRoot: 2, enabled: 3 });
   }
 }
-function create_else_block$5(ctx) {
+function create_else_block$6(ctx) {
   let div;
   let tjsapplicationheader;
   let t0;
@@ -17544,7 +17575,7 @@ function create_else_block$5(ctx) {
     }
   };
 }
-function create_if_block$8(ctx) {
+function create_if_block$9(ctx) {
   let div;
   let tjsapplicationheader;
   let t0;
@@ -17844,12 +17875,12 @@ function create_if_block$8(ctx) {
     }
   };
 }
-function create_fragment$9(ctx) {
+function create_fragment$a(ctx) {
   let current_block_type_index;
   let if_block;
   let if_block_anchor;
   let current;
-  const if_block_creators = [create_if_block$8, create_else_block$5];
+  const if_block_creators = [create_if_block$9, create_else_block$6];
   const if_blocks = [];
   function select_block_type(ctx2, dirty) {
     if (
@@ -17910,7 +17941,7 @@ function create_fragment$9(ctx) {
     }
   };
 }
-function instance$9($$self, $$props, $$invalidate) {
+function instance$a($$self, $$props, $$invalidate) {
   let appResizeObserver;
   let appClasses;
   let $focusKeep;
@@ -18257,8 +18288,8 @@ class ApplicationShell extends SvelteComponent {
     init(
       this,
       options,
-      instance$9,
-      create_fragment$9,
+      instance$a,
+      create_fragment$a,
       safe_not_equal,
       {
         elementContent: 0,
@@ -22576,6 +22607,9 @@ function debug(...args) {
     console.log(`${LOG_PREFIX$2} |`, ...args);
   }
 }
+function error(...args) {
+  console.error(`${LOG_PREFIX$2} |`, ...args);
+}
 const PERMISSION_TYPES = {
   ALL: "all",
   // Everyone can see
@@ -24080,7 +24114,7 @@ async function handlePlayDefensiveFxSocket(data) {
   if (!config) return;
   await _playDefensiveBuiltin(config, { type, token, attacker }, item);
 }
-const providers = /* @__PURE__ */ new Map();
+const providers$1 = /* @__PURE__ */ new Map();
 let initialized = false;
 function initFxTriggerManager() {
   if (initialized) return;
@@ -24159,15 +24193,15 @@ function _apiRegisterProvider(provider) {
     debug(`FxTriggerManager | Skipping provider '${provider.id}' (system '${provider.systemId}' != '${game.system?.id}')`);
     return;
   }
-  if (providers.has(provider.id)) {
+  if (providers$1.has(provider.id)) {
     console.warn(`[ARS] WeaponFX: Provider '${provider.id}' already registered, replacing`);
     try {
-      providers.get(provider.id).destroy?.();
+      providers$1.get(provider.id).destroy?.();
     } catch (err) {
       console.warn(`[ARS] WeaponFX: Error destroying old provider '${provider.id}':`, err);
     }
   }
-  providers.set(provider.id, provider);
+  providers$1.set(provider.id, provider);
   debug(`FxTriggerManager | Registered provider '${provider.id}' (${provider.label})`);
   try {
     provider.init?.();
@@ -24176,14 +24210,14 @@ function _apiRegisterProvider(provider) {
   }
 }
 function _apiUnregisterProvider(providerId) {
-  const provider = providers.get(providerId);
+  const provider = providers$1.get(providerId);
   if (!provider) return;
   try {
     provider.destroy?.();
   } catch (err) {
     console.warn(`[ARS] WeaponFX: Error destroying provider '${providerId}':`, err);
   }
-  providers.delete(providerId);
+  providers$1.delete(providerId);
   debug(`FxTriggerManager | Unregistered provider '${providerId}'`);
 }
 function exportWeaponFx(item) {
@@ -24581,6 +24615,9 @@ function refreshAllTokenCounters() {
   if (!canvas?.ready) return;
   for (const token of canvas.tokens?.placeables ?? []) refreshTokenCounters(token);
 }
+function removeAllTokenCounters() {
+  for (const token of canvas.tokens?.placeables ?? []) removeTokenCounters(token);
+}
 function refreshActorTokenCounters(actor) {
   if (!actor || !canvas?.ready) return;
   for (const token of actor.getActiveTokens?.() ?? []) refreshTokenCounters(token);
@@ -24629,15 +24666,48 @@ function pickColor(def, value, max) {
 function isImagePath(s) {
   return typeof s === "string" && /\.(png|jpe?g|webp|svg|gif|bmp)$/i.test(s);
 }
+function isLegacyGraphics(g) {
+  return typeof g.lineStyle === "function";
+}
+function strokePath(g, build, style) {
+  if (isLegacyGraphics(g)) {
+    g.lineStyle({ width: style.width, color: style.color, alpha: style.alpha ?? 1, cap: style.cap ?? "butt" });
+    build(g);
+  } else {
+    build(g);
+    g.stroke({ width: style.width, color: style.color, alpha: style.alpha ?? 1, cap: style.cap ?? "butt" });
+  }
+}
+function fillPath(g, build, style) {
+  if (typeof g.beginFill === "function") {
+    g.beginFill(style.color, style.alpha ?? 1);
+    build(g);
+    g.endFill();
+  } else {
+    build(g);
+    g.fill({ color: style.color, alpha: style.alpha ?? 1 });
+  }
+}
+function rectPath(g, x, y, w, h) {
+  (typeof g.drawRect === "function" ? g.drawRect : g.rect).call(g, x, y, w, h);
+}
+function circlePath(g, x, y, r) {
+  (typeof g.drawCircle === "function" ? g.drawCircle : g.circle).call(g, x, y, r);
+}
+function polyPath(g, pts) {
+  (typeof g.drawPolygon === "function" ? g.drawPolygon : g.poly).call(g, pts);
+}
 function makeText(label) {
-  const text2 = new PIXI.Text(label, {
+  const major = Number(String(PIXI.VERSION ?? "7").split(".")[0]) || 7;
+  const style = {
     fontFamily: "Signika, sans-serif",
     fontSize: 12,
     fill: 16777215,
-    stroke: 0,
-    strokeThickness: 3,
-    align: "center"
-  });
+    align: "center",
+    // v8 expects stroke:{color,width}; v7 uses stroke + strokeThickness.
+    ...major >= 8 ? { stroke: { color: 0, width: 3 } } : { stroke: 0, strokeThickness: 3 }
+  };
+  const text2 = major >= 8 ? new PIXI.Text({ text: label, style }) : new PIXI.Text(label, style);
   text2.anchor.set(0.5);
   text2.resolution = 2;
   return text2;
@@ -24672,16 +24742,18 @@ function drawArc(g, color, fraction, radius, thickness, spanDeg, centerDeg) {
   const spanRad = (full ? 360 : spanDeg) * DEG;
   const start = full ? -Math.PI / 2 : centerDeg * DEG - spanRad / 2;
   const at = (a) => [Math.cos(a) * radius, Math.sin(a) * radius];
-  g.lineStyle({ width: thickness, color: 0, alpha: 0.35, cap: "round" });
-  const [bx, by] = at(start);
-  g.moveTo(bx, by);
-  g.arc(0, 0, radius, start, start + spanRad);
+  strokePath(g, (gg) => {
+    const [bx, by] = at(start);
+    gg.moveTo(bx, by);
+    gg.arc(0, 0, radius, start, start + spanRad);
+  }, { width: thickness, color: 0, alpha: 0.35, cap: "round" });
   if (fraction > 0) {
     const end = start + spanRad * Math.clamp(fraction, 0, 1);
-    g.lineStyle({ width: thickness, color, alpha: 1, cap: "round" });
-    const [fx, fy] = at(start);
-    g.moveTo(fx, fy);
-    g.arc(0, 0, radius, start, end);
+    strokePath(g, (gg) => {
+      const [fx, fy] = at(start);
+      gg.moveTo(fx, fy);
+      gg.arc(0, 0, radius, start, end);
+    }, { width: thickness, color, alpha: 1, cap: "round" });
   }
 }
 function drawBadge(node, g, def, color, fraction, radius, centerDeg) {
@@ -24690,17 +24762,10 @@ function drawBadge(node, g, def, color, fraction, radius, centerDeg) {
   const shape = def.visual?.shape;
   if (shape === "square") {
     const s = BADGE_SQUARE;
-    g.beginFill(0, 0.4);
-    g.drawRect(-s / 2, -s / 2, s, s);
-    g.endFill();
+    fillPath(g, (gg) => rectPath(gg, -s / 2, -s / 2, s, s), { color: 0, alpha: 0.4 });
     const fh = s * fraction;
-    if (fh > 0) {
-      g.beginFill(color, 0.9);
-      g.drawRect(-s / 2, s / 2 - fh, s, fh);
-      g.endFill();
-    }
-    g.lineStyle(1.5, color, 1);
-    g.drawRect(-s / 2, -s / 2, s, s);
+    if (fh > 0) fillPath(g, (gg) => rectPath(gg, -s / 2, s / 2 - fh, s, fh), { color, alpha: 0.9 });
+    strokePath(g, (gg) => rectPath(gg, -s / 2, -s / 2, s, s), { width: 1.5, color, alpha: 1 });
     return;
   }
   if (shape === "polygon") {
@@ -24710,11 +24775,8 @@ function drawBadge(node, g, def, color, fraction, radius, centerDeg) {
       const ang = -Math.PI / 2 + i * (2 * Math.PI / sides);
       pts.push(Math.cos(ang) * BADGE_POLY_R, Math.sin(ang) * BADGE_POLY_R);
     }
-    g.beginFill(color, 0.85);
-    g.drawPolygon(pts);
-    g.endFill();
-    g.lineStyle(1.5, 0, 0.5);
-    g.drawPolygon(pts);
+    fillPath(g, (gg) => polyPath(gg, pts), { color, alpha: 0.85 });
+    strokePath(g, (gg) => polyPath(gg, pts), { width: 1.5, color: 0, alpha: 0.5 });
     return;
   }
   if (shape === "icon" && isImagePath(def.visual?.icon)) {
@@ -24725,11 +24787,8 @@ function drawBadge(node, g, def, color, fraction, radius, centerDeg) {
     node.addChild(sprite);
     return;
   }
-  g.beginFill(color, 0.85);
-  g.drawCircle(0, 0, BADGE_CIRCLE_R);
-  g.endFill();
-  g.lineStyle(1.5, 0, 0.5);
-  g.drawCircle(0, 0, BADGE_CIRCLE_R);
+  fillPath(g, (gg) => circlePath(gg, 0, 0, BADGE_CIRCLE_R), { color, alpha: 0.85 });
+  strokePath(g, (gg) => circlePath(gg, 0, 0, BADGE_CIRCLE_R), { width: 1.5, color: 0, alpha: 0.5 });
 }
 const LOG_PREFIX$1 = "Antifriz Roleplay Stuff | tokenCounters";
 function asTokenDoc(target) {
@@ -24869,17 +24928,269 @@ function createTokenCountersApi() {
     }
   };
 }
-function get_each_context_1$6(ctx, list, i) {
+class SpeedProvider {
+  /**
+   * @param {string} id - Fully qualified provider id, e.g. `system.my-system`.
+   */
+  constructor(id) {
+    this.id = id;
+  }
+  /**
+   * Colours offered by this provider, one per speed category.
+   * @returns {SpeedProviderColor[]}
+   * @abstract
+   */
+  get colors() {
+    throw new Error("A SpeedProvider must implement the `colors` getter");
+  }
+  /**
+   * Distances the given token can reach, one entry per speed category.
+   * Return an empty array to leave the ruler uncoloured for this token.
+   * @param {Token} token - The dragged token placeable.
+   * @returns {SpeedProviderRange[]}
+   * @abstract
+   */
+  // eslint-disable-next-line no-unused-vars
+  getRanges(token) {
+    throw new Error("A SpeedProvider must implement the `getRanges` method");
+  }
+  /**
+   * Provider specific settings shown in the Movement Ruler configuration app.
+   * Each entry uses the shape of `game.settings.register` data plus an `id`.
+   * @returns {Array<object>}
+   */
+  get settings() {
+    return [];
+  }
+  /**
+   * Colour used for distances beyond every declared range.
+   * @returns {number}
+   */
+  get defaultUnreachableColor() {
+    return MR_DEFAULT_UNREACHABLE_COLOR;
+  }
+  /**
+   * Whether the ruler is shown at all for the given token.
+   * @param {Token} token
+   * @returns {boolean}
+   */
+  // eslint-disable-next-line no-unused-vars
+  usesRuler(token) {
+    return true;
+  }
+  /**
+   * Read one of this provider's registered settings.
+   * @param {string} settingId
+   * @returns {*}
+   */
+  getSetting(settingId) {
+    try {
+      return game.settings.get(MODULE_ID, mrProviderSettingKey(this.id, settingId));
+    } catch (err) {
+      throw new Error(
+        `Movement Ruler | "${settingId}" is not a registered setting of provider "${this.id}". Add it to the return value of the provider's \`settings\` getter.`,
+        { cause: err }
+      );
+    }
+  }
+  /**
+   * Read the user-configured value of one of this provider's colours.
+   * @param {string} colorId
+   * @returns {number}
+   */
+  getColor(colorId) {
+    try {
+      return game.settings.get(MODULE_ID, mrColorSettingKey(this.id, colorId));
+    } catch {
+      return this.defaultUnreachableColor;
+    }
+  }
+}
+class GenericSpeedProvider extends SpeedProvider {
+  /** @inheritdoc */
+  get colors() {
+    return [
+      { id: "walk", default: MR_GENERIC_COLORS.WALK, name: "MOVEMENTRULER.speeds.Walk" },
+      { id: "dash", default: MR_GENERIC_COLORS.DASH, name: "MOVEMENTRULER.speeds.Dash" }
+    ];
+  }
+  /** @inheritdoc */
+  get settings() {
+    return [
+      {
+        id: "speedAttribute",
+        name: "MOVEMENTRULER.generic.speedAttribute.Name",
+        hint: "MOVEMENTRULER.generic.speedAttribute.Hint",
+        scope: "world",
+        type: String,
+        default: ""
+      },
+      {
+        id: "dashMultiplier",
+        name: "MOVEMENTRULER.generic.dashMultiplier.Name",
+        hint: "MOVEMENTRULER.generic.dashMultiplier.Hint",
+        scope: "world",
+        type: Number,
+        default: MR_DEFAULT_DASH_MULTIPLIER
+      }
+    ];
+  }
+  /** @inheritdoc */
+  getRanges(token) {
+    const attribute = this.getSetting("speedAttribute");
+    if (!attribute) return [];
+    const speed = Number(foundry.utils.getProperty(token, attribute));
+    if (!Number.isFinite(speed) || speed <= 0) return [];
+    const ranges = [{ range: speed, color: "walk" }];
+    const dashMultiplier = Number(this.getSetting("dashMultiplier"));
+    if (Number.isFinite(dashMultiplier) && dashMultiplier > 1) {
+      ranges.push({ range: speed * dashMultiplier, color: "dash" });
+    }
+    return ranges;
+  }
+}
+const providers = /* @__PURE__ */ new Map();
+let activeProvider;
+function getSpeedProviders() {
+  return providers;
+}
+function getActiveSpeedProvider() {
+  return activeProvider;
+}
+function getDefaultSpeedProviderId() {
+  const ids = [...providers.keys()];
+  return ids.find((id) => id.startsWith("system.")) ?? ids.find((id) => id.startsWith("module.")) ?? MR_NATIVE_PROVIDER_ID;
+}
+function refreshActiveSpeedProvider() {
+  const configured = game.settings.get(MODULE_ID, MR_SETTINGS.speedProvider);
+  activeProvider = providers.get(configured) ?? providers.get(getDefaultSpeedProviderId());
+}
+function setupProvider(provider) {
+  const unreachable = {
+    id: MR_UNREACHABLE_COLOR_ID,
+    default: provider.defaultUnreachableColor,
+    name: "MOVEMENTRULER.speeds.Unreachable"
+  };
+  for (const color of [...provider.colors, unreachable]) {
+    game.settings.register(MODULE_ID, mrColorSettingKey(provider.id, color.id), {
+      scope: "client",
+      config: false,
+      type: Number,
+      default: color.default
+    });
+  }
+  for (const setting of provider.settings) {
+    game.settings.register(MODULE_ID, mrProviderSettingKey(provider.id, setting.id), {
+      ...setting,
+      config: false
+    });
+  }
+  providers.set(provider.id, provider);
+  const providerSetting = game.settings.settings.get(`${MODULE_ID}.${MR_SETTINGS.speedProvider}`);
+  if (providerSetting) providerSetting.default = getDefaultSpeedProviderId();
+  refreshActiveSpeedProvider();
+}
+function register(id, ProviderClass) {
+  if (!(ProviderClass?.prototype instanceof SpeedProvider)) {
+    error(`Movement Ruler | "${id}" tried to register a speed provider that does not extend SpeedProvider.`);
+    return false;
+  }
+  if (providers.has(id)) {
+    error(`Movement Ruler | A speed provider with the id "${id}" is already registered.`);
+    return false;
+  }
+  try {
+    setupProvider(new ProviderClass(id));
+    return true;
+  } catch (err) {
+    error(`Movement Ruler | Failed to register the speed provider "${id}".`, err);
+    return false;
+  }
+}
+function registerSystemSpeedProvider(systemId, ProviderClass) {
+  if (game.system.id !== systemId) {
+    error(
+      `Movement Ruler | A speed provider was registered with the system id "${systemId}", but the active system is "${game.system.id}". The registration was ignored.`
+    );
+    return false;
+  }
+  return register(`system.${systemId}`, ProviderClass);
+}
+function registerModuleSpeedProvider(moduleId, ProviderClass) {
+  if (!game.modules.get(moduleId)?.active) {
+    error(
+      `Movement Ruler | A speed provider was registered with the module id "${moduleId}", but no active module with that id exists. The registration was ignored.`
+    );
+    return false;
+  }
+  return register(`module.${moduleId}`, ProviderClass);
+}
+function initSpeedProviders() {
+  if (providers.has(MR_NATIVE_PROVIDER_ID)) return;
+  setupProvider(new GenericSpeedProvider(MR_NATIVE_PROVIDER_ID));
+}
+function getRangesForToken(token) {
+  const provider = activeProvider;
+  if (!provider || !token) return [];
+  try {
+    return provider.getRanges(token).filter((range) => Number.isFinite(range?.range)).map((range) => ({ range: range.range, color: provider.getColor(range.color) })).sort((a, b) => a.range - b.range);
+  } catch (err) {
+    error(`Movement Ruler | The speed provider "${provider.id}" threw while computing ranges.`, err);
+    return [];
+  }
+}
+function getUnreachableColor() {
+  return activeProvider?.getColor(MR_UNREACHABLE_COLOR_ID) ?? 16711680;
+}
+function getColorForDistanceAndToken(distance, token, ranges) {
+  const speedRanges = ranges ?? getRangesForToken(token);
+  if (speedRanges.length === 0) return null;
+  const travelled = Math.round(distance * 100) / 100;
+  const match = speedRanges.find((range) => travelled <= range.range);
+  return match ? match.color : getUnreachableColor();
+}
+function getWaypointMeasurement(waypoint, mode) {
+  const measurementMode = mode ?? game.settings.get(MODULE_ID, MR_SETTINGS.measurement);
+  const measurement = waypoint?.measurement ?? {};
+  const value = measurementMode === MR_MEASUREMENT_MODES.DISTANCE ? measurement.distance : measurement.cost;
+  return Number.isFinite(value) ? value : Number.POSITIVE_INFINITY;
+}
+function colorNumberToHex(value) {
+  const int = Number.isFinite(value) ? Math.trunc(value) & 16777215 : 0;
+  return `#${int.toString(16).padStart(6, "0")}`;
+}
+function colorHexToNumber(hex) {
+  const parsed = Number.parseInt(String(hex).replace("#", ""), 16);
+  return Number.isFinite(parsed) ? parsed & 16777215 : 0;
+}
+function createMovementRulerApi() {
+  return {
+    SpeedProvider,
+    GenericSpeedProvider,
+    registerSystem: registerSystemSpeedProvider,
+    registerModule: registerModuleSpeedProvider,
+    getRangesForToken,
+    getColorForDistanceAndToken,
+    getUnreachableColor,
+    get providers() {
+      return getSpeedProviders();
+    },
+    get activeProvider() {
+      return getActiveSpeedProvider();
+    }
+  };
+}
+function get_each_context_1$7(ctx, list, i) {
   const child_ctx = ctx.slice();
   child_ctx[28] = list[i];
   return child_ctx;
 }
-function get_each_context$6(ctx, list, i) {
+function get_each_context$7(ctx, list, i) {
   const child_ctx = ctx.slice();
   child_ctx[25] = list[i];
   return child_ctx;
 }
-function create_if_block_5$5(ctx) {
+function create_if_block_5$6(ctx) {
   let span;
   let t0;
   let t1;
@@ -24919,14 +25230,14 @@ function create_if_block_5$5(ctx) {
     }
   };
 }
-function create_if_block$7(ctx) {
+function create_if_block$8(ctx) {
   let div;
   let mounted;
   let dispose;
   function select_block_type(ctx2, dirty) {
     if (!/*showUserPicker*/
-    ctx2[3]) return create_if_block_1$6;
-    return create_else_block$4;
+    ctx2[3]) return create_if_block_1$7;
+    return create_else_block$5;
   }
   let current_block_type = select_block_type(ctx);
   let if_block = current_block_type(ctx);
@@ -25010,7 +25321,7 @@ function create_if_block$7(ctx) {
     }
   };
 }
-function create_else_block$4(ctx) {
+function create_else_block$5(ctx) {
   let div3;
   let div0;
   let button0;
@@ -25035,8 +25346,8 @@ function create_else_block$4(ctx) {
     if (
       /*players*/
       ctx2[7].length === 0
-    ) return create_if_block_3$6;
-    return create_else_block_1$3;
+    ) return create_if_block_3$7;
+    return create_else_block_1$4;
   }
   let current_block_type = select_block_type_1(ctx);
   let if_block = current_block_type(ctx);
@@ -25129,7 +25440,7 @@ function create_else_block$4(ctx) {
     }
   };
 }
-function create_if_block_1$6(ctx) {
+function create_if_block_1$7(ctx) {
   let div;
   let each_value = ensure_array_like(
     /*options*/
@@ -25137,7 +25448,7 @@ function create_if_block_1$6(ctx) {
   );
   let each_blocks = [];
   for (let i = 0; i < each_value.length; i += 1) {
-    each_blocks[i] = create_each_block$6(get_each_context$6(ctx, each_value, i));
+    each_blocks[i] = create_each_block$7(get_each_context$7(ctx, each_value, i));
   }
   return {
     c() {
@@ -25164,11 +25475,11 @@ function create_if_block_1$6(ctx) {
         );
         let i;
         for (i = 0; i < each_value.length; i += 1) {
-          const child_ctx = get_each_context$6(ctx2, each_value, i);
+          const child_ctx = get_each_context$7(ctx2, each_value, i);
           if (each_blocks[i]) {
             each_blocks[i].p(child_ctx, dirty);
           } else {
-            each_blocks[i] = create_each_block$6(child_ctx);
+            each_blocks[i] = create_each_block$7(child_ctx);
             each_blocks[i].c();
             each_blocks[i].m(div, null);
           }
@@ -25187,7 +25498,7 @@ function create_if_block_1$6(ctx) {
     }
   };
 }
-function create_else_block_1$3(ctx) {
+function create_else_block_1$4(ctx) {
   let each_1_anchor;
   let each_value_1 = ensure_array_like(
     /*players*/
@@ -25195,7 +25506,7 @@ function create_else_block_1$3(ctx) {
   );
   let each_blocks = [];
   for (let i = 0; i < each_value_1.length; i += 1) {
-    each_blocks[i] = create_each_block_1$6(get_each_context_1$6(ctx, each_value_1, i));
+    each_blocks[i] = create_each_block_1$7(get_each_context_1$7(ctx, each_value_1, i));
   }
   return {
     c() {
@@ -25221,11 +25532,11 @@ function create_else_block_1$3(ctx) {
         );
         let i;
         for (i = 0; i < each_value_1.length; i += 1) {
-          const child_ctx = get_each_context_1$6(ctx2, each_value_1, i);
+          const child_ctx = get_each_context_1$7(ctx2, each_value_1, i);
           if (each_blocks[i]) {
             each_blocks[i].p(child_ctx, dirty);
           } else {
-            each_blocks[i] = create_each_block_1$6(child_ctx);
+            each_blocks[i] = create_each_block_1$7(child_ctx);
             each_blocks[i].c();
             each_blocks[i].m(each_1_anchor.parentNode, each_1_anchor);
           }
@@ -25244,7 +25555,7 @@ function create_else_block_1$3(ctx) {
     }
   };
 }
-function create_if_block_3$6(ctx) {
+function create_if_block_3$7(ctx) {
   let div;
   return {
     c() {
@@ -25263,7 +25574,7 @@ function create_if_block_3$6(ctx) {
     }
   };
 }
-function create_if_block_4$6(ctx) {
+function create_if_block_4$7(ctx) {
   let span;
   return {
     c() {
@@ -25281,7 +25592,7 @@ function create_if_block_4$6(ctx) {
     }
   };
 }
-function create_each_block_1$6(ctx) {
+function create_each_block_1$7(ctx) {
   let label;
   let input;
   let input_checked_value;
@@ -25310,7 +25621,7 @@ function create_each_block_1$6(ctx) {
   }
   let if_block = (
     /*player*/
-    ctx[28].active && create_if_block_4$6()
+    ctx[28].active && create_if_block_4$7()
   );
   return {
     c() {
@@ -25392,7 +25703,7 @@ function create_each_block_1$6(ctx) {
       ) {
         if (if_block) ;
         else {
-          if_block = create_if_block_4$6();
+          if_block = create_if_block_4$7();
           if_block.c();
           if_block.m(label, t4);
         }
@@ -25411,7 +25722,7 @@ function create_each_block_1$6(ctx) {
     }
   };
 }
-function create_if_block_2$6(ctx) {
+function create_if_block_2$7(ctx) {
   let i;
   return {
     c() {
@@ -25428,7 +25739,7 @@ function create_if_block_2$6(ctx) {
     }
   };
 }
-function create_each_block$6(ctx) {
+function create_each_block$7(ctx) {
   let button;
   let i;
   let t0;
@@ -25440,7 +25751,7 @@ function create_each_block$6(ctx) {
   let if_block = (
     /*normalized*/
     ctx[1].type === /*option*/
-    ctx[25].value && create_if_block_2$6()
+    ctx[25].value && create_if_block_2$7()
   );
   function click_handler_1() {
     return (
@@ -25496,7 +25807,7 @@ function create_each_block$6(ctx) {
       ) {
         if (if_block) ;
         else {
-          if_block = create_if_block_2$6();
+          if_block = create_if_block_2$7();
           if_block.c();
           if_block.m(button, t3);
         }
@@ -25525,7 +25836,7 @@ function create_each_block$6(ctx) {
     }
   };
 }
-function create_fragment$8(ctx) {
+function create_fragment$9(ctx) {
   let div;
   let button;
   let i;
@@ -25537,10 +25848,10 @@ function create_fragment$8(ctx) {
   let mounted;
   let dispose;
   let if_block0 = !/*compact*/
-  ctx[0] && create_if_block_5$5(ctx);
+  ctx[0] && create_if_block_5$6(ctx);
   let if_block1 = (
     /*isOpen*/
-    ctx[2] && create_if_block$7(ctx)
+    ctx[2] && create_if_block$8(ctx)
   );
   return {
     c() {
@@ -25611,7 +25922,7 @@ function create_fragment$8(ctx) {
         if (if_block0) {
           if_block0.p(ctx2, dirty);
         } else {
-          if_block0 = create_if_block_5$5(ctx2);
+          if_block0 = create_if_block_5$6(ctx2);
           if_block0.c();
           if_block0.m(button, null);
         }
@@ -25649,7 +25960,7 @@ function create_fragment$8(ctx) {
         if (if_block1) {
           if_block1.p(ctx2, dirty);
         } else {
-          if_block1 = create_if_block$7(ctx2);
+          if_block1 = create_if_block$8(ctx2);
           if_block1.c();
           if_block1.m(if_block1_anchor.parentNode, if_block1_anchor);
         }
@@ -25682,7 +25993,7 @@ function portal$1(node) {
     }
   };
 }
-function instance$8($$self, $$props, $$invalidate) {
+function instance$9($$self, $$props, $$invalidate) {
   let normalized;
   let currentLabel;
   let currentIcon;
@@ -25812,15 +26123,15 @@ function instance$8($$self, $$props, $$invalidate) {
 class PermissionPicker extends SvelteComponent {
   constructor(options) {
     super();
-    init(this, options, instance$8, create_fragment$8, safe_not_equal, { value: 16, compact: 0 });
+    init(this, options, instance$9, create_fragment$9, safe_not_equal, { value: 16, compact: 0 });
   }
 }
-function get_each_context$5(ctx, list, i) {
+function get_each_context$6(ctx, list, i) {
   const child_ctx = ctx.slice();
   child_ctx[59] = list[i];
   return child_ctx;
 }
-function get_each_context_1$5(ctx, list, i) {
+function get_each_context_1$6(ctx, list, i) {
   const child_ctx = ctx.slice();
   child_ctx[62] = list[i];
   const constants_0 = (
@@ -25850,12 +26161,12 @@ function get_each_context_1$5(ctx, list, i) {
   child_ctx[66] = constants_3;
   return child_ctx;
 }
-function get_each_context_2$2(ctx, list, i) {
+function get_each_context_2$3(ctx, list, i) {
   const child_ctx = ctx.slice();
   child_ctx[69] = list[i];
   return child_ctx;
 }
-function get_each_context_3$1(ctx, list, i) {
+function get_each_context_3$2(ctx, list, i) {
   const child_ctx = ctx.slice();
   child_ctx[72] = list[i];
   return child_ctx;
@@ -26074,7 +26385,7 @@ function create_if_block_9$3(ctx) {
   let each_value_3 = ensure_array_like(getOnlinePlayers());
   let each_blocks = [];
   for (let i = 0; i < each_value_3.length; i += 1) {
-    each_blocks[i] = create_each_block_3$1(get_each_context_3$1(ctx, each_value_3, i));
+    each_blocks[i] = create_each_block_3$2(get_each_context_3$2(ctx, each_value_3, i));
   }
   let if_block = show_if && create_if_block_10$3();
   return {
@@ -26167,11 +26478,11 @@ function create_if_block_9$3(ctx) {
         each_value_3 = ensure_array_like(getOnlinePlayers());
         let i;
         for (i = 0; i < each_value_3.length; i += 1) {
-          const child_ctx = get_each_context_3$1(ctx2, each_value_3, i);
+          const child_ctx = get_each_context_3$2(ctx2, each_value_3, i);
           if (each_blocks[i]) {
             each_blocks[i].p(child_ctx, dirty);
           } else {
-            each_blocks[i] = create_each_block_3$1(child_ctx);
+            each_blocks[i] = create_each_block_3$2(child_ctx);
             each_blocks[i].c();
             each_blocks[i].m(div1, t5);
           }
@@ -26193,7 +26504,7 @@ function create_if_block_9$3(ctx) {
     }
   };
 }
-function create_each_block_3$1(ctx) {
+function create_each_block_3$2(ctx) {
   let button;
   let i;
   let t0;
@@ -26409,7 +26720,7 @@ function create_if_block_7$4(ctx) {
     }
   };
 }
-function create_else_block_1$2(ctx) {
+function create_else_block_1$3(ctx) {
   let each_1_anchor;
   let current;
   let each_value = ensure_array_like(
@@ -26418,7 +26729,7 @@ function create_else_block_1$2(ctx) {
   );
   let each_blocks = [];
   for (let i = 0; i < each_value.length; i += 1) {
-    each_blocks[i] = create_each_block$5(get_each_context$5(ctx, each_value, i));
+    each_blocks[i] = create_each_block$6(get_each_context$6(ctx, each_value, i));
   }
   const out = (i) => transition_out(each_blocks[i], 1, 1, () => {
     each_blocks[i] = null;
@@ -26448,12 +26759,12 @@ function create_else_block_1$2(ctx) {
         );
         let i;
         for (i = 0; i < each_value.length; i += 1) {
-          const child_ctx = get_each_context$5(ctx2, each_value, i);
+          const child_ctx = get_each_context$6(ctx2, each_value, i);
           if (each_blocks[i]) {
             each_blocks[i].p(child_ctx, dirty);
             transition_in(each_blocks[i], 1);
           } else {
-            each_blocks[i] = create_each_block$5(child_ctx);
+            each_blocks[i] = create_each_block$6(child_ctx);
             each_blocks[i].c();
             transition_in(each_blocks[i], 1);
             each_blocks[i].m(each_1_anchor.parentNode, each_1_anchor);
@@ -26488,7 +26799,7 @@ function create_else_block_1$2(ctx) {
     }
   };
 }
-function create_if_block$6(ctx) {
+function create_if_block$7(ctx) {
   let div;
   let i;
   let t;
@@ -26496,8 +26807,8 @@ function create_if_block$6(ctx) {
     if (
       /*tracks*/
       ctx2[2].length === 0
-    ) return create_if_block_1$5;
-    return create_else_block$3;
+    ) return create_if_block_1$6;
+    return create_else_block$4;
   }
   let current_block_type = select_block_type_1(ctx);
   let if_block = current_block_type(ctx);
@@ -26536,7 +26847,7 @@ function create_if_block$6(ctx) {
     }
   };
 }
-function create_if_block_5$4(ctx) {
+function create_if_block_5$5(ctx) {
   let button;
   let mounted;
   let dispose;
@@ -26570,7 +26881,7 @@ function create_if_block_5$4(ctx) {
     }
   };
 }
-function create_if_block_4$5(ctx) {
+function create_if_block_4$6(ctx) {
   let div1;
   let div0;
   let mounted;
@@ -26649,7 +26960,7 @@ function create_if_block_4$5(ctx) {
     }
   };
 }
-function create_if_block_3$5(ctx) {
+function create_if_block_3$6(ctx) {
   let option;
   let t0;
   let t1_value = (
@@ -26694,7 +27005,7 @@ function create_if_block_3$5(ctx) {
     }
   };
 }
-function create_each_block_2$2(ctx) {
+function create_each_block_2$3(ctx) {
   let option;
   let t_value = (
     /*cat*/
@@ -26732,7 +27043,7 @@ function create_each_block_2$2(ctx) {
     }
   };
 }
-function create_if_block_2$5(ctx) {
+function create_if_block_2$6(ctx) {
   let permissionpicker;
   let current;
   function change_handler_1(...args) {
@@ -26785,7 +27096,7 @@ function create_if_block_2$5(ctx) {
     }
   };
 }
-function create_each_block_1$5(key_1, ctx) {
+function create_each_block_1$6(key_1, ctx) {
   let div2;
   let button0;
   let i0;
@@ -26823,7 +27134,7 @@ function create_each_block_1$5(key_1, ctx) {
   }
   let if_block0 = (
     /*isCurrentTrack*/
-    ctx[63] && create_if_block_5$4(ctx)
+    ctx[63] && create_if_block_5$5(ctx)
   );
   function dblclick_handler() {
     return (
@@ -26837,17 +27148,17 @@ function create_each_block_1$5(key_1, ctx) {
   let if_block1 = (
     /*isCurrentTrack*/
     ctx[63] && /*duration*/
-    ctx[13] > 0 && create_if_block_4$5(ctx)
+    ctx[13] > 0 && create_if_block_4$6(ctx)
   );
   let if_block2 = !/*isValidCategory*/
-  ctx[66] && create_if_block_3$5(ctx);
+  ctx[66] && create_if_block_3$6(ctx);
   let each_value_2 = ensure_array_like(
     /*categories*/
     ctx[8]
   );
   let each_blocks = [];
   for (let i = 0; i < each_value_2.length; i += 1) {
-    each_blocks[i] = create_each_block_2$2(get_each_context_2$2(ctx, each_value_2, i));
+    each_blocks[i] = create_each_block_2$3(get_each_context_2$3(ctx, each_value_2, i));
   }
   function change_handler(...args) {
     return (
@@ -26861,7 +27172,7 @@ function create_each_block_1$5(key_1, ctx) {
   }
   let if_block3 = (
     /*isGM*/
-    ctx[19] && create_if_block_2$5(ctx)
+    ctx[19] && create_if_block_2$6(ctx)
   );
   function click_handler_6() {
     return (
@@ -26987,7 +27298,7 @@ function create_each_block_1$5(key_1, ctx) {
         if (if_block0) {
           if_block0.p(ctx, dirty);
         } else {
-          if_block0 = create_if_block_5$4(ctx);
+          if_block0 = create_if_block_5$5(ctx);
           if_block0.c();
           if_block0.m(div2, t1);
         }
@@ -27006,7 +27317,7 @@ function create_each_block_1$5(key_1, ctx) {
         if (if_block1) {
           if_block1.p(ctx, dirty);
         } else {
-          if_block1 = create_if_block_4$5(ctx);
+          if_block1 = create_if_block_4$6(ctx);
           if_block1.c();
           if_block1.m(div0, null);
         }
@@ -27019,7 +27330,7 @@ function create_each_block_1$5(key_1, ctx) {
         if (if_block2) {
           if_block2.p(ctx, dirty);
         } else {
-          if_block2 = create_if_block_3$5(ctx);
+          if_block2 = create_if_block_3$6(ctx);
           if_block2.c();
           if_block2.m(select, if_block2_anchor);
         }
@@ -27035,11 +27346,11 @@ function create_each_block_1$5(key_1, ctx) {
         );
         let i;
         for (i = 0; i < each_value_2.length; i += 1) {
-          const child_ctx = get_each_context_2$2(ctx, each_value_2, i);
+          const child_ctx = get_each_context_2$3(ctx, each_value_2, i);
           if (each_blocks[i]) {
             each_blocks[i].p(child_ctx, dirty);
           } else {
-            each_blocks[i] = create_each_block_2$2(child_ctx);
+            each_blocks[i] = create_each_block_2$3(child_ctx);
             each_blocks[i].c();
             each_blocks[i].m(select, null);
           }
@@ -27079,7 +27390,7 @@ function create_each_block_1$5(key_1, ctx) {
             transition_in(if_block3, 1);
           }
         } else {
-          if_block3 = create_if_block_2$5(ctx);
+          if_block3 = create_if_block_2$6(ctx);
           if_block3.c();
           transition_in(if_block3, 1);
           if_block3.m(div1, t6);
@@ -27133,7 +27444,7 @@ function create_each_block_1$5(key_1, ctx) {
     }
   };
 }
-function create_each_block$5(ctx) {
+function create_each_block$6(ctx) {
   let div;
   let h3;
   let i;
@@ -27158,9 +27469,9 @@ function create_each_block$5(ctx) {
     ctx2[62].id
   );
   for (let i2 = 0; i2 < each_value_1.length; i2 += 1) {
-    let child_ctx = get_each_context_1$5(ctx, each_value_1, i2);
+    let child_ctx = get_each_context_1$6(ctx, each_value_1, i2);
     let key = get_key(child_ctx);
-    each_1_lookup.set(key, each_blocks[i2] = create_each_block_1$5(key, child_ctx));
+    each_1_lookup.set(key, each_blocks[i2] = create_each_block_1$6(key, child_ctx));
   }
   return {
     c() {
@@ -27210,7 +27521,7 @@ function create_each_block$5(ctx) {
           ctx2[59].tracks
         );
         group_outros();
-        each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx2, each_value_1, each_1_lookup, div, outro_and_destroy_block, create_each_block_1$5, t3, get_each_context_1$5);
+        each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx2, each_value_1, each_1_lookup, div, outro_and_destroy_block, create_each_block_1$6, t3, get_each_context_1$6);
         check_outros();
       }
     },
@@ -27237,7 +27548,7 @@ function create_each_block$5(ctx) {
     }
   };
 }
-function create_else_block$3(ctx) {
+function create_else_block$4(ctx) {
   let p0;
   let t1;
   let p1;
@@ -27264,7 +27575,7 @@ function create_else_block$3(ctx) {
     }
   };
 }
-function create_if_block_1$5(ctx) {
+function create_if_block_1$6(ctx) {
   let p0;
   let t1;
   let p1;
@@ -27291,7 +27602,7 @@ function create_if_block_1$5(ctx) {
     }
   };
 }
-function create_default_slot$5(ctx) {
+function create_default_slot$6(ctx) {
   let main;
   let header;
   let h2;
@@ -27329,7 +27640,7 @@ function create_default_slot$5(ctx) {
     ctx[15] && /*isPlaying*/
     ctx[9] && create_if_block_6$4(ctx)
   );
-  const if_block_creators = [create_if_block$6, create_else_block_1$2];
+  const if_block_creators = [create_if_block$7, create_else_block_1$3];
   const if_blocks = [];
   function select_block_type(ctx2, dirty) {
     if (
@@ -27507,7 +27818,7 @@ function create_default_slot$5(ctx) {
     }
   };
 }
-function create_fragment$7(ctx) {
+function create_fragment$8(ctx) {
   let applicationshell;
   let updating_elementRoot;
   let current;
@@ -27517,7 +27828,7 @@ function create_fragment$7(ctx) {
     ctx[45](value);
   }
   let applicationshell_props = {
-    $$slots: { default: [create_default_slot$5] },
+    $$slots: { default: [create_default_slot$6] },
     $$scope: { ctx }
   };
   if (
@@ -27586,7 +27897,7 @@ function formatTime(seconds) {
 }
 const keydown_handler = () => {
 };
-function instance$7($$self, $$props, $$invalidate) {
+function instance$8($$self, $$props, $$invalidate) {
   let doc;
   let currentTrack;
   let visibleTracks;
@@ -27941,7 +28252,7 @@ function instance$7($$self, $$props, $$invalidate) {
 class CharacterMusicShell extends SvelteComponent {
   constructor(options) {
     super();
-    init(this, options, instance$7, create_fragment$7, safe_not_equal, { elementRoot: 0, tjsDoc: 1 }, null, [-1, -1, -1]);
+    init(this, options, instance$8, create_fragment$8, safe_not_equal, { elementRoot: 0, tjsDoc: 1 }, null, [-1, -1, -1]);
   }
   get elementRoot() {
     return this.$$.ctx[0];
@@ -27958,7 +28269,7 @@ class CharacterMusicShell extends SvelteComponent {
     flush();
   }
 }
-function get_each_context$4(ctx, list, i) {
+function get_each_context$5(ctx, list, i) {
   const child_ctx = ctx.slice();
   child_ctx[48] = list[i];
   const constants_0 = (
@@ -27993,7 +28304,7 @@ function get_each_context$4(ctx, list, i) {
   child_ctx[53] = constants_4;
   return child_ctx;
 }
-function get_each_context_1$4(ctx, list, i) {
+function get_each_context_1$5(ctx, list, i) {
   const child_ctx = ctx.slice();
   child_ctx[48] = list[i];
   const constants_0 = normalizePermission(
@@ -28086,9 +28397,9 @@ function create_else_block_2$1(ctx) {
     ctx2[48].path
   );
   for (let i = 0; i < each_value_1.length; i += 1) {
-    let child_ctx = get_each_context_1$4(ctx, each_value_1, i);
+    let child_ctx = get_each_context_1$5(ctx, each_value_1, i);
     let key = get_key(child_ctx);
-    each_1_lookup.set(key, each_blocks[i] = create_each_block_1$4(key, child_ctx));
+    each_1_lookup.set(key, each_blocks[i] = create_each_block_1$5(key, child_ctx));
   }
   return {
     c() {
@@ -28113,7 +28424,7 @@ function create_else_block_2$1(ctx) {
           /*activeVisibleItems*/
           ctx2[11]
         );
-        each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx2, each_value_1, each_1_lookup, div, destroy_block, create_each_block_1$4, null, get_each_context_1$4);
+        each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx2, each_value_1, each_1_lookup, div, destroy_block, create_each_block_1$5, null, get_each_context_1$5);
       }
     },
     d(detaching) {
@@ -28175,7 +28486,7 @@ function create_if_block_9$2(ctx) {
     }
   };
 }
-function create_each_block_1$4(key_1, ctx) {
+function create_each_block_1$5(key_1, ctx) {
   let button;
   let img;
   let img_src_value;
@@ -28296,7 +28607,7 @@ function create_each_block_1$4(key_1, ctx) {
     }
   };
 }
-function create_else_block_1$1(ctx) {
+function create_else_block_1$2(ctx) {
   let t_value = (
     /*activeTab*/
     ctx[2] === "portraits" ? "Add Portrait" : "Add Token"
@@ -28459,7 +28770,7 @@ function create_if_block_6$3(ctx) {
     }
   };
 }
-function create_else_block$2(ctx) {
+function create_else_block$3(ctx) {
   let each_blocks = [];
   let each_1_lookup = /* @__PURE__ */ new Map();
   let each_1_anchor;
@@ -28473,9 +28784,9 @@ function create_else_block$2(ctx) {
     ctx2[48].path
   );
   for (let i = 0; i < each_value.length; i += 1) {
-    let child_ctx = get_each_context$4(ctx, each_value, i);
+    let child_ctx = get_each_context$5(ctx, each_value, i);
     let key = get_key(child_ctx);
-    each_1_lookup.set(key, each_blocks[i] = create_each_block$4(key, child_ctx));
+    each_1_lookup.set(key, each_blocks[i] = create_each_block$5(key, child_ctx));
   }
   return {
     c() {
@@ -28501,7 +28812,7 @@ function create_else_block$2(ctx) {
           ctx2[10]
         );
         group_outros();
-        each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx2, each_value, each_1_lookup, each_1_anchor.parentNode, outro_and_destroy_block, create_each_block$4, each_1_anchor, get_each_context$4);
+        each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx2, each_value, each_1_lookup, each_1_anchor.parentNode, outro_and_destroy_block, create_each_block$5, each_1_anchor, get_each_context$5);
         check_outros();
       }
     },
@@ -28528,7 +28839,7 @@ function create_else_block$2(ctx) {
     }
   };
 }
-function create_if_block$5(ctx) {
+function create_if_block$6(ctx) {
   let div;
   let i;
   let t0;
@@ -28610,7 +28921,7 @@ function create_if_block$5(ctx) {
     }
   };
 }
-function create_if_block_5$3(ctx) {
+function create_if_block_5$4(ctx) {
   let div;
   return {
     c() {
@@ -28629,7 +28940,7 @@ function create_if_block_5$3(ctx) {
     }
   };
 }
-function create_if_block_4$4(ctx) {
+function create_if_block_4$5(ctx) {
   let div;
   return {
     c() {
@@ -28648,7 +28959,7 @@ function create_if_block_4$4(ctx) {
     }
   };
 }
-function create_if_block_3$4(ctx) {
+function create_if_block_3$5(ctx) {
   let div;
   let i;
   let i_class_value;
@@ -28694,7 +29005,7 @@ function create_if_block_3$4(ctx) {
     }
   };
 }
-function create_if_block_2$4(ctx) {
+function create_if_block_2$5(ctx) {
   let button;
   let i;
   let button_title_value;
@@ -28743,7 +29054,7 @@ function create_if_block_2$4(ctx) {
     }
   };
 }
-function create_if_block_1$4(ctx) {
+function create_if_block_1$5(ctx) {
   let div;
   let permissionpicker;
   let current;
@@ -28820,7 +29131,7 @@ function create_if_block_1$4(ctx) {
     }
   };
 }
-function create_each_block$4(key_1, ctx) {
+function create_each_block$5(key_1, ctx) {
   let div2;
   let img;
   let img_src_value;
@@ -28857,16 +29168,16 @@ function create_each_block$4(key_1, ctx) {
   let dispose;
   let if_block0 = (
     /*isCurrent*/
-    ctx[51] && create_if_block_5$3()
+    ctx[51] && create_if_block_5$4()
   );
   let if_block1 = (
     /*isActive*/
-    ctx[52] && create_if_block_4$4()
+    ctx[52] && create_if_block_4$5()
   );
   let if_block2 = (
     /*isGM*/
     ctx[14] && /*itemPermission*/
-    ctx[53].type !== PERMISSION_TYPES.ALL && create_if_block_3$4(ctx)
+    ctx[53].type !== PERMISSION_TYPES.ALL && create_if_block_3$5(ctx)
   );
   function click_handler_6() {
     return (
@@ -28888,11 +29199,11 @@ function create_each_block$4(key_1, ctx) {
   }
   let if_block3 = (
     /*isActor*/
-    ctx[4] && create_if_block_2$4(ctx)
+    ctx[4] && create_if_block_2$5(ctx)
   );
   let if_block4 = (
     /*isGM*/
-    ctx[14] && create_if_block_1$4(ctx)
+    ctx[14] && create_if_block_1$5(ctx)
   );
   function click_handler_9() {
     return (
@@ -29068,7 +29379,7 @@ function create_each_block$4(key_1, ctx) {
       ) {
         if (if_block0) ;
         else {
-          if_block0 = create_if_block_5$3();
+          if_block0 = create_if_block_5$4();
           if_block0.c();
           if_block0.m(div2, t1);
         }
@@ -29082,7 +29393,7 @@ function create_each_block$4(key_1, ctx) {
       ) {
         if (if_block1) ;
         else {
-          if_block1 = create_if_block_4$4();
+          if_block1 = create_if_block_4$5();
           if_block1.c();
           if_block1.m(div2, t2);
         }
@@ -29098,7 +29409,7 @@ function create_each_block$4(key_1, ctx) {
         if (if_block2) {
           if_block2.p(ctx, dirty);
         } else {
-          if_block2 = create_if_block_3$4(ctx);
+          if_block2 = create_if_block_3$5(ctx);
           if_block2.c();
           if_block2.m(div2, t3);
         }
@@ -29160,7 +29471,7 @@ function create_each_block$4(key_1, ctx) {
         if (if_block3) {
           if_block3.p(ctx, dirty);
         } else {
-          if_block3 = create_if_block_2$4(ctx);
+          if_block3 = create_if_block_2$5(ctx);
           if_block3.c();
           if_block3.m(div0, t8);
         }
@@ -29179,7 +29490,7 @@ function create_each_block$4(key_1, ctx) {
             transition_in(if_block4, 1);
           }
         } else {
-          if_block4 = create_if_block_1$4(ctx);
+          if_block4 = create_if_block_1$5(ctx);
           if_block4.c();
           transition_in(if_block4, 1);
           if_block4.m(div0, t9);
@@ -29233,7 +29544,7 @@ function create_each_block$4(key_1, ctx) {
     }
   };
 }
-function create_default_slot$4(ctx) {
+function create_default_slot$5(ctx) {
   let main;
   let header;
   let div0;
@@ -29288,7 +29599,7 @@ function create_default_slot$4(ctx) {
       /*isItem*/
       ctx2[7]
     ) return create_if_block_7$3;
-    return create_else_block_1$1;
+    return create_else_block_1$2;
   }
   let current_block_type_1 = select_block_type_1(ctx);
   let if_block2 = current_block_type_1(ctx);
@@ -29296,7 +29607,7 @@ function create_default_slot$4(ctx) {
     /*isActor*/
     ctx[4] && create_if_block_6$3(ctx)
   );
-  const if_block_creators = [create_if_block$5, create_else_block$2];
+  const if_block_creators = [create_if_block$6, create_else_block$3];
   const if_blocks = [];
   function select_block_type_2(ctx2, dirty) {
     if (
@@ -29553,7 +29864,7 @@ function create_default_slot$4(ctx) {
     }
   };
 }
-function create_fragment$6(ctx) {
+function create_fragment$7(ctx) {
   let applicationshell;
   let updating_elementRoot;
   let current;
@@ -29561,7 +29872,7 @@ function create_fragment$6(ctx) {
     ctx[41](value);
   }
   let applicationshell_props = {
-    $$slots: { default: [create_default_slot$4] },
+    $$slots: { default: [create_default_slot$5] },
     $$scope: { ctx }
   };
   if (
@@ -29618,7 +29929,7 @@ function showImagePopout(imagePath, title = "Image") {
 function handleImageClick(event, item) {
   showImagePopout(item.path, item.name);
 }
-function instance$6($$self, $$props, $$invalidate) {
+function instance$7($$self, $$props, $$invalidate) {
   let doc;
   let isActor;
   let isItem;
@@ -29937,7 +30248,7 @@ function instance$6($$self, $$props, $$invalidate) {
 class PortraitGalleryShell extends SvelteComponent {
   constructor(options) {
     super();
-    init(this, options, instance$6, create_fragment$6, safe_not_equal, { elementRoot: 0, tjsDoc: 1 }, null, [-1, -1]);
+    init(this, options, instance$7, create_fragment$7, safe_not_equal, { elementRoot: 0, tjsDoc: 1 }, null, [-1, -1]);
   }
   get elementRoot() {
     return this.$$.ctx[0];
@@ -29954,17 +30265,17 @@ class PortraitGalleryShell extends SvelteComponent {
     flush();
   }
 }
-function get_each_context$3(ctx, list, i) {
+function get_each_context$4(ctx, list, i) {
   const child_ctx = ctx.slice();
   child_ctx[22] = list[i];
   return child_ctx;
 }
-function get_each_context_1$3(ctx, list, i) {
+function get_each_context_1$4(ctx, list, i) {
   const child_ctx = ctx.slice();
   child_ctx[25] = list[i];
   return child_ctx;
 }
-function create_else_block_1(ctx) {
+function create_else_block_1$1(ctx) {
   let each_blocks = [];
   let each_1_lookup = /* @__PURE__ */ new Map();
   let each_1_anchor;
@@ -29977,9 +30288,9 @@ function create_else_block_1(ctx) {
     ctx2[25].id
   );
   for (let i = 0; i < each_value_1.length; i += 1) {
-    let child_ctx = get_each_context_1$3(ctx, each_value_1, i);
+    let child_ctx = get_each_context_1$4(ctx, each_value_1, i);
     let key = get_key(child_ctx);
-    each_1_lookup.set(key, each_blocks[i] = create_each_block_1$3(key, child_ctx));
+    each_1_lookup.set(key, each_blocks[i] = create_each_block_1$4(key, child_ctx));
   }
   return {
     c() {
@@ -30003,7 +30314,7 @@ function create_else_block_1(ctx) {
           /*sounds*/
           ctx2[0]
         );
-        each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx2, each_value_1, each_1_lookup, each_1_anchor.parentNode, destroy_block, create_each_block_1$3, each_1_anchor, get_each_context_1$3);
+        each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx2, each_value_1, each_1_lookup, each_1_anchor.parentNode, destroy_block, create_each_block_1$4, each_1_anchor, get_each_context_1$4);
       }
     },
     d(detaching) {
@@ -30016,7 +30327,7 @@ function create_else_block_1(ctx) {
     }
   };
 }
-function create_if_block_3$3(ctx) {
+function create_if_block_3$4(ctx) {
   let p;
   return {
     c() {
@@ -30088,7 +30399,7 @@ function create_else_block_2(ctx) {
     }
   };
 }
-function create_if_block_4$3(ctx) {
+function create_if_block_4$4(ctx) {
   let input;
   let mounted;
   let dispose;
@@ -30163,7 +30474,7 @@ function create_if_block_4$3(ctx) {
     }
   };
 }
-function create_each_block_1$3(key_1, ctx) {
+function create_each_block_1$4(key_1, ctx) {
   let div;
   let button0;
   let t0;
@@ -30207,7 +30518,7 @@ function create_each_block_1$3(key_1, ctx) {
       /*editingVolumeId*/
       ctx2[2] === /*sound*/
       ctx2[25].id
-    ) return create_if_block_4$3;
+    ) return create_if_block_4$4;
     return create_else_block_2;
   }
   let current_block_type = select_block_type_1(ctx);
@@ -30314,7 +30625,7 @@ function create_each_block_1$3(key_1, ctx) {
     }
   };
 }
-function create_if_block$4(ctx) {
+function create_if_block$5(ctx) {
   let div;
   let span;
   let t1;
@@ -30331,18 +30642,18 @@ function create_if_block$4(ctx) {
   );
   let each_blocks = [];
   for (let i2 = 0; i2 < each_value.length; i2 += 1) {
-    each_blocks[i2] = create_each_block$3(get_each_context$3(ctx, each_value, i2));
+    each_blocks[i2] = create_each_block$4(get_each_context$4(ctx, each_value, i2));
   }
   function select_block_type_2(ctx2, dirty) {
     if (
       /*soundMode*/
       ctx2[1] === "random"
-    ) return create_if_block_1$3;
+    ) return create_if_block_1$4;
     if (
       /*soundMode*/
       ctx2[1] === "sequential"
-    ) return create_if_block_2$3;
-    return create_else_block$1;
+    ) return create_if_block_2$4;
+    return create_else_block$2;
   }
   let current_block_type = select_block_type_2(ctx);
   let if_block = current_block_type(ctx);
@@ -30405,11 +30716,11 @@ function create_if_block$4(ctx) {
         );
         let i2;
         for (i2 = 0; i2 < each_value.length; i2 += 1) {
-          const child_ctx = get_each_context$3(ctx2, each_value, i2);
+          const child_ctx = get_each_context$4(ctx2, each_value, i2);
           if (each_blocks[i2]) {
             each_blocks[i2].p(child_ctx, dirty);
           } else {
-            each_blocks[i2] = create_each_block$3(child_ctx);
+            each_blocks[i2] = create_each_block$4(child_ctx);
             each_blocks[i2].c();
             each_blocks[i2].m(select, null);
           }
@@ -30447,7 +30758,7 @@ function create_if_block$4(ctx) {
     }
   };
 }
-function create_each_block$3(ctx) {
+function create_each_block$4(ctx) {
   let option;
   let t_value = (
     /*sm*/
@@ -30474,7 +30785,7 @@ function create_each_block$3(ctx) {
     }
   };
 }
-function create_else_block$1(ctx) {
+function create_else_block$2(ctx) {
   let t;
   return {
     c() {
@@ -30490,7 +30801,7 @@ function create_else_block$1(ctx) {
     }
   };
 }
-function create_if_block_2$3(ctx) {
+function create_if_block_2$4(ctx) {
   let t;
   return {
     c() {
@@ -30506,7 +30817,7 @@ function create_if_block_2$3(ctx) {
     }
   };
 }
-function create_if_block_1$3(ctx) {
+function create_if_block_1$4(ctx) {
   let t;
   return {
     c() {
@@ -30522,7 +30833,7 @@ function create_if_block_1$3(ctx) {
     }
   };
 }
-function create_fragment$5(ctx) {
+function create_fragment$6(ctx) {
   let div1;
   let t0;
   let div0;
@@ -30536,14 +30847,14 @@ function create_fragment$5(ctx) {
     if (
       /*sounds*/
       ctx2[0].length === 0
-    ) return create_if_block_3$3;
-    return create_else_block_1;
+    ) return create_if_block_3$4;
+    return create_else_block_1$1;
   }
   let current_block_type = select_block_type(ctx);
   let if_block0 = current_block_type(ctx);
   let if_block1 = (
     /*sounds*/
-    ctx[0].length > 1 && create_if_block$4(ctx)
+    ctx[0].length > 1 && create_if_block$5(ctx)
   );
   return {
     c() {
@@ -30610,7 +30921,7 @@ function create_fragment$5(ctx) {
         if (if_block1) {
           if_block1.p(ctx2, dirty);
         } else {
-          if_block1 = create_if_block$4(ctx2);
+          if_block1 = create_if_block$5(ctx2);
           if_block1.c();
           if_block1.m(div1, null);
         }
@@ -30640,7 +30951,7 @@ function previewSound(sound) {
 function focusOnMount(node) {
   node.focus();
 }
-function instance$5($$self, $$props, $$invalidate) {
+function instance$6($$self, $$props, $$invalidate) {
   let { sounds = [] } = $$props;
   let { soundMode = "random" } = $$props;
   const dispatch2 = createEventDispatcher();
@@ -30772,25 +31083,25 @@ function instance$5($$self, $$props, $$invalidate) {
 class FxSoundList extends SvelteComponent {
   constructor(options) {
     super();
-    init(this, options, instance$5, create_fragment$5, safe_not_equal, { sounds: 0, soundMode: 1 });
+    init(this, options, instance$6, create_fragment$6, safe_not_equal, { sounds: 0, soundMode: 1 });
   }
 }
-function get_each_context$2(ctx, list, i) {
+function get_each_context$3(ctx, list, i) {
   const child_ctx = ctx.slice();
   child_ctx[27] = list[i];
   return child_ctx;
 }
-function get_each_context_1$2(ctx, list, i) {
+function get_each_context_1$3(ctx, list, i) {
   const child_ctx = ctx.slice();
   child_ctx[30] = list[i];
   return child_ctx;
 }
-function get_each_context_2$1(ctx, list, i) {
+function get_each_context_2$2(ctx, list, i) {
   const child_ctx = ctx.slice();
   child_ctx[33] = list[i];
   return child_ctx;
 }
-function create_if_block$3(ctx) {
+function create_if_block$4(ctx) {
   let div0;
   let span0;
   let t1;
@@ -30818,7 +31129,7 @@ function create_if_block$3(ctx) {
   );
   let each_blocks = [];
   for (let i = 0; i < each_value_2.length; i += 1) {
-    each_blocks[i] = create_each_block_2$1(get_each_context_2$1(ctx, each_value_2, i));
+    each_blocks[i] = create_each_block_2$2(get_each_context_2$2(ctx, each_value_2, i));
   }
   let if_block0 = (
     /*config*/
@@ -30830,23 +31141,23 @@ function create_if_block$3(ctx) {
   );
   let if_block2 = (
     /*config*/
-    ctx[1].source === "builtin" && create_if_block_5$2(ctx)
+    ctx[1].source === "builtin" && create_if_block_5$3(ctx)
   );
   let if_block3 = (
     /*showSpeed*/
-    ctx[3] && create_if_block_4$2(ctx)
+    ctx[3] && create_if_block_4$3(ctx)
   );
   let if_block4 = (
     /*showMirror*/
-    ctx[4] && create_if_block_3$2(ctx)
+    ctx[4] && create_if_block_3$3(ctx)
   );
   let if_block5 = (
     /*showTravelMode*/
-    ctx[5] && create_if_block_2$2(ctx)
+    ctx[5] && create_if_block_2$3(ctx)
   );
   let if_block6 = (
     /*showScatter*/
-    ctx[6] && create_if_block_1$2(ctx)
+    ctx[6] && create_if_block_1$3(ctx)
   );
   return {
     c() {
@@ -30952,11 +31263,11 @@ function create_if_block$3(ctx) {
         );
         let i;
         for (i = 0; i < each_value_2.length; i += 1) {
-          const child_ctx = get_each_context_2$1(ctx2, each_value_2, i);
+          const child_ctx = get_each_context_2$2(ctx2, each_value_2, i);
           if (each_blocks[i]) {
             each_blocks[i].p(child_ctx, dirty);
           } else {
-            each_blocks[i] = create_each_block_2$1(child_ctx);
+            each_blocks[i] = create_each_block_2$2(child_ctx);
             each_blocks[i].c();
             each_blocks[i].m(select, null);
           }
@@ -31012,7 +31323,7 @@ function create_if_block$3(ctx) {
         if (if_block2) {
           if_block2.p(ctx2, dirty);
         } else {
-          if_block2 = create_if_block_5$2(ctx2);
+          if_block2 = create_if_block_5$3(ctx2);
           if_block2.c();
           if_block2.m(t5.parentNode, t5);
         }
@@ -31032,7 +31343,7 @@ function create_if_block$3(ctx) {
         if (if_block3) {
           if_block3.p(ctx2, dirty);
         } else {
-          if_block3 = create_if_block_4$2(ctx2);
+          if_block3 = create_if_block_4$3(ctx2);
           if_block3.c();
           if_block3.m(t9.parentNode, t9);
         }
@@ -31047,7 +31358,7 @@ function create_if_block$3(ctx) {
         if (if_block4) {
           if_block4.p(ctx2, dirty);
         } else {
-          if_block4 = create_if_block_3$2(ctx2);
+          if_block4 = create_if_block_3$3(ctx2);
           if_block4.c();
           if_block4.m(t10.parentNode, t10);
         }
@@ -31062,7 +31373,7 @@ function create_if_block$3(ctx) {
         if (if_block5) {
           if_block5.p(ctx2, dirty);
         } else {
-          if_block5 = create_if_block_2$2(ctx2);
+          if_block5 = create_if_block_2$3(ctx2);
           if_block5.c();
           if_block5.m(t11.parentNode, t11);
         }
@@ -31077,7 +31388,7 @@ function create_if_block$3(ctx) {
         if (if_block6) {
           if_block6.p(ctx2, dirty);
         } else {
-          if_block6 = create_if_block_1$2(ctx2);
+          if_block6 = create_if_block_1$3(ctx2);
           if_block6.c();
           if_block6.m(if_block6_anchor.parentNode, if_block6_anchor);
         }
@@ -31113,7 +31424,7 @@ function create_if_block$3(ctx) {
     }
   };
 }
-function create_each_block_2$1(ctx) {
+function create_each_block_2$2(ctx) {
   let option;
   let t0_value = (
     /*src*/
@@ -31329,7 +31640,7 @@ function create_if_block_6$2(ctx) {
     }
   };
 }
-function create_if_block_5$2(ctx) {
+function create_if_block_5$3(ctx) {
   let div0;
   let span0;
   let t1;
@@ -31349,7 +31660,7 @@ function create_if_block_5$2(ctx) {
   );
   let each_blocks = [];
   for (let i = 0; i < each_value_1.length; i += 1) {
-    each_blocks[i] = create_each_block_1$2(get_each_context_1$2(ctx, each_value_1, i));
+    each_blocks[i] = create_each_block_1$3(get_each_context_1$3(ctx, each_value_1, i));
   }
   return {
     c() {
@@ -31422,11 +31733,11 @@ function create_if_block_5$2(ctx) {
         );
         let i;
         for (i = 0; i < each_value_1.length; i += 1) {
-          const child_ctx = get_each_context_1$2(ctx2, each_value_1, i);
+          const child_ctx = get_each_context_1$3(ctx2, each_value_1, i);
           if (each_blocks[i]) {
             each_blocks[i].p(child_ctx, dirty);
           } else {
-            each_blocks[i] = create_each_block_1$2(child_ctx);
+            each_blocks[i] = create_each_block_1$3(child_ctx);
             each_blocks[i].c();
             each_blocks[i].m(select, null);
           }
@@ -31463,7 +31774,7 @@ function create_if_block_5$2(ctx) {
     }
   };
 }
-function create_each_block_1$2(ctx) {
+function create_each_block_1$3(ctx) {
   let option;
   let t_value = (
     /*bt*/
@@ -31501,7 +31812,7 @@ function create_each_block_1$2(ctx) {
     }
   };
 }
-function create_if_block_4$2(ctx) {
+function create_if_block_4$3(ctx) {
   let div;
   let span;
   let t1;
@@ -31556,7 +31867,7 @@ function create_if_block_4$2(ctx) {
     }
   };
 }
-function create_if_block_3$2(ctx) {
+function create_if_block_3$3(ctx) {
   let label;
   let input;
   let input_checked_value;
@@ -31607,7 +31918,7 @@ function create_if_block_3$2(ctx) {
     }
   };
 }
-function create_if_block_2$2(ctx) {
+function create_if_block_2$3(ctx) {
   let div;
   let span;
   let t1;
@@ -31633,7 +31944,7 @@ function create_if_block_2$2(ctx) {
   );
   let each_blocks = [];
   for (let i2 = 0; i2 < each_value.length; i2 += 1) {
-    each_blocks[i2] = create_each_block$2(get_each_context$2(ctx, each_value, i2));
+    each_blocks[i2] = create_each_block$3(get_each_context$3(ctx, each_value, i2));
   }
   return {
     c() {
@@ -31694,11 +32005,11 @@ function create_if_block_2$2(ctx) {
         );
         let i2;
         for (i2 = 0; i2 < each_value.length; i2 += 1) {
-          const child_ctx = get_each_context$2(ctx2, each_value, i2);
+          const child_ctx = get_each_context$3(ctx2, each_value, i2);
           if (each_blocks[i2]) {
             each_blocks[i2].p(child_ctx, dirty);
           } else {
-            each_blocks[i2] = create_each_block$2(child_ctx);
+            each_blocks[i2] = create_each_block$3(child_ctx);
             each_blocks[i2].c();
             each_blocks[i2].m(select, null);
           }
@@ -31736,7 +32047,7 @@ function create_if_block_2$2(ctx) {
     }
   };
 }
-function create_each_block$2(ctx) {
+function create_each_block$3(ctx) {
   let option;
   let t_value = (
     /*tm*/
@@ -31763,7 +32074,7 @@ function create_each_block$2(ctx) {
     }
   };
 }
-function create_if_block_1$2(ctx) {
+function create_if_block_1$3(ctx) {
   let div;
   let span0;
   let t1;
@@ -31840,7 +32151,7 @@ function create_if_block_1$2(ctx) {
     }
   };
 }
-function create_fragment$4(ctx) {
+function create_fragment$5(ctx) {
   let div1;
   let div0;
   let h4;
@@ -31854,7 +32165,7 @@ function create_fragment$4(ctx) {
   let dispose;
   let if_block = (
     /*config*/
-    ctx[1].enabled && create_if_block$3(ctx)
+    ctx[1].enabled && create_if_block$4(ctx)
   );
   return {
     c() {
@@ -31958,7 +32269,7 @@ function create_fragment$4(ctx) {
         if (if_block) {
           if_block.p(ctx2, dirty);
         } else {
-          if_block = create_if_block$3(ctx2);
+          if_block = create_if_block$4(ctx2);
           if_block.c();
           if_block.m(div1, null);
         }
@@ -31979,7 +32290,7 @@ function create_fragment$4(ctx) {
     }
   };
 }
-function instance$4($$self, $$props, $$invalidate) {
+function instance$5($$self, $$props, $$invalidate) {
   let builtinTypes;
   let { title = "Effect" } = $$props;
   let { config = {} } = $$props;
@@ -32105,8 +32416,8 @@ class FxEffectConfig extends SvelteComponent {
     init(
       this,
       options,
-      instance$4,
-      create_fragment$4,
+      instance$5,
+      create_fragment$5,
       safe_not_equal,
       {
         title: 0,
@@ -32122,27 +32433,27 @@ class FxEffectConfig extends SvelteComponent {
     );
   }
 }
-function get_each_context$1(ctx, list, i) {
+function get_each_context$2(ctx, list, i) {
   const child_ctx = ctx.slice();
   child_ctx[62] = list[i];
   return child_ctx;
 }
-function get_each_context_1$1(ctx, list, i) {
+function get_each_context_1$2(ctx, list, i) {
   const child_ctx = ctx.slice();
   child_ctx[65] = list[i];
   return child_ctx;
 }
-function get_each_context_2(ctx, list, i) {
+function get_each_context_2$1(ctx, list, i) {
   const child_ctx = ctx.slice();
   child_ctx[68] = list[i];
   return child_ctx;
 }
-function get_each_context_3(ctx, list, i) {
+function get_each_context_3$1(ctx, list, i) {
   const child_ctx = ctx.slice();
   child_ctx[71] = list[i];
   return child_ctx;
 }
-function create_if_block$2(ctx) {
+function create_if_block$3(ctx) {
   let section0;
   let h40;
   let t1;
@@ -32247,7 +32558,7 @@ function create_if_block$2(ctx) {
   );
   let each_blocks_1 = [];
   for (let i = 0; i < each_value_3.length; i += 1) {
-    each_blocks_1[i] = create_each_block_3(get_each_context_3(ctx, each_value_3, i));
+    each_blocks_1[i] = create_each_block_3$1(get_each_context_3$1(ctx, each_value_3, i));
   }
   let each_value_2 = ensure_array_like(
     /*ROF_MODES*/
@@ -32255,7 +32566,7 @@ function create_if_block$2(ctx) {
   );
   let each_blocks = [];
   for (let i = 0; i < each_value_2.length; i += 1) {
-    each_blocks[i] = create_each_block_2(get_each_context_2(ctx, each_value_2, i));
+    each_blocks[i] = create_each_block_2$1(get_each_context_2$1(ctx, each_value_2, i));
   }
   let if_block0 = (
     /*fxConfig*/
@@ -32369,11 +32680,11 @@ function create_if_block$2(ctx) {
   );
   let if_block7 = (
     /*fxConfig*/
-    ctx[2].casing?.enabled && create_if_block_2$1(ctx)
+    ctx[2].casing?.enabled && create_if_block_2$2(ctx)
   );
   let if_block8 = (
     /*showPresets*/
-    ctx[3] && create_if_block_1$1(ctx)
+    ctx[3] && create_if_block_1$2(ctx)
   );
   return {
     c() {
@@ -32784,11 +33095,11 @@ function create_if_block$2(ctx) {
         );
         let i;
         for (i = 0; i < each_value_3.length; i += 1) {
-          const child_ctx = get_each_context_3(ctx2, each_value_3, i);
+          const child_ctx = get_each_context_3$1(ctx2, each_value_3, i);
           if (each_blocks_1[i]) {
             each_blocks_1[i].p(child_ctx, dirty);
           } else {
-            each_blocks_1[i] = create_each_block_3(child_ctx);
+            each_blocks_1[i] = create_each_block_3$1(child_ctx);
             each_blocks_1[i].c();
             each_blocks_1[i].m(div0, null);
           }
@@ -32806,11 +33117,11 @@ function create_if_block$2(ctx) {
         );
         let i;
         for (i = 0; i < each_value_2.length; i += 1) {
-          const child_ctx = get_each_context_2(ctx2, each_value_2, i);
+          const child_ctx = get_each_context_2$1(ctx2, each_value_2, i);
           if (each_blocks[i]) {
             each_blocks[i].p(child_ctx, dirty);
           } else {
-            each_blocks[i] = create_each_block_2(child_ctx);
+            each_blocks[i] = create_each_block_2$1(child_ctx);
             each_blocks[i].c();
             each_blocks[i].m(div1, null);
           }
@@ -33008,7 +33319,7 @@ function create_if_block$2(ctx) {
         if (if_block7) {
           if_block7.p(ctx2, dirty);
         } else {
-          if_block7 = create_if_block_2$1(ctx2);
+          if_block7 = create_if_block_2$2(ctx2);
           if_block7.c();
           if_block7.m(section7, null);
         }
@@ -33032,7 +33343,7 @@ function create_if_block$2(ctx) {
         if (if_block8) {
           if_block8.p(ctx2, dirty);
         } else {
-          if_block8 = create_if_block_1$1(ctx2);
+          if_block8 = create_if_block_1$2(ctx2);
           if_block8.c();
           if_block8.m(if_block8_anchor.parentNode, if_block8_anchor);
         }
@@ -33100,7 +33411,7 @@ function create_if_block$2(ctx) {
     }
   };
 }
-function create_each_block_3(ctx) {
+function create_each_block_3$1(ctx) {
   let button;
   let i;
   let t0;
@@ -33176,7 +33487,7 @@ function create_each_block_3(ctx) {
     }
   };
 }
-function create_each_block_2(ctx) {
+function create_each_block_2$1(ctx) {
   let button;
   let t0_value = (
     /*rm*/
@@ -34081,7 +34392,7 @@ function create_if_block_6$1(ctx) {
     }
   };
 }
-function create_if_block_2$1(ctx) {
+function create_if_block_2$2(ctx) {
   let div0;
   let span0;
   let t1;
@@ -34139,15 +34450,15 @@ function create_if_block_2$1(ctx) {
   let dispose;
   let if_block0 = (
     /*fxConfig*/
-    ctx[2].casing.source === "sequencer" && create_if_block_5$1(ctx)
+    ctx[2].casing.source === "sequencer" && create_if_block_5$2(ctx)
   );
   let if_block1 = (
     /*fxConfig*/
-    ctx[2].casing.source === "custom" && create_if_block_4$1(ctx)
+    ctx[2].casing.source === "custom" && create_if_block_4$2(ctx)
   );
   let if_block2 = (
     /*fxConfig*/
-    ctx[2].casing.persist && create_if_block_3$1(ctx)
+    ctx[2].casing.persist && create_if_block_3$2(ctx)
   );
   return {
     c() {
@@ -34361,7 +34672,7 @@ function create_if_block_2$1(ctx) {
         if (if_block0) {
           if_block0.p(ctx2, dirty);
         } else {
-          if_block0 = create_if_block_5$1(ctx2);
+          if_block0 = create_if_block_5$2(ctx2);
           if_block0.c();
           if_block0.m(t7.parentNode, t7);
         }
@@ -34376,7 +34687,7 @@ function create_if_block_2$1(ctx) {
         if (if_block1) {
           if_block1.p(ctx2, dirty);
         } else {
-          if_block1 = create_if_block_4$1(ctx2);
+          if_block1 = create_if_block_4$2(ctx2);
           if_block1.c();
           if_block1.m(t8.parentNode, t8);
         }
@@ -34420,7 +34731,7 @@ function create_if_block_2$1(ctx) {
         if (if_block2) {
           if_block2.p(ctx2, dirty);
         } else {
-          if_block2 = create_if_block_3$1(ctx2);
+          if_block2 = create_if_block_3$2(ctx2);
           if_block2.c();
           if_block2.m(if_block2_anchor.parentNode, if_block2_anchor);
         }
@@ -34453,7 +34764,7 @@ function create_if_block_2$1(ctx) {
     }
   };
 }
-function create_if_block_5$1(ctx) {
+function create_if_block_5$2(ctx) {
   let div;
   let span;
   let t1;
@@ -34506,7 +34817,7 @@ function create_if_block_5$1(ctx) {
     }
   };
 }
-function create_if_block_4$1(ctx) {
+function create_if_block_4$2(ctx) {
   let div1;
   let span;
   let t1;
@@ -34572,7 +34883,7 @@ function create_if_block_4$1(ctx) {
     }
   };
 }
-function create_if_block_3$1(ctx) {
+function create_if_block_3$2(ctx) {
   let div;
   let span0;
   let t1;
@@ -34656,7 +34967,7 @@ function create_if_block_3$1(ctx) {
     }
   };
 }
-function create_if_block_1$1(ctx) {
+function create_if_block_1$2(ctx) {
   let section;
   let t0;
   let p;
@@ -34666,7 +34977,7 @@ function create_if_block_1$1(ctx) {
   );
   let each_blocks = [];
   for (let i = 0; i < each_value.length; i += 1) {
-    each_blocks[i] = create_each_block$1(get_each_context$1(ctx, each_value, i));
+    each_blocks[i] = create_each_block$2(get_each_context$2(ctx, each_value, i));
   }
   return {
     c() {
@@ -34699,11 +35010,11 @@ function create_if_block_1$1(ctx) {
         );
         let i;
         for (i = 0; i < each_value.length; i += 1) {
-          const child_ctx = get_each_context$1(ctx2, each_value, i);
+          const child_ctx = get_each_context$2(ctx2, each_value, i);
           if (each_blocks[i]) {
             each_blocks[i].p(child_ctx, dirty);
           } else {
-            each_blocks[i] = create_each_block$1(child_ctx);
+            each_blocks[i] = create_each_block$2(child_ctx);
             each_blocks[i].c();
             each_blocks[i].m(section, t0);
           }
@@ -34722,7 +35033,7 @@ function create_if_block_1$1(ctx) {
     }
   };
 }
-function create_each_block_1$1(ctx) {
+function create_each_block_1$2(ctx) {
   let button;
   let i;
   let t0;
@@ -34778,7 +35089,7 @@ function create_each_block_1$1(ctx) {
     }
   };
 }
-function create_each_block$1(ctx) {
+function create_each_block$2(ctx) {
   let div1;
   let h5;
   let t1;
@@ -34789,7 +35100,7 @@ function create_each_block$1(ctx) {
   ));
   let each_blocks = [];
   for (let i = 0; i < each_value_1.length; i += 1) {
-    each_blocks[i] = create_each_block_1$1(get_each_context_1$1(ctx, each_value_1, i));
+    each_blocks[i] = create_each_block_1$2(get_each_context_1$2(ctx, each_value_1, i));
   }
   return {
     c() {
@@ -34826,11 +35137,11 @@ function create_each_block$1(ctx) {
         ));
         let i;
         for (i = 0; i < each_value_1.length; i += 1) {
-          const child_ctx = get_each_context_1$1(ctx2, each_value_1, i);
+          const child_ctx = get_each_context_1$2(ctx2, each_value_1, i);
           if (each_blocks[i]) {
             each_blocks[i].p(child_ctx, dirty);
           } else {
-            each_blocks[i] = create_each_block_1$1(child_ctx);
+            each_blocks[i] = create_each_block_1$2(child_ctx);
             each_blocks[i].c();
             each_blocks[i].m(div0, null);
           }
@@ -34849,7 +35160,7 @@ function create_each_block$1(ctx) {
     }
   };
 }
-function create_default_slot$3(ctx) {
+function create_default_slot$4(ctx) {
   let main;
   let section;
   let label;
@@ -34864,7 +35175,7 @@ function create_default_slot$3(ctx) {
   let dispose;
   let if_block = (
     /*fxConfig*/
-    ctx[2].enabled && create_if_block$2(ctx)
+    ctx[2].enabled && create_if_block$3(ctx)
   );
   return {
     c() {
@@ -34962,7 +35273,7 @@ function create_default_slot$3(ctx) {
             transition_in(if_block, 1);
           }
         } else {
-          if_block = create_if_block$2(ctx2);
+          if_block = create_if_block$3(ctx2);
           if_block.c();
           transition_in(if_block, 1);
           if_block.m(main, null);
@@ -34994,7 +35305,7 @@ function create_default_slot$3(ctx) {
     }
   };
 }
-function create_fragment$3(ctx) {
+function create_fragment$4(ctx) {
   let applicationshell;
   let updating_elementRoot;
   let current;
@@ -35002,7 +35313,7 @@ function create_fragment$3(ctx) {
     ctx[58](value);
   }
   let applicationshell_props = {
-    $$slots: { default: [create_default_slot$3] },
+    $$slots: { default: [create_default_slot$4] },
     $$scope: { ctx }
   };
   if (
@@ -35052,7 +35363,7 @@ function create_fragment$3(ctx) {
     }
   };
 }
-function instance$3($$self, $$props, $$invalidate) {
+function instance$4($$self, $$props, $$invalidate) {
   let doc;
   let sequencerAvailable;
   let $tjsDoc, $$unsubscribe_tjsDoc = noop, $$subscribe_tjsDoc = () => ($$unsubscribe_tjsDoc(), $$unsubscribe_tjsDoc = subscribe(tjsDoc, ($$value) => $$invalidate(25, $tjsDoc = $$value)), tjsDoc);
@@ -35629,7 +35940,7 @@ function instance$3($$self, $$props, $$invalidate) {
 class WeaponFxShell_1 extends SvelteComponent {
   constructor(options) {
     super();
-    init(this, options, instance$3, create_fragment$3, safe_not_equal, { elementRoot: 0, tjsDoc: 1 }, null, [-1, -1, -1]);
+    init(this, options, instance$4, create_fragment$4, safe_not_equal, { elementRoot: 0, tjsDoc: 1 }, null, [-1, -1, -1]);
   }
   get elementRoot() {
     return this.$$.ctx[0];
@@ -35646,7 +35957,7 @@ class WeaponFxShell_1 extends SvelteComponent {
     flush();
   }
 }
-function create_if_block$1(ctx) {
+function create_if_block$2(ctx) {
   let section0;
   let div0;
   let h40;
@@ -35703,7 +36014,7 @@ function create_if_block$1(ctx) {
   );
   let if_block3 = (
     /*fxConfig*/
-    ctx[2].aura.enabled && create_if_block_1(ctx)
+    ctx[2].aura.enabled && create_if_block_1$1(ctx)
   );
   return {
     c() {
@@ -36089,7 +36400,7 @@ function create_if_block$1(ctx) {
         if (if_block3) {
           if_block3.p(ctx2, dirty);
         } else {
-          if_block3 = create_if_block_1(ctx2);
+          if_block3 = create_if_block_1$1(ctx2);
           if_block3.c();
           if_block3.m(section3, null);
         }
@@ -37451,7 +37762,7 @@ function create_if_block_16(ctx) {
     }
   };
 }
-function create_if_block_1(ctx) {
+function create_if_block_1$1(ctx) {
   let div0;
   let span0;
   let t1;
@@ -37523,14 +37834,14 @@ function create_if_block_1(ctx) {
   );
   let if_block3 = (
     /*fxConfig*/
-    ctx[2].aura.mode !== "reactive" && create_if_block_3(ctx)
+    ctx[2].aura.mode !== "reactive" && create_if_block_3$1(ctx)
   );
   function select_block_type_1(ctx2, dirty) {
     if (
       /*fxConfig*/
       ctx2[2].aura.mode !== "reactive"
-    ) return create_if_block_2;
-    return create_else_block;
+    ) return create_if_block_2$1;
+    return create_else_block$1;
   }
   let current_block_type_1 = select_block_type_1(ctx);
   let if_block4 = current_block_type_1(ctx);
@@ -37765,7 +38076,7 @@ function create_if_block_1(ctx) {
         if (if_block3) {
           if_block3.p(ctx2, dirty);
         } else {
-          if_block3 = create_if_block_3(ctx2);
+          if_block3 = create_if_block_3$1(ctx2);
           if_block3.c();
           if_block3.m(t21.parentNode, t21);
         }
@@ -38581,7 +38892,7 @@ function create_if_block_7(ctx) {
     }
   };
 }
-function create_if_block_3(ctx) {
+function create_if_block_3$1(ctx) {
   let div1;
   let span0;
   let t1;
@@ -38605,11 +38916,11 @@ function create_if_block_3(ctx) {
   let dispose;
   let if_block0 = (
     /*fxConfig*/
-    ctx[2].aura.activateSound.path && create_if_block_5(ctx)
+    ctx[2].aura.activateSound.path && create_if_block_5$1(ctx)
   );
   let if_block1 = (
     /*fxConfig*/
-    ctx[2].aura.deactivateSound.path && create_if_block_4(ctx)
+    ctx[2].aura.deactivateSound.path && create_if_block_4$1(ctx)
   );
   return {
     c() {
@@ -38706,7 +39017,7 @@ function create_if_block_3(ctx) {
         if (if_block0) {
           if_block0.p(ctx2, dirty);
         } else {
-          if_block0 = create_if_block_5(ctx2);
+          if_block0 = create_if_block_5$1(ctx2);
           if_block0.c();
           if_block0.m(div0, null);
         }
@@ -38726,7 +39037,7 @@ function create_if_block_3(ctx) {
         if (if_block1) {
           if_block1.p(ctx2, dirty);
         } else {
-          if_block1 = create_if_block_4(ctx2);
+          if_block1 = create_if_block_4$1(ctx2);
           if_block1.c();
           if_block1.m(div2, null);
         }
@@ -38748,7 +39059,7 @@ function create_if_block_3(ctx) {
     }
   };
 }
-function create_if_block_5(ctx) {
+function create_if_block_5$1(ctx) {
   let button;
   let mounted;
   let dispose;
@@ -38781,7 +39092,7 @@ function create_if_block_5(ctx) {
     }
   };
 }
-function create_if_block_4(ctx) {
+function create_if_block_4$1(ctx) {
   let button;
   let mounted;
   let dispose;
@@ -38814,7 +39125,7 @@ function create_if_block_4(ctx) {
     }
   };
 }
-function create_else_block(ctx) {
+function create_else_block$1(ctx) {
   let button;
   let mounted;
   let dispose;
@@ -38847,7 +39158,7 @@ function create_else_block(ctx) {
     }
   };
 }
-function create_if_block_2(ctx) {
+function create_if_block_2$1(ctx) {
   let button0;
   let t1;
   let button1;
@@ -38916,7 +39227,7 @@ function create_if_block_2(ctx) {
     }
   };
 }
-function create_default_slot$2(ctx) {
+function create_default_slot$3(ctx) {
   let main;
   let section;
   let label;
@@ -38930,7 +39241,7 @@ function create_default_slot$2(ctx) {
   let dispose;
   let if_block = (
     /*fxConfig*/
-    ctx[2].enabled && create_if_block$1(ctx)
+    ctx[2].enabled && create_if_block$2(ctx)
   );
   return {
     c() {
@@ -39023,7 +39334,7 @@ function create_default_slot$2(ctx) {
         if (if_block) {
           if_block.p(ctx2, dirty);
         } else {
-          if_block = create_if_block$1(ctx2);
+          if_block = create_if_block$2(ctx2);
           if_block.c();
           if_block.m(main, null);
         }
@@ -39042,7 +39353,7 @@ function create_default_slot$2(ctx) {
     }
   };
 }
-function create_fragment$2(ctx) {
+function create_fragment$3(ctx) {
   let applicationshell;
   let updating_elementRoot;
   let current;
@@ -39050,7 +39361,7 @@ function create_fragment$2(ctx) {
     ctx[66](value);
   }
   let applicationshell_props = {
-    $$slots: { default: [create_default_slot$2] },
+    $$slots: { default: [create_default_slot$3] },
     $$scope: { ctx }
   };
   if (
@@ -39100,7 +39411,7 @@ function create_fragment$2(ctx) {
     }
   };
 }
-function instance$2($$self, $$props, $$invalidate) {
+function instance$3($$self, $$props, $$invalidate) {
   let doc;
   let sequencerAvailable;
   let $tjsDoc, $$unsubscribe_tjsDoc = noop, $$subscribe_tjsDoc = () => ($$unsubscribe_tjsDoc(), $$unsubscribe_tjsDoc = subscribe(tjsDoc, ($$value) => $$invalidate(20, $tjsDoc = $$value)), tjsDoc);
@@ -39572,7 +39883,7 @@ function instance$2($$self, $$props, $$invalidate) {
 class DefensiveFxShell_1 extends SvelteComponent {
   constructor(options) {
     super();
-    init(this, options, instance$2, create_fragment$2, safe_not_equal, { elementRoot: 0, tjsDoc: 1 }, null, [-1, -1, -1]);
+    init(this, options, instance$3, create_fragment$3, safe_not_equal, { elementRoot: 0, tjsDoc: 1 }, null, [-1, -1, -1]);
   }
   get elementRoot() {
     return this.$$.ctx[0];
@@ -39589,19 +39900,19 @@ class DefensiveFxShell_1 extends SvelteComponent {
     flush();
   }
 }
-function get_each_context(ctx, list, i) {
+function get_each_context$1(ctx, list, i) {
   const child_ctx = ctx.slice();
   child_ctx[42] = list[i];
   return child_ctx;
 }
-function get_each_context_1(ctx, list, i) {
+function get_each_context_1$1(ctx, list, i) {
   const child_ctx = ctx.slice();
   child_ctx[45] = list[i];
   child_ctx[46] = list;
   child_ctx[47] = i;
   return child_ctx;
 }
-function create_each_block_1(key_1, ctx) {
+function create_each_block_1$1(key_1, ctx) {
   let div;
   let span;
   let t0;
@@ -39855,7 +40166,7 @@ function create_each_block_1(key_1, ctx) {
     }
   };
 }
-function create_default_slot$1(ctx) {
+function create_default_slot$2(ctx) {
   let main;
   let p;
   let t1;
@@ -39886,9 +40197,9 @@ function create_default_slot$1(ctx) {
     ctx2[45].id
   );
   for (let i = 0; i < each_value_1.length; i += 1) {
-    let child_ctx = get_each_context_1(ctx, each_value_1, i);
+    let child_ctx = get_each_context_1$1(ctx, each_value_1, i);
     let key = get_key(child_ctx);
-    each_1_lookup.set(key, each_blocks[i] = create_each_block_1(key, child_ctx));
+    each_1_lookup.set(key, each_blocks[i] = create_each_block_1$1(key, child_ctx));
   }
   return {
     c() {
@@ -39991,7 +40302,7 @@ function create_default_slot$1(ctx) {
           /*categories*/
           ctx2[1]
         );
-        each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx2, each_value_1, each_1_lookup, div0, destroy_block, create_each_block_1, null, get_each_context_1);
+        each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx2, each_value_1, each_1_lookup, div0, destroy_block, create_each_block_1$1, null, get_each_context_1$1);
       }
       if (dirty[0] & /*hasChanges*/
       16 && button3_disabled_value !== (button3_disabled_value = !/*hasChanges*/
@@ -40011,7 +40322,7 @@ function create_default_slot$1(ctx) {
     }
   };
 }
-function create_if_block(ctx) {
+function create_if_block$1(ctx) {
   let div2;
   let div0;
   let t;
@@ -40026,7 +40337,7 @@ function create_if_block(ctx) {
   );
   let each_blocks = [];
   for (let i = 0; i < each_value.length; i += 1) {
-    each_blocks[i] = create_each_block(get_each_context(ctx, each_value, i));
+    each_blocks[i] = create_each_block$1(get_each_context$1(ctx, each_value, i));
   }
   return {
     c() {
@@ -40109,11 +40420,11 @@ function create_if_block(ctx) {
         );
         let i;
         for (i = 0; i < each_value.length; i += 1) {
-          const child_ctx = get_each_context(ctx2, each_value, i);
+          const child_ctx = get_each_context$1(ctx2, each_value, i);
           if (each_blocks[i]) {
             each_blocks[i].p(child_ctx, dirty);
           } else {
-            each_blocks[i] = create_each_block(child_ctx);
+            each_blocks[i] = create_each_block$1(child_ctx);
             each_blocks[i].c();
             each_blocks[i].m(div0, null);
           }
@@ -40157,7 +40468,7 @@ function create_if_block(ctx) {
     }
   };
 }
-function create_each_block(ctx) {
+function create_each_block$1(ctx) {
   let button;
   let i;
   let t;
@@ -40226,7 +40537,7 @@ function create_each_block(ctx) {
     }
   };
 }
-function create_fragment$1(ctx) {
+function create_fragment$2(ctx) {
   let applicationshell;
   let updating_elementRoot;
   let t;
@@ -40238,7 +40549,7 @@ function create_fragment$1(ctx) {
     ctx[34](value);
   }
   let applicationshell_props = {
-    $$slots: { default: [create_default_slot$1] },
+    $$slots: { default: [create_default_slot$2] },
     $$scope: { ctx }
   };
   if (
@@ -40253,7 +40564,7 @@ function create_fragment$1(ctx) {
   let if_block = (
     /*openIconPicker*/
     ctx[2] && /*openCategory*/
-    ctx[9] && create_if_block(ctx)
+    ctx[9] && create_if_block$1(ctx)
   );
   return {
     c() {
@@ -40301,7 +40612,7 @@ function create_fragment$1(ctx) {
         if (if_block) {
           if_block.p(ctx2, dirty);
         } else {
-          if_block = create_if_block(ctx2);
+          if_block = create_if_block$1(ctx2);
           if_block.c();
           if_block.m(if_block_anchor.parentNode, if_block_anchor);
         }
@@ -40339,7 +40650,7 @@ function portal(node) {
     }
   };
 }
-function instance$1($$self, $$props, $$invalidate) {
+function instance$2($$self, $$props, $$invalidate) {
   let openCategoryIndex;
   let openCategory;
   let { elementRoot = void 0 } = $$props;
@@ -40574,7 +40885,7 @@ function instance$1($$self, $$props, $$invalidate) {
 class MusicCategoriesShell extends SvelteComponent {
   constructor(options) {
     super();
-    init(this, options, instance$1, create_fragment$1, safe_not_equal, { elementRoot: 0 }, null, [-1, -1]);
+    init(this, options, instance$2, create_fragment$2, safe_not_equal, { elementRoot: 0 }, null, [-1, -1]);
   }
   get elementRoot() {
     return this.$$.ctx[0];
@@ -40584,7 +40895,7 @@ class MusicCategoriesShell extends SvelteComponent {
     flush();
   }
 }
-function create_default_slot(ctx) {
+function create_default_slot$1(ctx) {
   let div7;
   let div2;
   let h30;
@@ -40811,7 +41122,7 @@ function create_default_slot(ctx) {
     }
   };
 }
-function create_fragment(ctx) {
+function create_fragment$1(ctx) {
   let applicationshell;
   let updating_elementRoot;
   let current;
@@ -40819,7 +41130,7 @@ function create_fragment(ctx) {
     ctx[11](value);
   }
   let applicationshell_props = {
-    $$slots: { default: [create_default_slot] },
+    $$slots: { default: [create_default_slot$1] },
     $$scope: { ctx }
   };
   if (
@@ -40868,7 +41179,7 @@ function create_fragment(ctx) {
     }
   };
 }
-function instance($$self, $$props, $$invalidate) {
+function instance$1($$self, $$props, $$invalidate) {
   let { elementRoot = void 0 } = $$props;
   const external = getContext("#external");
   const application = external?.application;
@@ -40935,7 +41246,1709 @@ function instance($$self, $$props, $$invalidate) {
 class HeaderButtonsShell extends SvelteComponent {
   constructor(options) {
     super();
-    init(this, options, instance, create_fragment, safe_not_equal, { elementRoot: 0 });
+    init(this, options, instance$1, create_fragment$1, safe_not_equal, { elementRoot: 0 });
+  }
+  get elementRoot() {
+    return this.$$.ctx[0];
+  }
+  set elementRoot(elementRoot) {
+    this.$$set({ elementRoot });
+    flush();
+  }
+}
+function get_each_context(ctx, list, i) {
+  const child_ctx = ctx.slice();
+  child_ctx[33] = list[i];
+  const constants_0 = `${/*selectedProviderId*/
+  child_ctx[1]}.${/*setting*/
+  child_ctx[33].id}`;
+  child_ctx[34] = constants_0;
+  return child_ctx;
+}
+function get_each_context_1(ctx, list, i) {
+  const child_ctx = ctx.slice();
+  child_ctx[37] = list[i][0];
+  child_ctx[38] = list[i][1];
+  return child_ctx;
+}
+function get_each_context_2(ctx, list, i) {
+  const child_ctx = ctx.slice();
+  child_ctx[41] = list[i];
+  child_ctx[42] = list;
+  child_ctx[43] = i;
+  return child_ctx;
+}
+function get_each_context_3(ctx, list, i) {
+  const child_ctx = ctx.slice();
+  child_ctx[44] = list[i];
+  return child_ctx;
+}
+function create_else_block_1(ctx) {
+  let div;
+  let span;
+  let t1;
+  let b;
+  let t2_value = (
+    /*selectedProvider*/
+    (ctx[2] ? (
+      /*providerLabel*/
+      ctx[14](
+        /*selectedProvider*/
+        ctx[2]
+      )
+    ) : "") + ""
+  );
+  let t2;
+  let t3;
+  let p;
+  return {
+    c() {
+      div = element("div");
+      span = element("span");
+      span.textContent = `${/*localize*/
+      ctx[13]("MOVEMENTRULER.provider.Name")}`;
+      t1 = space();
+      b = element("b");
+      t2 = text(t2_value);
+      t3 = space();
+      p = element("p");
+      p.textContent = `${/*localize*/
+      ctx[13]("MOVEMENTRULER.provider.PlayerHint")}`;
+      attr(span, "class", "row-label");
+      attr(div, "class", "setting-row");
+      attr(p, "class", "notes");
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      append(div, span);
+      append(div, t1);
+      append(div, b);
+      append(b, t2);
+      insert(target, t3, anchor);
+      insert(target, p, anchor);
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*selectedProvider*/
+      4 && t2_value !== (t2_value = /*selectedProvider*/
+      (ctx2[2] ? (
+        /*providerLabel*/
+        ctx2[14](
+          /*selectedProvider*/
+          ctx2[2]
+        )
+      ) : "") + "")) set_data(t2, t2_value);
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+        detach(t3);
+        detach(p);
+      }
+    }
+  };
+}
+function create_if_block_5(ctx) {
+  let div0;
+  let label0;
+  let t1;
+  let select0;
+  let each_blocks = [];
+  let each_1_lookup = /* @__PURE__ */ new Map();
+  let t2;
+  let p0;
+  let t4;
+  let div1;
+  let label1;
+  let t6;
+  let select1;
+  let option0;
+  let option1;
+  let t9;
+  let p1;
+  let t11;
+  let div2;
+  let label2;
+  let input;
+  let t12;
+  let t13_value = (
+    /*localize*/
+    ctx[13]("MOVEMENTRULER.observerOnly.Name") + ""
+  );
+  let t13;
+  let t14;
+  let p2;
+  let mounted;
+  let dispose;
+  let each_value_3 = ensure_array_like(
+    /*providers*/
+    ctx[12]
+  );
+  const get_key = (ctx2) => (
+    /*provider*/
+    ctx2[44].id
+  );
+  for (let i = 0; i < each_value_3.length; i += 1) {
+    let child_ctx = get_each_context_3(ctx, each_value_3, i);
+    let key = get_key(child_ctx);
+    each_1_lookup.set(key, each_blocks[i] = create_each_block_3(key, child_ctx));
+  }
+  return {
+    c() {
+      div0 = element("div");
+      label0 = element("label");
+      label0.textContent = `${/*localize*/
+      ctx[13]("MOVEMENTRULER.provider.Name")}`;
+      t1 = space();
+      select0 = element("select");
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        each_blocks[i].c();
+      }
+      t2 = space();
+      p0 = element("p");
+      p0.textContent = `${/*localize*/
+      ctx[13]("MOVEMENTRULER.provider.Hint")}`;
+      t4 = space();
+      div1 = element("div");
+      label1 = element("label");
+      label1.textContent = `${/*localize*/
+      ctx[13]("MOVEMENTRULER.measurement.Name")}`;
+      t6 = space();
+      select1 = element("select");
+      option0 = element("option");
+      option0.textContent = `${/*localize*/
+      ctx[13]("MOVEMENTRULER.measurement.Cost")}`;
+      option1 = element("option");
+      option1.textContent = `${/*localize*/
+      ctx[13]("MOVEMENTRULER.measurement.Distance")}`;
+      t9 = space();
+      p1 = element("p");
+      p1.textContent = `${/*localize*/
+      ctx[13]("MOVEMENTRULER.measurement.Hint")}`;
+      t11 = space();
+      div2 = element("div");
+      label2 = element("label");
+      input = element("input");
+      t12 = space();
+      t13 = text(t13_value);
+      t14 = space();
+      p2 = element("p");
+      p2.textContent = `${/*localize*/
+      ctx[13]("MOVEMENTRULER.observerOnly.Hint")}`;
+      attr(label0, "for", "mr-provider");
+      attr(select0, "id", "mr-provider");
+      if (
+        /*selectedProviderId*/
+        ctx[1] === void 0
+      ) add_render_callback(() => (
+        /*select0_change_handler*/
+        ctx[19].call(select0)
+      ));
+      attr(div0, "class", "setting-row");
+      attr(p0, "class", "notes");
+      attr(label1, "for", "mr-measurement");
+      option0.__value = MR_MEASUREMENT_MODES.COST;
+      set_input_value(option0, option0.__value);
+      option1.__value = MR_MEASUREMENT_MODES.DISTANCE;
+      set_input_value(option1, option1.__value);
+      attr(select1, "id", "mr-measurement");
+      if (
+        /*measurement*/
+        ctx[3] === void 0
+      ) add_render_callback(() => (
+        /*select1_change_handler*/
+        ctx[20].call(select1)
+      ));
+      attr(div1, "class", "setting-row");
+      attr(p1, "class", "notes");
+      attr(input, "type", "checkbox");
+      attr(div2, "class", "setting-row");
+      attr(p2, "class", "notes");
+    },
+    m(target, anchor) {
+      insert(target, div0, anchor);
+      append(div0, label0);
+      append(div0, t1);
+      append(div0, select0);
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        if (each_blocks[i]) {
+          each_blocks[i].m(select0, null);
+        }
+      }
+      select_option(
+        select0,
+        /*selectedProviderId*/
+        ctx[1],
+        true
+      );
+      insert(target, t2, anchor);
+      insert(target, p0, anchor);
+      insert(target, t4, anchor);
+      insert(target, div1, anchor);
+      append(div1, label1);
+      append(div1, t6);
+      append(div1, select1);
+      append(select1, option0);
+      append(select1, option1);
+      select_option(
+        select1,
+        /*measurement*/
+        ctx[3],
+        true
+      );
+      insert(target, t9, anchor);
+      insert(target, p1, anchor);
+      insert(target, t11, anchor);
+      insert(target, div2, anchor);
+      append(div2, label2);
+      append(label2, input);
+      input.checked = /*observerOnly*/
+      ctx[4];
+      append(label2, t12);
+      append(label2, t13);
+      insert(target, t14, anchor);
+      insert(target, p2, anchor);
+      if (!mounted) {
+        dispose = [
+          listen(
+            select0,
+            "change",
+            /*select0_change_handler*/
+            ctx[19]
+          ),
+          listen(
+            select1,
+            "change",
+            /*select1_change_handler*/
+            ctx[20]
+          ),
+          listen(
+            input,
+            "change",
+            /*input_change_handler*/
+            ctx[21]
+          )
+        ];
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*providers, providerLabel*/
+      20480) {
+        each_value_3 = ensure_array_like(
+          /*providers*/
+          ctx2[12]
+        );
+        each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx2, each_value_3, each_1_lookup, select0, destroy_block, create_each_block_3, null, get_each_context_3);
+      }
+      if (dirty[0] & /*selectedProviderId, providers*/
+      4098) {
+        select_option(
+          select0,
+          /*selectedProviderId*/
+          ctx2[1]
+        );
+      }
+      if (dirty[0] & /*measurement*/
+      8) {
+        select_option(
+          select1,
+          /*measurement*/
+          ctx2[3]
+        );
+      }
+      if (dirty[0] & /*observerOnly*/
+      16) {
+        input.checked = /*observerOnly*/
+        ctx2[4];
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div0);
+        detach(t2);
+        detach(p0);
+        detach(t4);
+        detach(div1);
+        detach(t9);
+        detach(p1);
+        detach(t11);
+        detach(div2);
+        detach(t14);
+        detach(p2);
+      }
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        each_blocks[i].d();
+      }
+      mounted = false;
+      run_all(dispose);
+    }
+  };
+}
+function create_each_block_3(key_2, ctx) {
+  let option;
+  let t_value = (
+    /*providerLabel*/
+    ctx[14](
+      /*provider*/
+      ctx[44]
+    ) + ""
+  );
+  let t;
+  return {
+    key: key_2,
+    first: null,
+    c() {
+      option = element("option");
+      t = text(t_value);
+      option.__value = /*provider*/
+      ctx[44].id;
+      set_input_value(option, option.__value);
+      this.first = option;
+    },
+    m(target, anchor) {
+      insert(target, option, anchor);
+      append(option, t);
+    },
+    p(new_ctx, dirty) {
+      ctx = new_ctx;
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(option);
+      }
+    }
+  };
+}
+function create_each_block_2(key_2, ctx) {
+  let div;
+  let label_1;
+  let t0_value = (
+    /*color*/
+    (ctx[41].name ? (
+      /*localize*/
+      ctx[13](
+        /*color*/
+        ctx[41].name
+      )
+    ) : (
+      /*color*/
+      ctx[41].id
+    )) + ""
+  );
+  let t0;
+  let label_1_for_value;
+  let t1;
+  let input;
+  let input_id_value;
+  let mounted;
+  let dispose;
+  function input_input_handler() {
+    ctx[24].call(
+      input,
+      /*color*/
+      ctx[41]
+    );
+  }
+  return {
+    key: key_2,
+    first: null,
+    c() {
+      div = element("div");
+      label_1 = element("label");
+      t0 = text(t0_value);
+      t1 = space();
+      input = element("input");
+      attr(label_1, "for", label_1_for_value = `mr-color-${/*color*/
+      ctx[41].id}`);
+      attr(input, "id", input_id_value = `mr-color-${/*color*/
+      ctx[41].id}`);
+      attr(input, "type", "color");
+      attr(div, "class", "setting-row");
+      this.first = div;
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      append(div, label_1);
+      append(label_1, t0);
+      append(div, t1);
+      append(div, input);
+      set_input_value(
+        input,
+        /*colorValues*/
+        ctx[7][`${/*selectedProviderId*/
+        ctx[1]}.${/*color*/
+        ctx[41].id}`]
+      );
+      if (!mounted) {
+        dispose = listen(input, "input", input_input_handler);
+        mounted = true;
+      }
+    },
+    p(new_ctx, dirty) {
+      ctx = new_ctx;
+      if (dirty[0] & /*selectedColors*/
+      1024 && t0_value !== (t0_value = /*color*/
+      (ctx[41].name ? (
+        /*localize*/
+        ctx[13](
+          /*color*/
+          ctx[41].name
+        )
+      ) : (
+        /*color*/
+        ctx[41].id
+      )) + "")) set_data(t0, t0_value);
+      if (dirty[0] & /*selectedColors*/
+      1024 && label_1_for_value !== (label_1_for_value = `mr-color-${/*color*/
+      ctx[41].id}`)) {
+        attr(label_1, "for", label_1_for_value);
+      }
+      if (dirty[0] & /*selectedColors*/
+      1024 && input_id_value !== (input_id_value = `mr-color-${/*color*/
+      ctx[41].id}`)) {
+        attr(input, "id", input_id_value);
+      }
+      if (dirty[0] & /*colorValues, selectedProviderId, selectedColors, providers*/
+      5250) {
+        set_input_value(
+          input,
+          /*colorValues*/
+          ctx[7][`${/*selectedProviderId*/
+          ctx[1]}.${/*color*/
+          ctx[41].id}`]
+        );
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+      }
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_if_block(ctx) {
+  let section;
+  let h3;
+  let i;
+  let t0;
+  let t1_value = (
+    /*localize*/
+    ctx[13]("MOVEMENTRULER.headers.ProviderSettings") + ""
+  );
+  let t1;
+  let t2;
+  let each_blocks = [];
+  let each_1_lookup = /* @__PURE__ */ new Map();
+  let each_value = ensure_array_like(
+    /*selectedSettings*/
+    ctx[9]
+  );
+  const get_key = (ctx2) => (
+    /*setting*/
+    ctx2[33].id
+  );
+  for (let i2 = 0; i2 < each_value.length; i2 += 1) {
+    let child_ctx = get_each_context(ctx, each_value, i2);
+    let key = get_key(child_ctx);
+    each_1_lookup.set(key, each_blocks[i2] = create_each_block(key, child_ctx));
+  }
+  return {
+    c() {
+      section = element("section");
+      h3 = element("h3");
+      i = element("i");
+      t0 = space();
+      t1 = text(t1_value);
+      t2 = space();
+      for (let i2 = 0; i2 < each_blocks.length; i2 += 1) {
+        each_blocks[i2].c();
+      }
+      attr(i, "class", "fas fa-sliders");
+      attr(section, "class", "config-section");
+    },
+    m(target, anchor) {
+      insert(target, section, anchor);
+      append(section, h3);
+      append(h3, i);
+      append(h3, t0);
+      append(h3, t1);
+      append(section, t2);
+      for (let i2 = 0; i2 < each_blocks.length; i2 += 1) {
+        if (each_blocks[i2]) {
+          each_blocks[i2].m(section, null);
+        }
+      }
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*localize, selectedSettings, isSettingEditable, settingValues, selectedProviderId*/
+      41730) {
+        each_value = ensure_array_like(
+          /*selectedSettings*/
+          ctx2[9]
+        );
+        each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx2, each_value, each_1_lookup, section, destroy_block, create_each_block, null, get_each_context);
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(section);
+      }
+      for (let i2 = 0; i2 < each_blocks.length; i2 += 1) {
+        each_blocks[i2].d();
+      }
+    }
+  };
+}
+function create_else_block(ctx) {
+  let input;
+  let input_id_value;
+  let input_disabled_value;
+  let mounted;
+  let dispose;
+  function input_input_handler_2() {
+    ctx[28].call(
+      input,
+      /*key*/
+      ctx[34]
+    );
+  }
+  return {
+    c() {
+      input = element("input");
+      attr(input, "id", input_id_value = `mr-setting-${/*setting*/
+      ctx[33].id}`);
+      attr(input, "type", "text");
+      input.disabled = input_disabled_value = !/*isSettingEditable*/
+      ctx[15](
+        /*setting*/
+        ctx[33]
+      );
+    },
+    m(target, anchor) {
+      insert(target, input, anchor);
+      set_input_value(
+        input,
+        /*settingValues*/
+        ctx[8][
+          /*key*/
+          ctx[34]
+        ]
+      );
+      if (!mounted) {
+        dispose = listen(input, "input", input_input_handler_2);
+        mounted = true;
+      }
+    },
+    p(new_ctx, dirty) {
+      ctx = new_ctx;
+      if (dirty[0] & /*selectedSettings*/
+      512 && input_id_value !== (input_id_value = `mr-setting-${/*setting*/
+      ctx[33].id}`)) {
+        attr(input, "id", input_id_value);
+      }
+      if (dirty[0] & /*selectedSettings*/
+      512 && input_disabled_value !== (input_disabled_value = !/*isSettingEditable*/
+      ctx[15](
+        /*setting*/
+        ctx[33]
+      ))) {
+        input.disabled = input_disabled_value;
+      }
+      if (dirty[0] & /*settingValues, selectedProviderId, selectedSettings, providers*/
+      4866 && input.value !== /*settingValues*/
+      ctx[8][
+        /*key*/
+        ctx[34]
+      ]) {
+        set_input_value(
+          input,
+          /*settingValues*/
+          ctx[8][
+            /*key*/
+            ctx[34]
+          ]
+        );
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(input);
+      }
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_if_block_4(ctx) {
+  let input;
+  let input_id_value;
+  let input_disabled_value;
+  let mounted;
+  let dispose;
+  function input_input_handler_1() {
+    ctx[27].call(
+      input,
+      /*key*/
+      ctx[34]
+    );
+  }
+  return {
+    c() {
+      input = element("input");
+      attr(input, "id", input_id_value = `mr-setting-${/*setting*/
+      ctx[33].id}`);
+      attr(input, "type", "number");
+      attr(input, "step", "any");
+      input.disabled = input_disabled_value = !/*isSettingEditable*/
+      ctx[15](
+        /*setting*/
+        ctx[33]
+      );
+    },
+    m(target, anchor) {
+      insert(target, input, anchor);
+      set_input_value(
+        input,
+        /*settingValues*/
+        ctx[8][
+          /*key*/
+          ctx[34]
+        ]
+      );
+      if (!mounted) {
+        dispose = listen(input, "input", input_input_handler_1);
+        mounted = true;
+      }
+    },
+    p(new_ctx, dirty) {
+      ctx = new_ctx;
+      if (dirty[0] & /*selectedSettings*/
+      512 && input_id_value !== (input_id_value = `mr-setting-${/*setting*/
+      ctx[33].id}`)) {
+        attr(input, "id", input_id_value);
+      }
+      if (dirty[0] & /*selectedSettings*/
+      512 && input_disabled_value !== (input_disabled_value = !/*isSettingEditable*/
+      ctx[15](
+        /*setting*/
+        ctx[33]
+      ))) {
+        input.disabled = input_disabled_value;
+      }
+      if (dirty[0] & /*settingValues, selectedProviderId, selectedSettings, providers*/
+      4866 && to_number(input.value) !== /*settingValues*/
+      ctx[8][
+        /*key*/
+        ctx[34]
+      ]) {
+        set_input_value(
+          input,
+          /*settingValues*/
+          ctx[8][
+            /*key*/
+            ctx[34]
+          ]
+        );
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(input);
+      }
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_if_block_3(ctx) {
+  let select;
+  let each_blocks = [];
+  let each_1_lookup = /* @__PURE__ */ new Map();
+  let select_id_value;
+  let select_disabled_value;
+  let mounted;
+  let dispose;
+  let each_value_1 = ensure_array_like(Object.entries(
+    /*setting*/
+    ctx[33].choices
+  ));
+  const get_key = (ctx2) => (
+    /*value*/
+    ctx2[37]
+  );
+  for (let i = 0; i < each_value_1.length; i += 1) {
+    let child_ctx = get_each_context_1(ctx, each_value_1, i);
+    let key = get_key(child_ctx);
+    each_1_lookup.set(key, each_blocks[i] = create_each_block_1(key, child_ctx));
+  }
+  function select_change_handler() {
+    ctx[26].call(
+      select,
+      /*key*/
+      ctx[34]
+    );
+  }
+  return {
+    c() {
+      select = element("select");
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        each_blocks[i].c();
+      }
+      attr(select, "id", select_id_value = `mr-setting-${/*setting*/
+      ctx[33].id}`);
+      select.disabled = select_disabled_value = !/*isSettingEditable*/
+      ctx[15](
+        /*setting*/
+        ctx[33]
+      );
+      if (
+        /*settingValues*/
+        ctx[8][
+          /*key*/
+          ctx[34]
+        ] === void 0
+      ) add_render_callback(select_change_handler);
+    },
+    m(target, anchor) {
+      insert(target, select, anchor);
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        if (each_blocks[i]) {
+          each_blocks[i].m(select, null);
+        }
+      }
+      select_option(
+        select,
+        /*settingValues*/
+        ctx[8][
+          /*key*/
+          ctx[34]
+        ],
+        true
+      );
+      if (!mounted) {
+        dispose = listen(select, "change", select_change_handler);
+        mounted = true;
+      }
+    },
+    p(new_ctx, dirty) {
+      ctx = new_ctx;
+      if (dirty[0] & /*selectedSettings, localize*/
+      8704) {
+        each_value_1 = ensure_array_like(Object.entries(
+          /*setting*/
+          ctx[33].choices
+        ));
+        each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx, each_value_1, each_1_lookup, select, destroy_block, create_each_block_1, null, get_each_context_1);
+      }
+      if (dirty[0] & /*selectedSettings*/
+      512 && select_id_value !== (select_id_value = `mr-setting-${/*setting*/
+      ctx[33].id}`)) {
+        attr(select, "id", select_id_value);
+      }
+      if (dirty[0] & /*selectedSettings*/
+      512 && select_disabled_value !== (select_disabled_value = !/*isSettingEditable*/
+      ctx[15](
+        /*setting*/
+        ctx[33]
+      ))) {
+        select.disabled = select_disabled_value;
+      }
+      if (dirty[0] & /*settingValues, selectedProviderId, selectedSettings, providers*/
+      4866) {
+        select_option(
+          select,
+          /*settingValues*/
+          ctx[8][
+            /*key*/
+            ctx[34]
+          ]
+        );
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(select);
+      }
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        each_blocks[i].d();
+      }
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_if_block_2(ctx) {
+  let input;
+  let input_id_value;
+  let input_disabled_value;
+  let mounted;
+  let dispose;
+  function input_change_handler_1() {
+    ctx[25].call(
+      input,
+      /*key*/
+      ctx[34]
+    );
+  }
+  return {
+    c() {
+      input = element("input");
+      attr(input, "id", input_id_value = `mr-setting-${/*setting*/
+      ctx[33].id}`);
+      attr(input, "type", "checkbox");
+      input.disabled = input_disabled_value = !/*isSettingEditable*/
+      ctx[15](
+        /*setting*/
+        ctx[33]
+      );
+    },
+    m(target, anchor) {
+      insert(target, input, anchor);
+      input.checked = /*settingValues*/
+      ctx[8][
+        /*key*/
+        ctx[34]
+      ];
+      if (!mounted) {
+        dispose = listen(input, "change", input_change_handler_1);
+        mounted = true;
+      }
+    },
+    p(new_ctx, dirty) {
+      ctx = new_ctx;
+      if (dirty[0] & /*selectedSettings*/
+      512 && input_id_value !== (input_id_value = `mr-setting-${/*setting*/
+      ctx[33].id}`)) {
+        attr(input, "id", input_id_value);
+      }
+      if (dirty[0] & /*selectedSettings*/
+      512 && input_disabled_value !== (input_disabled_value = !/*isSettingEditable*/
+      ctx[15](
+        /*setting*/
+        ctx[33]
+      ))) {
+        input.disabled = input_disabled_value;
+      }
+      if (dirty[0] & /*settingValues, selectedProviderId, selectedSettings, providers*/
+      4866) {
+        input.checked = /*settingValues*/
+        ctx[8][
+          /*key*/
+          ctx[34]
+        ];
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(input);
+      }
+      mounted = false;
+      dispose();
+    }
+  };
+}
+function create_each_block_1(key_2, ctx) {
+  let option;
+  let t_value = (
+    /*localize*/
+    ctx[13](
+      /*label*/
+      ctx[38]
+    ) + ""
+  );
+  let t;
+  let option_value_value;
+  return {
+    key: key_2,
+    first: null,
+    c() {
+      option = element("option");
+      t = text(t_value);
+      option.__value = option_value_value = /*value*/
+      ctx[37];
+      set_input_value(option, option.__value);
+      this.first = option;
+    },
+    m(target, anchor) {
+      insert(target, option, anchor);
+      append(option, t);
+    },
+    p(new_ctx, dirty) {
+      ctx = new_ctx;
+      if (dirty[0] & /*selectedSettings*/
+      512 && t_value !== (t_value = /*localize*/
+      ctx[13](
+        /*label*/
+        ctx[38]
+      ) + "")) set_data(t, t_value);
+      if (dirty[0] & /*selectedSettings*/
+      512 && option_value_value !== (option_value_value = /*value*/
+      ctx[37])) {
+        option.__value = option_value_value;
+        set_input_value(option, option.__value);
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(option);
+      }
+    }
+  };
+}
+function create_if_block_1(ctx) {
+  let p;
+  let t_value = (
+    /*localize*/
+    ctx[13](
+      /*setting*/
+      ctx[33].hint
+    ) + ""
+  );
+  let t;
+  return {
+    c() {
+      p = element("p");
+      t = text(t_value);
+      attr(p, "class", "notes");
+    },
+    m(target, anchor) {
+      insert(target, p, anchor);
+      append(p, t);
+    },
+    p(ctx2, dirty) {
+      if (dirty[0] & /*selectedSettings*/
+      512 && t_value !== (t_value = /*localize*/
+      ctx2[13](
+        /*setting*/
+        ctx2[33].hint
+      ) + "")) set_data(t, t_value);
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(p);
+      }
+    }
+  };
+}
+function create_each_block(key_2, ctx) {
+  let div;
+  let label_1;
+  let t0_value = (
+    /*localize*/
+    (ctx[13](
+      /*setting*/
+      ctx[33].name
+    ) || /*setting*/
+    ctx[33].id) + ""
+  );
+  let t0;
+  let label_1_for_value;
+  let t1;
+  let show_if;
+  let show_if_1;
+  let show_if_2;
+  let t2;
+  let if_block1_anchor;
+  function select_block_type_1(ctx2, dirty) {
+    if (dirty[0] & /*selectedSettings*/
+    512) show_if = null;
+    if (dirty[0] & /*selectedSettings*/
+    512) show_if_1 = null;
+    if (dirty[0] & /*selectedSettings*/
+    512) show_if_2 = null;
+    if (show_if == null) show_if = !!(settingKind(
+      /*setting*/
+      ctx2[33]
+    ) === "boolean");
+    if (show_if) return create_if_block_2;
+    if (show_if_1 == null) show_if_1 = !!(settingKind(
+      /*setting*/
+      ctx2[33]
+    ) === "select");
+    if (show_if_1) return create_if_block_3;
+    if (show_if_2 == null) show_if_2 = !!(settingKind(
+      /*setting*/
+      ctx2[33]
+    ) === "number");
+    if (show_if_2) return create_if_block_4;
+    return create_else_block;
+  }
+  let current_block_type = select_block_type_1(ctx, [-1, -1]);
+  let if_block0 = current_block_type(ctx);
+  let if_block1 = (
+    /*setting*/
+    ctx[33].hint && create_if_block_1(ctx)
+  );
+  return {
+    key: key_2,
+    first: null,
+    c() {
+      div = element("div");
+      label_1 = element("label");
+      t0 = text(t0_value);
+      t1 = space();
+      if_block0.c();
+      t2 = space();
+      if (if_block1) if_block1.c();
+      if_block1_anchor = empty();
+      attr(label_1, "for", label_1_for_value = `mr-setting-${/*setting*/
+      ctx[33].id}`);
+      attr(div, "class", "setting-row");
+      this.first = div;
+    },
+    m(target, anchor) {
+      insert(target, div, anchor);
+      append(div, label_1);
+      append(label_1, t0);
+      append(div, t1);
+      if_block0.m(div, null);
+      insert(target, t2, anchor);
+      if (if_block1) if_block1.m(target, anchor);
+      insert(target, if_block1_anchor, anchor);
+    },
+    p(new_ctx, dirty) {
+      ctx = new_ctx;
+      if (dirty[0] & /*selectedSettings*/
+      512 && t0_value !== (t0_value = /*localize*/
+      (ctx[13](
+        /*setting*/
+        ctx[33].name
+      ) || /*setting*/
+      ctx[33].id) + "")) set_data(t0, t0_value);
+      if (dirty[0] & /*selectedSettings*/
+      512 && label_1_for_value !== (label_1_for_value = `mr-setting-${/*setting*/
+      ctx[33].id}`)) {
+        attr(label_1, "for", label_1_for_value);
+      }
+      if (current_block_type === (current_block_type = select_block_type_1(ctx, dirty)) && if_block0) {
+        if_block0.p(ctx, dirty);
+      } else {
+        if_block0.d(1);
+        if_block0 = current_block_type(ctx);
+        if (if_block0) {
+          if_block0.c();
+          if_block0.m(div, null);
+        }
+      }
+      if (
+        /*setting*/
+        ctx[33].hint
+      ) {
+        if (if_block1) {
+          if_block1.p(ctx, dirty);
+        } else {
+          if_block1 = create_if_block_1(ctx);
+          if_block1.c();
+          if_block1.m(if_block1_anchor.parentNode, if_block1_anchor);
+        }
+      } else if (if_block1) {
+        if_block1.d(1);
+        if_block1 = null;
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div);
+        detach(t2);
+        detach(if_block1_anchor);
+      }
+      if_block0.d();
+      if (if_block1) if_block1.d(detaching);
+    }
+  };
+}
+function create_default_slot(ctx) {
+  let div3;
+  let section0;
+  let h30;
+  let i0;
+  let t0;
+  let t1_value = (
+    /*localize*/
+    ctx[13]("MOVEMENTRULER.headers.Provider") + ""
+  );
+  let t1;
+  let t2;
+  let t3;
+  let section1;
+  let h31;
+  let i1;
+  let t4;
+  let t5_value = (
+    /*localize*/
+    ctx[13]("MOVEMENTRULER.headers.Display") + ""
+  );
+  let t5;
+  let t6;
+  let div0;
+  let label0;
+  let input0;
+  let t7;
+  let t8_value = (
+    /*localize*/
+    ctx[13]("MOVEMENTRULER.highlightGrid.Name") + ""
+  );
+  let t8;
+  let t9;
+  let div1;
+  let label1;
+  let input1;
+  let t10;
+  let t11_value = (
+    /*localize*/
+    ctx[13]("MOVEMENTRULER.colorWaypoints.Name") + ""
+  );
+  let t11;
+  let t12;
+  let section2;
+  let h32;
+  let i2;
+  let t13;
+  let t14_value = (
+    /*localize*/
+    ctx[13]("MOVEMENTRULER.headers.Colors") + ""
+  );
+  let t14;
+  let t15;
+  let each_blocks = [];
+  let each_1_lookup = /* @__PURE__ */ new Map();
+  let t16;
+  let button0;
+  let i3;
+  let t17;
+  let t18_value = (
+    /*localize*/
+    ctx[13]("MOVEMENTRULER.ResetColors") + ""
+  );
+  let t18;
+  let t19;
+  let t20;
+  let div2;
+  let button1;
+  let i4;
+  let t21;
+  let t22_value = (
+    /*localize*/
+    ctx[13]("SETTINGS.Save") + ""
+  );
+  let t22;
+  let t23;
+  let button2;
+  let i5;
+  let t24;
+  let t25_value = (
+    /*localize*/
+    ctx[13]("Cancel") + ""
+  );
+  let t25;
+  let mounted;
+  let dispose;
+  function select_block_type(ctx2, dirty) {
+    if (
+      /*isGM*/
+      ctx2[11]
+    ) return create_if_block_5;
+    return create_else_block_1;
+  }
+  let current_block_type = select_block_type(ctx);
+  let if_block0 = current_block_type(ctx);
+  let each_value_2 = ensure_array_like(
+    /*selectedColors*/
+    ctx[10]
+  );
+  const get_key = (ctx2) => (
+    /*color*/
+    ctx2[41].id
+  );
+  for (let i = 0; i < each_value_2.length; i += 1) {
+    let child_ctx = get_each_context_2(ctx, each_value_2, i);
+    let key = get_key(child_ctx);
+    each_1_lookup.set(key, each_blocks[i] = create_each_block_2(key, child_ctx));
+  }
+  let if_block1 = (
+    /*selectedSettings*/
+    ctx[9].length > 0 && create_if_block(ctx)
+  );
+  return {
+    c() {
+      div3 = element("div");
+      section0 = element("section");
+      h30 = element("h3");
+      i0 = element("i");
+      t0 = space();
+      t1 = text(t1_value);
+      t2 = space();
+      if_block0.c();
+      t3 = space();
+      section1 = element("section");
+      h31 = element("h3");
+      i1 = element("i");
+      t4 = space();
+      t5 = text(t5_value);
+      t6 = space();
+      div0 = element("div");
+      label0 = element("label");
+      input0 = element("input");
+      t7 = space();
+      t8 = text(t8_value);
+      t9 = space();
+      div1 = element("div");
+      label1 = element("label");
+      input1 = element("input");
+      t10 = space();
+      t11 = text(t11_value);
+      t12 = space();
+      section2 = element("section");
+      h32 = element("h3");
+      i2 = element("i");
+      t13 = space();
+      t14 = text(t14_value);
+      t15 = space();
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        each_blocks[i].c();
+      }
+      t16 = space();
+      button0 = element("button");
+      i3 = element("i");
+      t17 = space();
+      t18 = text(t18_value);
+      t19 = space();
+      if (if_block1) if_block1.c();
+      t20 = space();
+      div2 = element("div");
+      button1 = element("button");
+      i4 = element("i");
+      t21 = space();
+      t22 = text(t22_value);
+      t23 = space();
+      button2 = element("button");
+      i5 = element("i");
+      t24 = space();
+      t25 = text(t25_value);
+      attr(i0, "class", "fas fa-gauge-high");
+      attr(section0, "class", "config-section");
+      attr(i1, "class", "fas fa-palette");
+      attr(input0, "type", "checkbox");
+      attr(div0, "class", "setting-row");
+      attr(input1, "type", "checkbox");
+      attr(div1, "class", "setting-row");
+      attr(section1, "class", "config-section");
+      attr(i2, "class", "fas fa-swatchbook");
+      attr(i3, "class", "fas fa-rotate-left");
+      attr(button0, "type", "button");
+      attr(button0, "class", "reset-btn");
+      attr(section2, "class", "config-section");
+      attr(i4, "class", "fas fa-save");
+      attr(button1, "type", "button");
+      attr(button1, "class", "save-btn");
+      attr(i5, "class", "fas fa-times");
+      attr(button2, "type", "button");
+      attr(button2, "class", "cancel-btn");
+      attr(div2, "class", "button-row");
+      attr(div3, "class", "movement-ruler-content");
+    },
+    m(target, anchor) {
+      insert(target, div3, anchor);
+      append(div3, section0);
+      append(section0, h30);
+      append(h30, i0);
+      append(h30, t0);
+      append(h30, t1);
+      append(section0, t2);
+      if_block0.m(section0, null);
+      append(div3, t3);
+      append(div3, section1);
+      append(section1, h31);
+      append(h31, i1);
+      append(h31, t4);
+      append(h31, t5);
+      append(section1, t6);
+      append(section1, div0);
+      append(div0, label0);
+      append(label0, input0);
+      input0.checked = /*highlightGrid*/
+      ctx[5];
+      append(label0, t7);
+      append(label0, t8);
+      append(section1, t9);
+      append(section1, div1);
+      append(div1, label1);
+      append(label1, input1);
+      input1.checked = /*colorWaypoints*/
+      ctx[6];
+      append(label1, t10);
+      append(label1, t11);
+      append(div3, t12);
+      append(div3, section2);
+      append(section2, h32);
+      append(h32, i2);
+      append(h32, t13);
+      append(h32, t14);
+      append(section2, t15);
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        if (each_blocks[i]) {
+          each_blocks[i].m(section2, null);
+        }
+      }
+      append(section2, t16);
+      append(section2, button0);
+      append(button0, i3);
+      append(button0, t17);
+      append(button0, t18);
+      append(div3, t19);
+      if (if_block1) if_block1.m(div3, null);
+      append(div3, t20);
+      append(div3, div2);
+      append(div2, button1);
+      append(button1, i4);
+      append(button1, t21);
+      append(button1, t22);
+      append(div2, t23);
+      append(div2, button2);
+      append(button2, i5);
+      append(button2, t24);
+      append(button2, t25);
+      if (!mounted) {
+        dispose = [
+          listen(
+            input0,
+            "change",
+            /*input0_change_handler*/
+            ctx[22]
+          ),
+          listen(
+            input1,
+            "change",
+            /*input1_change_handler*/
+            ctx[23]
+          ),
+          listen(
+            button0,
+            "click",
+            /*resetColors*/
+            ctx[16]
+          ),
+          listen(
+            button1,
+            "click",
+            /*save*/
+            ctx[17]
+          ),
+          listen(
+            button2,
+            "click",
+            /*cancel*/
+            ctx[18]
+          )
+        ];
+        mounted = true;
+      }
+    },
+    p(ctx2, dirty) {
+      if_block0.p(ctx2, dirty);
+      if (dirty[0] & /*highlightGrid*/
+      32) {
+        input0.checked = /*highlightGrid*/
+        ctx2[5];
+      }
+      if (dirty[0] & /*colorWaypoints*/
+      64) {
+        input1.checked = /*colorWaypoints*/
+        ctx2[6];
+      }
+      if (dirty[0] & /*selectedColors, colorValues, selectedProviderId, localize*/
+      9346) {
+        each_value_2 = ensure_array_like(
+          /*selectedColors*/
+          ctx2[10]
+        );
+        each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx2, each_value_2, each_1_lookup, section2, destroy_block, create_each_block_2, t16, get_each_context_2);
+      }
+      if (
+        /*selectedSettings*/
+        ctx2[9].length > 0
+      ) {
+        if (if_block1) {
+          if_block1.p(ctx2, dirty);
+        } else {
+          if_block1 = create_if_block(ctx2);
+          if_block1.c();
+          if_block1.m(div3, t20);
+        }
+      } else if (if_block1) {
+        if_block1.d(1);
+        if_block1 = null;
+      }
+    },
+    d(detaching) {
+      if (detaching) {
+        detach(div3);
+      }
+      if_block0.d();
+      for (let i = 0; i < each_blocks.length; i += 1) {
+        each_blocks[i].d();
+      }
+      if (if_block1) if_block1.d();
+      mounted = false;
+      run_all(dispose);
+    }
+  };
+}
+function create_fragment(ctx) {
+  let applicationshell;
+  let updating_elementRoot;
+  let current;
+  function applicationshell_elementRoot_binding(value) {
+    ctx[29](value);
+  }
+  let applicationshell_props = {
+    $$slots: { default: [create_default_slot] },
+    $$scope: { ctx }
+  };
+  if (
+    /*elementRoot*/
+    ctx[0] !== void 0
+  ) {
+    applicationshell_props.elementRoot = /*elementRoot*/
+    ctx[0];
+  }
+  applicationshell = new ApplicationShell({ props: applicationshell_props });
+  binding_callbacks.push(() => bind(applicationshell, "elementRoot", applicationshell_elementRoot_binding));
+  return {
+    c() {
+      create_component(applicationshell.$$.fragment);
+    },
+    m(target, anchor) {
+      mount_component(applicationshell, target, anchor);
+      current = true;
+    },
+    p(ctx2, dirty) {
+      const applicationshell_changes = {};
+      if (dirty[0] & /*selectedSettings, settingValues, selectedProviderId, selectedColors, colorValues, colorWaypoints, highlightGrid, observerOnly, measurement, selectedProvider*/
+      2046 | dirty[1] & /*$$scope*/
+      65536) {
+        applicationshell_changes.$$scope = { dirty, ctx: ctx2 };
+      }
+      if (!updating_elementRoot && dirty[0] & /*elementRoot*/
+      1) {
+        updating_elementRoot = true;
+        applicationshell_changes.elementRoot = /*elementRoot*/
+        ctx2[0];
+        add_flush_callback(() => updating_elementRoot = false);
+      }
+      applicationshell.$set(applicationshell_changes);
+    },
+    i(local) {
+      if (current) return;
+      transition_in(applicationshell.$$.fragment, local);
+      current = true;
+    },
+    o(local) {
+      transition_out(applicationshell.$$.fragment, local);
+      current = false;
+    },
+    d(detaching) {
+      destroy_component(applicationshell, detaching);
+    }
+  };
+}
+function settingKind(setting) {
+  if (setting.choices) return "select";
+  if (setting.type === Boolean) return "boolean";
+  if (setting.type === Number) return "number";
+  return "string";
+}
+function instance($$self, $$props, $$invalidate) {
+  let selectedProvider;
+  let selectedColors;
+  let selectedSettings;
+  let { elementRoot = void 0 } = $$props;
+  const external = getContext("#external");
+  const application = external?.application;
+  const isGM = game.user.isGM;
+  const providers2 = [...getSpeedProviders().values()];
+  const localize2 = (key) => key ? game.i18n.localize(key) : "";
+  let selectedProviderId = game.settings.get(MODULE_ID, MR_SETTINGS.speedProvider);
+  if (!providers2.some((p) => p.id === selectedProviderId)) {
+    selectedProviderId = providers2[0]?.id ?? MR_NATIVE_PROVIDER_ID;
+  }
+  let measurement = game.settings.get(MODULE_ID, MR_SETTINGS.measurement);
+  let observerOnly = game.settings.get(MODULE_ID, MR_SETTINGS.observerOnly);
+  let highlightGrid = game.settings.get(MODULE_ID, MR_SETTINGS.highlightGrid);
+  let colorWaypoints = game.settings.get(MODULE_ID, MR_SETTINGS.colorWaypoints);
+  const colorValues = {};
+  const settingValues = {};
+  function providerColors(provider) {
+    return [
+      ...provider.colors,
+      {
+        id: MR_UNREACHABLE_COLOR_ID,
+        default: provider.defaultUnreachableColor,
+        name: "MOVEMENTRULER.speeds.Unreachable"
+      }
+    ];
+  }
+  function providerLabel(provider) {
+    if (provider.id === MR_NATIVE_PROVIDER_ID) return localize2("MOVEMENTRULER.provider.Native");
+    const separator = provider.id.indexOf(".");
+    const type = provider.id.slice(0, separator);
+    const packageId = provider.id.slice(separator + 1);
+    if (type === "system") {
+      return game.i18n.format("MOVEMENTRULER.provider.System", { name: game.system.title });
+    }
+    return game.i18n.format("MOVEMENTRULER.provider.Module", {
+      name: game.modules.get(packageId)?.title ?? packageId
+    });
+  }
+  for (const provider of providers2) {
+    for (const color of providerColors(provider)) {
+      colorValues[`${provider.id}.${color.id}`] = colorNumberToHex(game.settings.get(MODULE_ID, mrColorSettingKey(provider.id, color.id)));
+    }
+    for (const setting of provider.settings) {
+      settingValues[`${provider.id}.${setting.id}`] = game.settings.get(MODULE_ID, mrProviderSettingKey(provider.id, setting.id));
+    }
+  }
+  function isSettingEditable(setting) {
+    return isGM || setting.scope !== "world";
+  }
+  function resetColors() {
+    if (!selectedProvider) return;
+    for (const color of providerColors(selectedProvider)) {
+      $$invalidate(7, colorValues[`${selectedProvider.id}.${color.id}`] = colorNumberToHex(color.default), colorValues);
+    }
+  }
+  async function save() {
+    await game.settings.set(MODULE_ID, MR_SETTINGS.highlightGrid, highlightGrid);
+    await game.settings.set(MODULE_ID, MR_SETTINGS.colorWaypoints, colorWaypoints);
+    for (const provider of providers2) {
+      for (const color of providerColors(provider)) {
+        await game.settings.set(MODULE_ID, mrColorSettingKey(provider.id, color.id), colorHexToNumber(colorValues[`${provider.id}.${color.id}`]));
+      }
+    }
+    for (const provider of providers2) {
+      for (const setting of provider.settings) {
+        if (!isSettingEditable(setting)) continue;
+        let value = settingValues[`${provider.id}.${setting.id}`];
+        if (setting.type === Number) value = Number(value);
+        await game.settings.set(MODULE_ID, mrProviderSettingKey(provider.id, setting.id), value);
+      }
+    }
+    if (isGM) {
+      await game.settings.set(MODULE_ID, MR_SETTINGS.measurement, measurement);
+      await game.settings.set(MODULE_ID, MR_SETTINGS.observerOnly, observerOnly);
+      await game.settings.set(MODULE_ID, MR_SETTINGS.speedProvider, selectedProviderId);
+    }
+    notifyInfo(localize2("MOVEMENTRULER.Saved"));
+    application.close();
+  }
+  function cancel() {
+    application.close();
+  }
+  function select0_change_handler() {
+    selectedProviderId = select_value(this);
+    $$invalidate(1, selectedProviderId);
+    $$invalidate(12, providers2);
+  }
+  function select1_change_handler() {
+    measurement = select_value(this);
+    $$invalidate(3, measurement);
+  }
+  function input_change_handler() {
+    observerOnly = this.checked;
+    $$invalidate(4, observerOnly);
+  }
+  function input0_change_handler() {
+    highlightGrid = this.checked;
+    $$invalidate(5, highlightGrid);
+  }
+  function input1_change_handler() {
+    colorWaypoints = this.checked;
+    $$invalidate(6, colorWaypoints);
+  }
+  function input_input_handler(color) {
+    colorValues[`${selectedProviderId}.${color.id}`] = this.value;
+    $$invalidate(7, colorValues);
+  }
+  function input_change_handler_1(key) {
+    settingValues[key] = this.checked;
+    $$invalidate(8, settingValues);
+    $$invalidate(9, selectedSettings), $$invalidate(2, selectedProvider), $$invalidate(1, selectedProviderId);
+  }
+  function select_change_handler(key) {
+    settingValues[key] = select_value(this);
+    $$invalidate(8, settingValues);
+    $$invalidate(9, selectedSettings), $$invalidate(2, selectedProvider), $$invalidate(1, selectedProviderId);
+  }
+  function input_input_handler_1(key) {
+    settingValues[key] = to_number(this.value);
+    $$invalidate(8, settingValues);
+    $$invalidate(9, selectedSettings), $$invalidate(2, selectedProvider), $$invalidate(1, selectedProviderId);
+  }
+  function input_input_handler_2(key) {
+    settingValues[key] = this.value;
+    $$invalidate(8, settingValues);
+    $$invalidate(9, selectedSettings), $$invalidate(2, selectedProvider), $$invalidate(1, selectedProviderId);
+  }
+  function applicationshell_elementRoot_binding(value) {
+    elementRoot = value;
+    $$invalidate(0, elementRoot);
+  }
+  $$self.$$set = ($$props2) => {
+    if ("elementRoot" in $$props2) $$invalidate(0, elementRoot = $$props2.elementRoot);
+  };
+  $$self.$$.update = () => {
+    if ($$self.$$.dirty[0] & /*selectedProviderId*/
+    2) {
+      $$invalidate(2, selectedProvider = providers2.find((p) => p.id === selectedProviderId));
+    }
+    if ($$self.$$.dirty[0] & /*selectedProvider*/
+    4) {
+      $$invalidate(10, selectedColors = selectedProvider ? providerColors(selectedProvider) : []);
+    }
+    if ($$self.$$.dirty[0] & /*selectedProvider*/
+    4) {
+      $$invalidate(9, selectedSettings = selectedProvider?.settings ?? []);
+    }
+  };
+  return [
+    elementRoot,
+    selectedProviderId,
+    selectedProvider,
+    measurement,
+    observerOnly,
+    highlightGrid,
+    colorWaypoints,
+    colorValues,
+    settingValues,
+    selectedSettings,
+    selectedColors,
+    isGM,
+    providers2,
+    localize2,
+    providerLabel,
+    isSettingEditable,
+    resetColors,
+    save,
+    cancel,
+    select0_change_handler,
+    select1_change_handler,
+    input_change_handler,
+    input0_change_handler,
+    input1_change_handler,
+    input_input_handler,
+    input_change_handler_1,
+    select_change_handler,
+    input_input_handler_1,
+    input_input_handler_2,
+    applicationshell_elementRoot_binding
+  ];
+}
+class MovementRulerShell extends SvelteComponent {
+  constructor(options) {
+    super();
+    init(this, options, instance, create_fragment, safe_not_equal, { elementRoot: 0 }, null, [-1, -1]);
   }
   get elementRoot() {
     return this.$$.ctx[0];
@@ -41383,10 +43396,217 @@ class HeaderButtonsApp extends SvelteApp {
     });
   }
 }
+class MovementRulerApp extends SvelteApp {
+  /**
+   * Open the app, focusing an existing window instead of duplicating it.
+   * @returns {MovementRulerApp}
+   */
+  static open() {
+    const existingApp = Object.values(ui.windows).find((w) => w instanceof MovementRulerApp);
+    if (existingApp) {
+      existingApp.render(true, { focus: true });
+      return existingApp;
+    }
+    const app = new this();
+    app.render(true);
+    return app;
+  }
+  /**
+   * @returns {SvelteApp.Options}
+   */
+  static get defaultOptions() {
+    return deepMerge(super.defaultOptions, {
+      id: "movement-ruler-config",
+      classes: ["antifriz-roleplay-stuff", "movement-ruler-config"],
+      title: "MOVEMENTRULER.Title",
+      width: 520,
+      height: "auto",
+      resizable: true,
+      minimizable: false,
+      svelte: {
+        class: MovementRulerShell,
+        target: document.body,
+        intro: true,
+        props: {}
+      }
+    });
+  }
+}
+function readOptions() {
+  try {
+    return {
+      enabled: game.settings.get(MODULE_ID, MR_SETTINGS.enabled) === true,
+      highlightGrid: game.settings.get(MODULE_ID, MR_SETTINGS.highlightGrid) === true,
+      colorWaypoints: game.settings.get(MODULE_ID, MR_SETTINGS.colorWaypoints) === true,
+      observerOnly: game.settings.get(MODULE_ID, MR_SETTINGS.observerOnly) === true,
+      measurement: game.settings.get(MODULE_ID, MR_SETTINGS.measurement)
+    };
+  } catch {
+    return {
+      enabled: false,
+      highlightGrid: false,
+      colorWaypoints: false,
+      observerOnly: true,
+      measurement: MR_MEASUREMENT_MODES.COST
+    };
+  }
+}
+function AFTokenRulerMixin(BaseRuler) {
+  return class AFTokenRuler extends BaseRuler {
+    /**
+     * Settings and provider ranges, cached for the duration of one refresh.
+     * @type {{options: object, ranges: Array<{range: number, color: number}>}|undefined}
+     */
+    #cache;
+    /** @inheritdoc */
+    get isVisible() {
+      const provider = getActiveSpeedProvider();
+      if (provider && readOptions().enabled && !provider.usesRuler(this.token)) return false;
+      return super.isVisible;
+    }
+    /** @inheritdoc */
+    refresh(rulerData) {
+      this.#cache = void 0;
+      super.refresh(rulerData);
+    }
+    /** @inheritdoc */
+    clear() {
+      this.#cache = void 0;
+      super.clear();
+    }
+    /**
+     * Lazily build the per-refresh cache.
+     * @returns {{options: object, ranges: Array<{range: number, color: number}>}}
+     */
+    #getCache() {
+      if (this.#cache) return this.#cache;
+      const options = readOptions();
+      const token = this.token;
+      const actor = token?.actor;
+      let ranges = [];
+      if (options.enabled && actor) {
+        const visible = !options.observerOnly || actor.testUserPermission(game.user, "OBSERVER");
+        if (visible) ranges = getRangesForToken(token);
+      }
+      this.#cache = { options, ranges };
+      return this.#cache;
+    }
+    /**
+     * Resolve the speed colour for a ruler waypoint.
+     * @param {object} waypoint - A `TokenRulerWaypoint`.
+     * @returns {number|null} The colour, or `null` to keep the default style.
+     */
+    #getSpeedColor(waypoint) {
+      const { options, ranges } = this.#getCache();
+      if (ranges.length === 0) return null;
+      if (waypoint?.unreachable) return getUnreachableColor();
+      const travelled = getWaypointMeasurement(waypoint, options.measurement);
+      return getColorForDistanceAndToken(travelled, this.token, ranges);
+    }
+    /** @inheritdoc */
+    _getSegmentStyle(waypoint) {
+      const style = super._getSegmentStyle(waypoint);
+      const color = this.#getSpeedColor(waypoint);
+      if (color !== null) style.color = color;
+      return style;
+    }
+    /** @inheritdoc */
+    _getGridHighlightStyle(waypoint, offset) {
+      const style = super._getGridHighlightStyle(waypoint, offset);
+      if (!this.#getCache().options.highlightGrid) return style;
+      const color = this.#getSpeedColor(waypoint);
+      if (color !== null) style.color = color;
+      return style;
+    }
+    /** @inheritdoc */
+    _getWaypointStyle(waypoint) {
+      const style = super._getWaypointStyle(waypoint);
+      if (!this.#getCache().options.colorWaypoints) return style;
+      const color = this.#getSpeedColor(waypoint);
+      if (color !== null) style.color = color;
+      return style;
+    }
+  };
+}
+function installMovementRuler() {
+  const BaseRuler = CONFIG.Token.rulerClass ?? foundry.canvas.placeables.tokens.TokenRuler;
+  CONFIG.Token.rulerClass = AFTokenRulerMixin(BaseRuler);
+}
+class MovementRulerMenuProxy extends foundry.applications.api.ApplicationV2 {
+  static DEFAULT_OPTIONS = { id: "movement-ruler-menu-proxy" };
+  /** @inheritdoc */
+  async render() {
+    MovementRulerApp.open();
+    return this;
+  }
+}
+function registerMovementRulerSettings() {
+  game.settings.register(MODULE_ID, MR_SETTINGS.enabled, {
+    name: "SETTINGS.enableMovementRuler.Name",
+    hint: "SETTINGS.enableMovementRuler.Hint",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: false,
+    restricted: true
+  });
+  game.settings.register(MODULE_ID, MR_SETTINGS.speedProvider, {
+    scope: "world",
+    config: false,
+    type: String,
+    default: MR_NATIVE_PROVIDER_ID,
+    onChange: () => refreshActiveSpeedProvider()
+  });
+  game.settings.register(MODULE_ID, MR_SETTINGS.measurement, {
+    scope: "world",
+    config: false,
+    type: String,
+    choices: {
+      [MR_MEASUREMENT_MODES.COST]: "MOVEMENTRULER.measurement.Cost",
+      [MR_MEASUREMENT_MODES.DISTANCE]: "MOVEMENTRULER.measurement.Distance"
+    },
+    default: MR_MEASUREMENT_MODES.COST
+  });
+  game.settings.register(MODULE_ID, MR_SETTINGS.observerOnly, {
+    scope: "world",
+    config: false,
+    type: Boolean,
+    default: true
+  });
+  game.settings.register(MODULE_ID, MR_SETTINGS.highlightGrid, {
+    scope: "client",
+    config: false,
+    type: Boolean,
+    default: true
+  });
+  game.settings.register(MODULE_ID, MR_SETTINGS.colorWaypoints, {
+    scope: "client",
+    config: false,
+    type: Boolean,
+    default: true
+  });
+  game.settings.registerMenu(MODULE_ID, "movementRulerMenu", {
+    name: "SETTINGS.movementRulerMenu.Name",
+    label: "SETTINGS.movementRulerMenu.Label",
+    hint: "SETTINGS.movementRulerMenu.Hint",
+    icon: "fas fa-ruler",
+    type: MovementRulerMenuProxy,
+    restricted: false
+  });
+}
+function registerMovementRulerHooks() {
+  initSpeedProviders();
+  const api = createMovementRulerApi();
+  const mod = game.modules.get(MODULE_ID);
+  if (mod) mod.api = { ...mod.api ?? {}, movementRuler: api };
+  Hooks.callAll(MR_READY_HOOK, api);
+  Hooks.once("setup", () => installMovementRuler());
+}
 new TJSGameSettings(MODULE_ID);
 function registerSettings() {
   _registerWorldSettings();
   _registerClientSettings();
+  registerMovementRulerSettings();
 }
 function _registerWorldSettings() {
   game.settings.register(MODULE_ID, "enableWeaponFx", {
@@ -41409,9 +43629,10 @@ function _registerWorldSettings() {
     type: Boolean,
     default: false,
     restricted: true,
-    onChange: () => {
+    onChange: (value) => {
       Object.values(ui.windows).forEach((w) => w.render?.());
-      refreshAllTokenCounters();
+      if (value) refreshAllTokenCounters();
+      else removeAllTokenCounters();
     }
   });
   game.settings.register(MODULE_ID, "tokenCounterPresets", {
@@ -41745,8 +43966,8 @@ async function loadTextureForDisplay(src, fallback) {
   try {
     const asset = await foundry.canvas.loadTexture(src, { fallback: fallback || DEFAULT_PORTRAIT });
     return resolveTexture(asset);
-  } catch (error) {
-    console.warn("Antifriz Roleplay Stuff | Failed to load perceived token image", src, error);
+  } catch (error2) {
+    console.warn("Antifriz Roleplay Stuff | Failed to load perceived token image", src, error2);
     return null;
   }
 }
@@ -41900,6 +44121,7 @@ Hooks.once("init", async function() {
   registerSettings();
   registerPerceivedImageHooks();
   registerTokenCounterHooks();
+  registerMovementRulerHooks();
 });
 Hooks.once("ready", async function() {
   registerSocketListeners();

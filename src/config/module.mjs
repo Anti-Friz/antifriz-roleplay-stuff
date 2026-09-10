@@ -52,6 +52,7 @@ export const settings = {
    enableTokenCounters: 'enableTokenCounters',
    showTokenCountersButton: 'showTokenCountersButton',
    tokenCounterPresets: 'tokenCounterPresets',
+   enableMovementRuler: 'enableMovementRuler',
    debugMode: 'debugMode'
 };
 
@@ -65,5 +66,6 @@ export const settings = {
  * @property {string} enableTokenCounters - Enable Token Counters subsystem (world, GM only)
  * @property {string} showTokenCountersButton - Show token-counters config button on actor sheets
  * @property {string} tokenCounterPresets - Stored token-counter preset library (world)
+ * @property {string} enableMovementRuler - Enable Movement Ruler colouring (world, GM only)
  * @property {string} debugMode - Enable debug logging
  */

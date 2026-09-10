@@ -1,0 +1,144 @@
+/**
+ * Styles for MovementRulerShell component
+ */
+@use 'shared';
+
+.antifriz-roleplay-stuff.movement-ruler-config {
+   .window-content {
+      padding: 0 !important;
+   }
+
+   .movement-ruler-content {
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+   }
+
+   .config-section {
+      border: 1px solid var(--ars-border-color);
+      border-radius: var(--ars-border-radius);
+      padding: 0.75rem;
+      background: var(--ars-bg-secondary);
+
+      h3 {
+         margin: 0 0 0.75rem 0;
+         font-size: 1rem;
+         font-weight: bold;
+         color: var(--ars-text-primary);
+         display: flex;
+         align-items: center;
+         gap: 0.5rem;
+
+         i {
+            color: var(--ars-accent);
+         }
+      }
+   }
+
+   .setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 0.35rem;
+
+      > label {
+         display: flex;
+         align-items: center;
+         gap: 0.5rem;
+         color: var(--ars-text-primary);
+         flex: 1;
+      }
+
+      > .row-label {
+         color: var(--ars-text-primary);
+         flex: 1;
+      }
+
+      input[type="checkbox"] {
+         cursor: pointer;
+         width: 18px;
+         height: 18px;
+         flex: none;
+      }
+
+      input[type="color"] {
+         width: 60px;
+         height: 26px;
+         padding: 0;
+         border: 1px solid var(--ars-border-color);
+         border-radius: var(--ars-border-radius);
+         background: transparent;
+         cursor: pointer;
+         flex: none;
+      }
+
+      select,
+      input[type="text"],
+      input[type="number"] {
+         flex: 1;
+         max-width: 60%;
+      }
+   }
+
+   .notes {
+      margin: 0 0 0.6rem 0;
+      font-size: 0.75rem;
+      color: var(--ars-text-secondary);
+   }
+
+   .reset-btn {
+      margin-top: 0.5rem;
+      padding: 0.35rem 0.75rem;
+      border: 1px solid var(--ars-border-color);
+      border-radius: var(--ars-border-radius);
+      background: var(--ars-bg-hover);
+      color: var(--ars-text-primary);
+      cursor: pointer;
+      font-size: 0.8rem;
+
+      &:hover {
+         background: var(--ars-border-color);
+      }
+   }
+
+   .button-row {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+      padding-top: 0.5rem;
+      border-top: 1px solid var(--ars-border-color);
+
+      button {
+         padding: 0.5rem 1rem;
+         border: none;
+         border-radius: var(--ars-border-radius);
+         cursor: pointer;
+         font-size: 0.9rem;
+         font-weight: 500;
+         display: flex;
+         align-items: center;
+         gap: 0.35rem;
+         transition: all 0.2s;
+      }
+
+      .save-btn {
+         background: var(--ars-accent);
+         color: white;
+
+         &:hover {
+            background: var(--ars-accent-hover);
+         }
+      }
+
+      .cancel-btn {
+         background: var(--ars-bg-hover);
+         color: var(--ars-text-primary);
+
+         &:hover {
+            background: var(--ars-border-color);
+         }
+      }
+   }
+}

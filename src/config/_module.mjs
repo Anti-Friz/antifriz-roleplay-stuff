@@ -14,6 +14,12 @@ export {
    HUD_MODES, VISIBLE_WHEN, ELEMENT_TYPES, COUNTER_DEFAULTS
 } from './tokenCounters.mjs';
 
+export * as movementRulerConfig from './movementRuler.mjs';
+export {
+   MR_SETTINGS, MR_NATIVE_PROVIDER_ID, MR_UNREACHABLE_COLOR_ID, MR_READY_HOOK,
+   MR_MEASUREMENT_MODES, mrColorSettingKey, mrProviderSettingKey
+} from './movementRuler.mjs';
+
 export const MODULE_ID = constants.moduleId;
 export const MODULE_LABEL = constants.moduleLabel;
 

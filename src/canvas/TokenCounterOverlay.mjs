@@ -83,6 +83,11 @@ export function refreshAllTokenCounters() {
    for (const token of canvas.tokens?.placeables ?? []) refreshTokenCounters(token);
 }
 
+/** Remove overlays from every placed token (used when the subsystem is disabled). */
+export function removeAllTokenCounters() {
+   for (const token of canvas.tokens?.placeables ?? []) removeTokenCounters(token);
+}
+
 /**
  * Refresh overlays for all active tokens of a given actor.
  * @param {Actor} actor
@@ -157,16 +162,77 @@ function isImagePath(s) {
    return typeof s === 'string' && /\.(png|jpe?g|webp|svg|gif|bmp)$/i.test(s);
 }
 
+/* -------------------------------------------- */
+/*  PIXI v7 / v8 drawing shims                   */
+/* -------------------------------------------- */
+
+/** @param {PIXI.Graphics} g @returns {boolean} True on PIXI v7 (legacy Graphics API). */
+function isLegacyGraphics(g) {
+   return typeof g.lineStyle === 'function';
+}
+
+/**
+ * Stroke a path built by `build`. PIXI v7 sets style first; v8 strokes after the path.
+ * @param {PIXI.Graphics} g
+ * @param {(g: PIXI.Graphics) => void} build
+ * @param {{width: number, color: number, alpha?: number, cap?: string}} style
+ */
+function strokePath(g, build, style) {
+   if (isLegacyGraphics(g)) {
+      g.lineStyle({ width: style.width, color: style.color, alpha: style.alpha ?? 1, cap: style.cap ?? 'butt' });
+      build(g);
+   }
+   else {
+      build(g);
+      g.stroke({ width: style.width, color: style.color, alpha: style.alpha ?? 1, cap: style.cap ?? 'butt' });
+   }
+}
+
+/**
+ * Fill a path built by `build`, on both PIXI v7 and v8.
+ * @param {PIXI.Graphics} g
+ * @param {(g: PIXI.Graphics) => void} build
+ * @param {{color: number, alpha?: number}} style
+ */
+function fillPath(g, build, style) {
+   if (typeof g.beginFill === 'function') {
+      g.beginFill(style.color, style.alpha ?? 1);
+      build(g);
+      g.endFill();
+   }
+   else {
+      build(g);
+      g.fill({ color: style.color, alpha: style.alpha ?? 1 });
+   }
+}
+
+/** @param {PIXI.Graphics} g */
+function rectPath(g, x, y, w, h) {
+   (typeof g.drawRect === 'function' ? g.drawRect : g.rect).call(g, x, y, w, h);
+}
+
+/** @param {PIXI.Graphics} g */
+function circlePath(g, x, y, r) {
+   (typeof g.drawCircle === 'function' ? g.drawCircle : g.circle).call(g, x, y, r);
+}
+
+/** @param {PIXI.Graphics} g */
+function polyPath(g, pts) {
+   (typeof g.drawPolygon === 'function' ? g.drawPolygon : g.poly).call(g, pts);
+}
+
 /** @param {string} label @returns {PIXI.Text} */
 function makeText(label) {
-   const text = new PIXI.Text(label, {
+   const major = Number(String(PIXI.VERSION ?? '7').split('.')[0]) || 7;
+   const style = {
       fontFamily: 'Signika, sans-serif',
       fontSize: 12,
       fill: 0xffffff,
-      stroke: 0x000000,
-      strokeThickness: 3,
-      align: 'center'
-   });
+      align: 'center',
+      // v8 expects stroke:{color,width}; v7 uses stroke + strokeThickness.
+      ...(major >= 8 ? { stroke: { color: 0x000000, width: 3 } } : { stroke: 0x000000, strokeThickness: 3 })
+   };
+   const text = major >= 8 ? new PIXI.Text({ text: label, style }) : new PIXI.Text(label, style);
    text.anchor.set(0.5);
    text.resolution = 2;
    return text;
@@ -230,17 +296,19 @@ function drawArc(g, color, fraction, radius, thickness, spanDeg, centerDeg) {
    const start = full ? (-Math.PI / 2) : (centerDeg * DEG - spanRad / 2);
    const at = (a) => [Math.cos(a) * radius, Math.sin(a) * radius];
 
-   g.lineStyle({ width: thickness, color: 0x000000, alpha: 0.35, cap: 'round' });
-   const [bx, by] = at(start);
-   g.moveTo(bx, by);
-   g.arc(0, 0, radius, start, start + spanRad);
+   strokePath(g, (gg) => {
+      const [bx, by] = at(start);
+      gg.moveTo(bx, by);
+      gg.arc(0, 0, radius, start, start + spanRad);
+   }, { width: thickness, color: 0x000000, alpha: 0.35, cap: 'round' });
 
    if (fraction > 0) {
       const end = start + spanRad * Math.clamp(fraction, 0, 1);
-      g.lineStyle({ width: thickness, color, alpha: 1, cap: 'round' });
-      const [fx, fy] = at(start);
-      g.moveTo(fx, fy);
-      g.arc(0, 0, radius, start, end);
+      strokePath(g, (gg) => {
+         const [fx, fy] = at(start);
+         gg.moveTo(fx, fy);
+         gg.arc(0, 0, radius, start, end);
+      }, { width: thickness, color, alpha: 1, cap: 'round' });
    }
 }
 
@@ -262,10 +330,10 @@ function drawBadge(node, g, def, color, fraction, radius, centerDeg) {
 
    if (shape === 'square') {
       const s = BADGE_SQUARE;
-      g.beginFill(0x000000, 0.4); g.drawRect(-s / 2, -s / 2, s, s); g.endFill();
+      fillPath(g, (gg) => rectPath(gg, -s / 2, -s / 2, s, s), { color: 0x000000, alpha: 0.4 });
       const fh = s * fraction;
-      if (fh > 0) { g.beginFill(color, 0.9); g.drawRect(-s / 2, s / 2 - fh, s, fh); g.endFill(); }
-      g.lineStyle(1.5, color, 1); g.drawRect(-s / 2, -s / 2, s, s);
+      if (fh > 0) fillPath(g, (gg) => rectPath(gg, -s / 2, s / 2 - fh, s, fh), { color, alpha: 0.9 });
+      strokePath(g, (gg) => rectPath(gg, -s / 2, -s / 2, s, s), { width: 1.5, color, alpha: 1 });
       return;
    }
 
@@ -276,8 +344,8 @@ function drawBadge(node, g, def, color, fraction, radius, centerDeg) {
          const ang = -Math.PI / 2 + i * (2 * Math.PI / sides);
          pts.push(Math.cos(ang) * BADGE_POLY_R, Math.sin(ang) * BADGE_POLY_R);
       }
-      g.beginFill(color, 0.85); g.drawPolygon(pts); g.endFill();
-      g.lineStyle(1.5, 0x000000, 0.5); g.drawPolygon(pts);
+      fillPath(g, (gg) => polyPath(gg, pts), { color, alpha: 0.85 });
+      strokePath(g, (gg) => polyPath(gg, pts), { width: 1.5, color: 0x000000, alpha: 0.5 });
       return;
    }
 
@@ -291,6 +359,6 @@ function drawBadge(node, g, def, color, fraction, radius, centerDeg) {
    }
 
    // circle (also icon fallback when icon is a font-glyph class)
-   g.beginFill(color, 0.85); g.drawCircle(0, 0, BADGE_CIRCLE_R); g.endFill();
-   g.lineStyle(1.5, 0x000000, 0.5); g.drawCircle(0, 0, BADGE_CIRCLE_R);
+   fillPath(g, (gg) => circlePath(gg, 0, 0, BADGE_CIRCLE_R), { color, alpha: 0.85 });
+   strokePath(g, (gg) => circlePath(gg, 0, 0, BADGE_CIRCLE_R), { width: 1.5, color: 0x000000, alpha: 0.5 });
 }

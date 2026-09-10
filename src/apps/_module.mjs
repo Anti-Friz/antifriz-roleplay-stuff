@@ -9,3 +9,4 @@ export { WeaponFxApp } from "./characterSheetAddition/WeaponFxApp.mjs";
 export { DefensiveFxApp } from "./characterSheetAddition/DefensiveFxApp.mjs";
 export { MusicCategoriesApp } from "./settings/MusicCategoriesApp.mjs";
 export { HeaderButtonsApp } from "./settings/HeaderButtonsApp.mjs";
+export { MovementRulerApp } from "./settings/MovementRulerApp.mjs";

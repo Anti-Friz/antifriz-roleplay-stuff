@@ -15,6 +15,7 @@ Hooks.once('init', async function () {
    hooks.registerSettings();
    hooks.registerPerceivedImageHooks();
    hooks.registerTokenCounterHooks();
+   hooks.registerMovementRulerHooks();
 });
 
 Hooks.once('ready', async function () {
