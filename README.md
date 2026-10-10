@@ -1,6 +1,6 @@
 # AntiFriz Roleplay Stuff
 
-[![Foundry VTT](https://img.shields.io/badge/Foundry-v13-informational)](https://foundryvtt.com/)
+[![Foundry VTT](https://img.shields.io/badge/Foundry-v14-informational)](https://foundryvtt.com/)
 [![License](https://img.shields.io/github/license/Anti-Friz/antifriz-roleplay-stuff)](LICENSE)
 [![Latest Release](https://img.shields.io/github/v/release/Anti-Friz/antifriz-roleplay-stuff)](https://github.com/Anti-Friz/antifriz-roleplay-stuff/releases/latest)
 
